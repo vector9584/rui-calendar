@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>瑞历 Rui Calendar · 日历，自己说了算</title>
+<title>瑞历 Rui Calendar · 你的日子，不该住在别人家</title>
 <link rel="icon" type="image/png" href="favicon.png" />
 <link rel="apple-touch-icon" href="apple-touch-icon.png" />
-<meta name="description" content="瑞历是一套开源自托管日历。网页、iPhone、Android、Windows 桌面读写同一个日历，日程和联系人只存在你自己的设备上。" />
+<meta name="description" content="瑞历是一套开源自托管日历。网页、手机、Windows 桌面共用一份日程和联系人，数据只落在你自己的设备上。" />
 <meta name="theme-color" content="#2f9e8f" />
-<meta property="og:title" content="瑞历 Rui Calendar · 日历，自己说了算" />
+<meta property="og:title" content="瑞历 Rui Calendar · 你的日子，不该住在别人家" />
 <meta property="og:description" content="开源自托管日历：网页 + 手机 + Windows 桌面共用一个日历，数据只在你自己的设备上。" />
 <meta property="og:image" content="og-image.png" />
 <meta property="og:type" content="website" />
@@ -106,8 +106,10 @@
     border-bottom: 1px solid var(--line);
   }
   .nav { display: flex; align-items: center; justify-content: space-between; height: 62px; }
-  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: 0.2px; }
+  .nav-brand { display: flex; align-items: center; gap: 9px; }
   .nav-brand img { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 3px 10px rgba(47,158,143,0.32); }
+  .nav-brand .brand-zh { font-weight: 800; font-size: 17px; letter-spacing: 0.5px; }
+  .nav-brand .brand-en { font-size: 11.5px; font-weight: 500; color: var(--muted); letter-spacing: 0.3px; }
   .nav-links { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--ink-2); }
   .nav-links a { transition: color 0.15s; }
   .nav-links a:hover { color: var(--brand); }
@@ -249,11 +251,20 @@
   .card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
   .card:hover::before, .card:hover::after { opacity: 1; }
   .card .icon {
-    width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center;
+    width: 50px; height: 50px; border-radius: 15px; display: flex; align-items: center;
     justify-content: center; margin-bottom: 16px;
-    background: var(--brand-soft); color: var(--brand);
+    color: #fff;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    box-shadow: 0 8px 18px rgba(47,158,143,0.32);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
   }
-  .card .icon svg { width: 23px; height: 23px; }
+  .card:hover .icon { transform: scale(1.08) rotate(-4deg); }
+  .card .icon svg { width: 24px; height: 24px; }
+  .card.accent-b .icon { background: linear-gradient(135deg, #1f7a6d, #2f9e8f); box-shadow: 0 8px 18px rgba(31,122,109,0.34); }
+  .card.accent-c .icon { background: linear-gradient(135deg, #f2a41b, #ffb84d); box-shadow: 0 8px 18px rgba(242,164,27,0.34); }
+  .card.accent-d .icon { background: linear-gradient(135deg, #e86b5a, #ff8a6b); box-shadow: 0 8px 18px rgba(232,107,90,0.34); }
+  .card.accent-e .icon { background: linear-gradient(135deg, #8b6bc4, #a98fd9); box-shadow: 0 8px 18px rgba(139,107,196,0.34); }
+  .card.accent-f .icon { background: linear-gradient(135deg, #4a90d9, #6bb0e8); box-shadow: 0 8px 18px rgba(74,144,217,0.34); }
   .card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 7px; }
   .card p { font-size: 14px; color: var(--muted); }
 
@@ -266,7 +277,8 @@
     box-shadow: var(--shadow-sm);
   }
   .flow-node .icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 11px;
-    display: flex; align-items: center; justify-content: center; background: var(--brand-soft); color: var(--brand); }
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2)); box-shadow: 0 6px 14px rgba(47,158,143,0.28); }
   .flow-node .icon svg { width: 20px; height: 20px; }
   .flow-node .t { font-weight: 700; font-size: 14px; }
   .flow-node .d { font-size: 12px; color: var(--muted); margin-top: 4px; }
@@ -282,8 +294,13 @@
   }
   .client:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
   .client .icon { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 15px;
-    display: flex; align-items: center; justify-content: center;
-    background: var(--brand-soft); color: var(--brand); }
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: 0 8px 16px rgba(16,28,24,0.18); transition: transform 0.22s ease; }
+  .client:hover .icon { transform: scale(1.06) translateY(-2px); }
+  .clients .client:nth-child(1) .icon { background: linear-gradient(135deg, var(--brand), var(--brand-2)); }
+  .clients .client:nth-child(2) .icon { background: linear-gradient(135deg, #4a90d9, #6bb0e8); }
+  .clients .client:nth-child(3) .icon { background: linear-gradient(135deg, #8b6bc4, #a98fd9); }
+  .clients .client:nth-child(4) .icon { background: linear-gradient(135deg, #f2a41b, #ffb84d); }
   .client .icon svg { width: 26px; height: 26px; }
   .client .name { font-weight: 700; font-size: 15px; }
   .client .desc { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
@@ -427,7 +444,8 @@
   <div class="wrap nav">
     <a class="nav-brand" href="#top">
       <img src="og-image.png" alt="瑞历" width="30" height="30" />
-      Rui Calendar
+      <span class="brand-zh">瑞历</span>
+      <span class="brand-en">Rui Calendar</span>
     </a>
     <div class="nav-links">
       <a href="#features">能做什么</a>
@@ -443,10 +461,10 @@
 <main id="top">
   <section class="hero wrap" id="hero">
     <div class="hero-copy">
-      <h1>日历，<br /><span class="grad">自己说了算</span></h1>
+      <h1>你的日子，<br /><span class="grad">不该住在别人家</span></h1>
       <p class="tag">
-        瑞历是一套开源自托管日历。网页、iPhone、Android、Windows 桌面读写同一个日历，
-        你的日程和联系人只存在自己的设备上，不经手任何第三方。
+        一个日历，网页、手机、Windows 桌面都能用。你的日程和联系人，
+        只放在你自己的设备上，谁也翻不到。
       </p>
       <div class="cta-row">
         <a class="btn btn-primary" href="#download">
@@ -499,27 +517,27 @@
           <h3>一处改动，处处同步</h3>
           <p>网页、iPhone、Android、Windows 桌面悬浮窗，读写同一个日历库，手机记一条，电脑立刻看得见。</p>
         </div>
-        <div class="card reveal">
+        <div class="card accent-b reveal">
           <div class="icon"><svg><use href="#i-lock"/></svg></div>
           <h3>数据留在自己手里</h3>
           <p>部署在你自己的 NAS 或服务器上，日程和联系人不经过任何云厂商，谁也翻不走你的隐私。</p>
         </div>
-        <div class="card reveal">
+        <div class="card accent-c reveal">
           <div class="icon"><svg><use href="#i-cal"/></svg></div>
           <h3>日历 + 通讯录</h3>
           <p>CalDAV 管日程、CardDAV 管联系人，全用开放标准，任何兼容客户端都能接进来，不被一家锁死。</p>
         </div>
-        <div class="card reveal">
+        <div class="card accent-d reveal">
           <div class="icon"><svg><use href="#i-lang"/></svg></div>
           <h3>中文优先</h3>
           <p>中文界面、本地化日期（2026年10月23日这样写），不是英文版的生硬翻译，用起来不别扭。</p>
         </div>
-        <div class="card reveal">
+        <div class="card accent-e reveal">
           <div class="icon"><svg><use href="#i-rss"/></svg></div>
           <h3>订阅源叠着看</h3>
           <p>节假日、老黄历、天气这些中文订阅，和你的日程叠在一起显示，互不干扰。</p>
         </div>
-        <div class="card reveal">
+        <div class="card accent-f reveal">
           <div class="icon"><svg><use href="#i-spark"/></svg></div>
           <h3>AI 帮你记</h3>
           <p>接 AI 助手，说一句「周五下午三点提醒我开会」，日程自动落进日历，不用手动点。</p>
