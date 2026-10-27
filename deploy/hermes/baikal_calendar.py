@@ -6,7 +6,7 @@
 
 数据源（全部通过环境变量注入，不落明文）：
   - 端点  BAIKAL_BASE_URL（形如 https://your-dav.example.com/dav.php）
-  - 用户  BAIKAL_USER_NAME（默认 vector），密码 BAIKAL_USER_PASS
+  - 用户  BAIKAL_USER_NAME（默认 your-username），密码 BAIKAL_USER_PASS
   - 凭据文件 BAIKAL_ENV_FILE（默认 ~/.baikal.env，一行 KEY=VALUE）
   - 日历  /calendars/{user}/personal/  （uri=personal）
 
@@ -89,7 +89,7 @@ class BaikalCal:
         env_file = env_file or os.environ.get("BAIKAL_ENV_FILE", _ENV_FILE_DEFAULT)
         base = base or os.environ.get("BAIKAL_BASE_URL", _BASE_DEFAULT)
         env = _load_env(env_file)
-        self.user = env.get("BAIKAL_USER_NAME", "vector")
+        self.user = env.get("BAIKAL_USER_NAME", "your-username")
         self.passwd = env.get("BAIKAL_USER_PASS", "")
         self.base = base.rstrip("/")
         self.cal = f"{self.base}/calendars/{self.user}/personal/"

@@ -16,7 +16,7 @@ const isNative = Capacitor.isNativePlatform()
 export function OnboardingModal(): JSX.Element | null {
   const { t } = useTranslation('common')
   const { t: tc } = useTranslation('calendar')
-  const [serverUrl, setServerUrl] = useState('https://your-caldav.example.com:7086/dav.php/')
+  const [serverUrl, setServerUrl] = useState('https://your-caldav.example.com/dav.php/')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [isConnecting, setIsConnecting] = useState(false)
@@ -119,7 +119,7 @@ export function OnboardingModal(): JSX.Element | null {
               name="serverUrl"
               type="url"
               className={styles.formInput}
-              placeholder="https://your-caldav.example.com:7086/dav.php/"
+              placeholder="https://your-caldav.example.com/dav.php/"
               value={serverUrl}
               onChange={(e) => setServerUrl(e.target.value)}
               required
@@ -173,7 +173,7 @@ export function OnboardingModal(): JSX.Element | null {
           </button>
           <a
             className={styles.skipButton}
-            href="https://your-caldav.example.com:7086/admin/"
+            href="https://your-caldav.example.com/admin/"
             target="_blank"
             rel="noreferrer"
           >

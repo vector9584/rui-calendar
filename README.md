@@ -16,39 +16,164 @@
 
 于是拆成「存储 + 前端」两层，用两个成熟的标准协议组件拼出同样能力、却更可控的方案。
 
-## 架构
+## 架构总览
 
+下面四张图从不同视角描述这套系统。
+
+### 1. 网络拓扑图
+
+流量如何从公网一路走到内网容器：用户设备 → 公网 ECS（nginx 入口）→ frp 隧道（NAS 主动出站）→ 内网 Docker 容器。
+
+```mermaid
+flowchart LR
+    subgraph Users["用户侧（公网）"]
+        iOS["iOS 原生日历"]
+        Android["Android 原生日历"]
+        Browser["桌面浏览器"]
+        Desktop["桌面客户端（规划中）"]
+    end
+
+    subgraph ECS["ECS 公网服务器"]
+        NGINX["nginx<br/>HTTPS 终止 · 反向代理"]
+        FRPS["frps 隧道服务端"]
+    end
+
+    subgraph NAS["NAS（内网，无公网 IP）"]
+        FRPC["frpc 客户端（主动出站）"]
+        subgraph Docker["Docker 容器"]
+            BAIKAL["Baikal<br/>存储后端"]
+            CALINO["瑞历 Calino<br/>网页前端"]
+            PROXY["calino-proxy<br/>CORS 代理"]
+        end
+    end
+
+    External["外部 ICS 订阅源"]
+
+    iOS -->|"CalDAV 读写"| NGINX
+    Android -->|"CalDAV 读写"| NGINX
+    Browser -->|"HTTPS 网页"| NGINX
+    Desktop -->|"CalDAV 读写"| NGINX
+    NGINX -->|"反向代理"| FRPS
+    FRPS <-->|"frp 隧道（NAS 主动出站）"| FRPC
+    FRPC --> BAIKAL
+    FRPC --> CALINO
+    FRPC --> PROXY
+    PROXY -.->|"拉取外部订阅"| External
 ```
-                      ┌─────────────────────────────────────────────┐
-                      │  ECS 公网服务器（nginx 7086 ssl 入口）        │
-                      │                                              │
-   iOS 原生日历 ──CalDAV──▶ /dav.php  ─┐                            │
-   桌面浏览器 ──瑞历网页──▶ /          ─┤                            │
-                       │  /admin+/res ─┤  反代到 frps 隧道端口        │
-   外部 ICS 订阅 ──CORS──▶ /proxy/    ─┘                            │
-                      └──────────────────┬──────────────────────────┘
-                                         │ frp 隧道（NAS 主动出站）
-                      ┌──────────────────▼──────────────────────────┐
-                      │  NAS（飞牛，内网）                            │
-                      │   frpc ──┬─ 7031 ─▶ Baikal(5232)  存储后端   │
-                      │           ├─ 7032 ─▶ 瑞历 Calino(5233) 前端  │
-                      │           └─ 7033 ─▶ calino-proxy(5234) 代理 │
-                      └─────────────────────────────────────────────┘
+
+### 2. 系统架构图
+
+逻辑组件与数据流。核心原则：**Baikal 是唯一数据存储，所有端读写同一份数据**。
+
+```mermaid
+flowchart TB
+    subgraph Clients["客户端层（三端一致）"]
+        Web["瑞历网页前端<br/>Calino 中文定制版"]
+        iOS["iOS 原生日历 App"]
+        Android["Android 原生日历 App"]
+        Desktop["桌面客户端（规划中）"]
+    end
+
+    subgraph Edge["边缘接入层"]
+        Nginx["ECS nginx<br/>HTTPS 终止 · 反向代理 · CORS"]
+        Frp["frp 隧道<br/>内网穿透"]
+    end
+
+    subgraph Core["核心层（NAS 内网）"]
+        Baikal["Baikal<br/>CalDAV / CardDAV 服务器"]
+        Proxy["calino-proxy<br/>通用 CORS 代理"]
+    end
+
+    Storage[("SQLite<br/>日历 · 联系人 · 账户")]
+    Hermes["Hermes AI 助手<br/>baikal_calendar.py"]
+
+    Web -->|"CalDAV/CardDAV + 网页资源"| Nginx
+    iOS -->|"CalDAV 读写"| Nginx
+    Android -->|"CalDAV 读写"| Nginx
+    Desktop -->|"CalDAV 读写"| Nginx
+    Nginx <-->|"frp 隧道"| Frp
+    Frp <-->|"内网映射"| Baikal
+    Baikal --- Storage
+    Web -.->|"订阅外部 ICS（走 CORS 代理）"| Proxy
+    Proxy -.->|"转发"| External["外部订阅源"]
+    Hermes -->|"CalDAV 直写"| Nginx
 ```
 
-一句话：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的网页前端，iOS 原生 App 直连 Baikal，三端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+### 3. 技术架构图
 
-### 组件清单
+每一层用什么技术栈。
+
+```mermaid
+flowchart TB
+    subgraph L1["表现层 / 客户端"]
+        R["React 19 + TypeScript + Vite"]
+        I["i18next（完整 zh 语言包）"]
+        Z["Zustand + localStorage / IndexedDB"]
+        D["date-fns（中文日期格式）"]
+    end
+
+    subgraph L2["接入层 / 网关"]
+        N["nginx：HTTPS 终止 · 反向代理 · CORS · 证书"]
+        F["frp：内网穿透（frpc 出站 → frps）"]
+    end
+
+    subgraph L3["服务层 / 存储"]
+        B["Baikal：PHP + sabre/dav + SQLite"]
+        P["calino-proxy：Node.js 零依赖 CORS 代理"]
+    end
+
+    subgraph L4["协议层 / 标准"]
+        CD["CalDAV · CardDAV"]
+        ICS["iCalendar (RFC 5545) · vCard (RFC 6350)"]
+    end
+
+    L1 -->|"CalDAV / CardDAV"| L2
+    L2 -->|"反向代理 / 隧道"| L3
+    L1 -.-> CD
+    L3 -.-> CD
+    L3 -.-> ICS
+```
+
+### 4. 设备互联图
+
+每台终端设备如何接入、分别连到哪个服务。
+
+```mermaid
+flowchart LR
+    subgraph Service["统一服务端"]
+        Baikal["Baikal<br/>CalDAV / CardDAV<br/>唯一存储"]
+        Calino["瑞历网页<br/>Calino"]
+    end
+
+    iPhone["iPhone 原生日历"]
+    iPad["iPad 原生日历"]
+    Android["Android 原生日历"]
+    Browser["桌面浏览器"]
+    WinExe["Windows 桌面客户端<br/>（规划中）"]
+    Hermes["Hermes AI 助手"]
+
+    iPhone -->|"CalDAV 读写日历"| Baikal
+    iPad -->|"CalDAV 读写日历"| Baikal
+    Android -->|"CalDAV 读写日历"| Baikal
+    WinExe -->|"CalDAV 读写日历"| Baikal
+    Browser -->|"网页：日历 + 联系人编辑"| Calino
+    Calino -->|"CalDAV / CardDAV"| Baikal
+    Hermes -->|"CalDAV 直写"| Baikal
+```
+
+一句话总结：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的网页前端，iOS 原生 App 直连 Baikal，三端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+
+## 组件清单
 
 | 组件 | 职责 | 说明 |
 |---|---|---|
 | **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
 | **瑞历（Calino 定制版）** | 网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
 | **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
-| **frpc** | 内网穿透客户端 | 跑在 NAS，主动出站连公网 frps，映射 3 条隧道 |
-| **nginx（ECS）** | 公网 HTTPS 入口 | 7086 独立 ssl 端口，反代 + 证书终止 |
+| **frpc / frps** | 内网穿透 | NAS 主动出站连公网 frps，映射 3 条隧道 |
+| **nginx（ECS）** | 公网 HTTPS 入口 | 独立 ssl 端口，反代 + 证书终止 |
 | **iOS/Android 原生日历** | 移动端读写 | 系统日历账户直连 Baikal，与网页端同一份数据 |
-| **Hermes / AI 助手** | 程序化操作日历 | 通过 `deploy/hermes/baikal_calendar.py` 直写 Baikal |
+| **Hermes / AI 助手** | 程序化操作日历 | `deploy/hermes/baikal_calendar.py` 直写 Baikal，操作手册见 [`deploy/hermes/SKILL.md`](./deploy/hermes/SKILL.md) |
 
 ## 从 Y日历 到这里（演进）
 
@@ -85,7 +210,7 @@
 ### 交互优化
 - 月视图单击 = 开「天」视图、双击 = 创建日程（防误触）；年月下拉框互斥。
 
-完整改造清单见部署总纲笔记（私库），本仓库代码即最终实现。
+完整改造清单见 [`deploy/hermes/SKILL.md`](./deploy/hermes/SKILL.md)，本仓库代码即最终实现。
 
 ## 目录结构
 
@@ -94,9 +219,11 @@ ruili-calendar/
 ├── src/                    # 瑞历前端源码（Calino 定制）
 ├── proxy/                  # 通用 CORS 代理（零依赖 Node，base64url 编码）
 ├── deploy/                 # 部署资产（脱敏）
-│   ├── nginx/calino.example.conf   # ECS 7086 站点反代配置
+│   ├── nginx/calino.example.conf   # ECS 独立端口站点反代配置
 │   ├── frpc/frpc.example.toml      # frp 隧道配置
 │   ├── hermes/baikal_calendar.py   # AI 助手日历写入 helper
+│   ├── hermes/test_baikal_calendar.py  # helper 回归测试
+│   ├── hermes/SKILL.md             # AI 助手操作手册（Hermes skill）
 │   └── README.md                   # 部署手册
 ├── android/                # Calino 上游的 Android（Capacitor）包装
 ├── docs/                   # 上游文档（Docker/发布检查清单等）
@@ -114,7 +241,7 @@ pnpm dev          # 本地开发
 pnpm build        # 产物在 dist/
 ```
 
-完整部署（Baikal + 瑞历 + proxy + frp + nginx + iOS）见 [deploy/README.md](./deploy/README.md)。
+完整部署（Baikal + 瑞历 + proxy + frp + nginx + iOS + AI 助手）见 [deploy/README.md](./deploy/README.md)。
 
 ## 桌面客户端
 
@@ -122,10 +249,11 @@ pnpm build        # 产物在 dist/
 
 ## 脱敏说明
 
-本仓库由作者的私有部署脱敏而来，不含任何真实域名、IP、密钥或凭据：
+本仓库由作者的私有部署脱敏而来，不含任何真实域名、IP、端口、密钥或凭据：
 
 - 引导弹框预填的 CalDAV 服务器地址、订阅源域名、代理路径等已替换为占位符。
-- 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，clone 后替换成你的地址即可。
+- 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，端口为示例值，clone 后替换成你的真实地址即可。
+- `deploy/hermes/SKILL.md` 中的真实域名、内网 IP、用户名、姓名均已脱敏。
 
 ## 许可证
 

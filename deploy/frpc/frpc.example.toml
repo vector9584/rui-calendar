@@ -12,26 +12,26 @@ serverAddr = "your-ecs.example.com"
 serverPort = 7000
 auth.token = "your-frps-token"
 
-# ---- Baikal：CalDAV/CardDAV 存储后端（NAS 5232 → ECS 7031）----
+# ---- Baikal：CalDAV/CardDAV 存储后端（NAS 5232 → ECS 7001）----
 [[proxies]]
 name = "baikal"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 5232
-remotePort = 7031
+remotePort = 7001
 
-# ---- Calino：网页日历前端（NAS 5233 → ECS 7032）----
+# ---- Calino：网页日历前端（NAS 5233 → ECS 7002）----
 [[proxies]]
 name = "calino"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 5233
-remotePort = 7032
+remotePort = 7002
 
-# ---- Calino-proxy：通用 CORS 代理（NAS 5234 → ECS 7033）----
+# ---- Calino-proxy：通用 CORS 代理（NAS 5234 → ECS 7003）----
 [[proxies]]
 name = "calino-proxy"
 type = "tcp"
 localIP = "127.0.0.1"
 localPort = 5234
-remotePort = 7033
+remotePort = 7003

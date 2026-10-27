@@ -9,10 +9,10 @@
 ```
 iOS 原生日历 ──CalDAV──┐
 桌面浏览器 ──瑞历网页──┤
-                       ├──> ECS nginx :7086 (https) ──┬─> /          → frpc 7032 → Calino(5233)
-                        │                              ├─> /dav.php   → frpc 7031 → Baikal(5232)
-                        │                              ├─> /admin+/res→ frpc 7031 → Baikal 管理后台
-                        │                              └─> /proxy/    → frpc 7033 → calino-proxy(5234) → 任意 https 目标
+                       ├──> ECS nginx （独立 ssl 端口） ──┬─> /          → frpc 7002 → Calino(5233)
+                        │                              ├─> /dav.php   → frpc 7001 → Baikal(5232)
+                        │                              ├─> /admin+/res→ frpc 7001 → Baikal 管理后台
+                        │                              └─> /proxy/    → frpc 7003 → calino-proxy(5234) → 任意 https 目标
 ```
 
 一句话：Baikal 是唯一存储（日历 + 联系人），瑞历（Calino 定制版）是网页前端，iOS 原生 App 直连 Baikal，三端数据一致。瑞历纯前端无状态，数据全在 Baikal。
@@ -21,11 +21,11 @@ iOS 原生日历 ──CalDAV──┐
 
 | 组件 | 镜像/进程 | 内网 | frpc | 作用 |
 |---|---|---|---|---|
-| Baikal | `ckulka/baikal:0.10.1-nginx` | 127.0.0.1:5232 | 7031 | CalDAV/CardDAV 服务器，唯一存储 |
-| 瑞历（Calino） | `ghcr.io/ivan-malinovski/calino:0.41.0`（或自构建镜像） | 127.0.0.1:5233 | 7032 | 网页日历客户端（本仓库） |
-| calino-proxy | 本仓库 `proxy/` 自构建 | 127.0.0.1:5234 | 7033 | 通用 CORS 代理（订阅外部 ICS） |
+| Baikal | `ckulka/baikal:0.10.1-nginx` | 127.0.0.1:5232 | 7001 | CalDAV/CardDAV 服务器，唯一存储 |
+| 瑞历（Calino） | `ghcr.io/ivan-malinovski/calino:0.41.0`（或自构建镜像） | 127.0.0.1:5233 | 7002 | 网页日历客户端（本仓库） |
+| calino-proxy | 本仓库 `proxy/` 自构建 | 127.0.0.1:5234 | 7003 | 通用 CORS 代理（订阅外部 ICS） |
 | frpc | 飞牛应用 / 独立进程 | webServer 7400 | — | default 实例，reload=GET /api/reload |
-| ECS nginx | 宝塔 / 裸 nginx | — | — | 7086 站点，公网 HTTPS 入口 |
+| ECS nginx | 宝塔 / 裸 nginx | — | — | 独立 ssl 端口，公网 HTTPS 入口 |
 
 ## 一、部署 Baikal（存储后端）
 
@@ -42,7 +42,7 @@ docker run -d --name baikal --restart unless-stopped \
 1. **Config Standard**：时区、管理员密码、认证方式选 **Basic**（瑞历/iOS 都用 Basic 认证）。
 2. **Config Database**：选 SQLite，点提交才真正初始化 `db.sqlite`（只交第一步会报 `no connection to a database`）。
 
-然后在后台建一个 CalDAV 用户（如 `vector`），并建一个日历（uri 建议 `personal`，颜色可自选）。
+然后在后台建一个 CalDAV 用户（如 `your-username`），并建一个日历（uri 建议 `personal`，颜色可自选）。
 
 > ⚠️ 认证方式务必选 Basic。若误选/翻译成其他值（如 Digest），Basic 客户端（瑞历/iOS）会全部 401。
 
@@ -91,16 +91,16 @@ curl http://127.0.0.1:5234/health   # → Calino CORS proxy OK
 curl http://127.0.0.1:7400/api/reload   # frpc 0.71 是 GET，不是 PUT/POST
 ```
 
-reload 后 7031/7032/7033 隧道在 frps 端监听，ECS nginx 才能反代到它们。
+reload 后 7001/7002/7003 隧道在 frps 端监听，ECS nginx 才能反代到它们。
 
 ## 五、配置 ECS nginx 反代
 
 用 `deploy/nginx/calino.example.conf` 做模板，替换域名、证书路径、frps 地址，放到你的 nginx 站点目录。关键点：
 
-- 走独立 `7086 ssl` 端口，**不挂在 80/443 主站**（会覆盖主站）。
+- 走独立 ssl 端口，**不挂在 80/443 主站**（会覆盖主站）。
 - `/admin/` 和 `/res/` 的 `Host` 用 `$http_host`（带端口），否则 Baikal 后台白屏。
 - `/dav.php/` 的 OPTIONS 拦截必须补 `DAV` + `Allow` 头，否则 iOS 报「无法使用 SSL」。
-- `/proxy/` 用尾斜杠 `proxy_pass http://127.0.0.1:7033/` 剥前缀，不要用 set/map。
+- `/proxy/` 用尾斜杠 `proxy_pass http://127.0.0.1:7003/` 剥前缀，不要用 set/map。
 
 ```bash
 nginx -t && nginx -s reload
@@ -113,8 +113,8 @@ nginx -t && nginx -s reload
 iOS 原生日历 App 直接连 Baikal（CalDAV 读写，三端一致）：
 
 - 设置 → 日历 → 账户 → 添加账户 → 其他 → 添加 CalDAV 账户
-- 服务器：`your-domain.example.com`（端口单独填 7086，别把 `:7086` 塞进服务器字段）
-- 用户名：`vector`（你的 CalDAV 用户）
+- 服务器：`your-domain.example.com`（端口单独填独立端口，别把端口塞进服务器字段）
+- 用户名：`your-username`（你的 CalDAV 用户）
 - 密码：该用户的 CalDAV 密码
 
 iOS 强制 HTTPS，明文 http 直接拒（不是账号密码错）。自动发现走 `/.well-known/caldav`，所以 nginx 里那条 301 必须有。
@@ -126,8 +126,8 @@ iOS 强制 HTTPS，明文 http 直接拒（不是账号密码错）。自动发�
 ```bash
 # 写凭据文件（不落明文到代码）
 cat > ~/.baikal.env <<'EOF'
-BAIKAL_BASE_URL=https://your-domain.example.com:7086/dav.php
-BAIKAL_USER_NAME=vector
+BAIKAL_BASE_URL=https://your-domain.example.com:8443/dav.php
+BAIKAL_USER_NAME=your-username
 BAIKAL_USER_PASS=你的密码
 EOF
 
