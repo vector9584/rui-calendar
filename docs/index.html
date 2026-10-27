@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rui Calendar（瑞历）— 自托管开源日历</title>
+<link rel="icon" type="image/png" href="favicon.png" />
+<meta name="description" content="Rui Calendar（瑞历）是一套开源自托管日历系统：网页 + iOS + Android + Windows 桌面四端同步，CalDAV / CardDAV 标准读写，中文优先，数据完全自主。" />
+<meta property="og:title" content="Rui Calendar（瑞历）— 自托管开源日历" />
+<meta property="og:description" content="四端同步、数据自主、中文优先的开源自托管日历。网页 + iOS + Android + Windows。" />
+<meta property="og:image" content="og-image.png" />
+<meta property="og:type" content="website" />
+<style>
+  :root {
+    --bg: #f6f8f7;
+    --bg-glow: #eef4f1;
+    --card: #ffffff;
+    --ink: #15201e;
+    --ink-2: #4a5a54;
+    --muted: #6b7a74;
+    --line: #e3eae6;
+    --brand: #2f7d6b;
+    --brand-deep: #28695a;
+    --brand-soft: #e5f0ec;
+    --sun: #f59e0b;
+    --radius: 18px;
+    --shadow: 0 1px 2px rgba(21,32,30,.04), 0 8px 24px rgba(21,32,30,.06);
+    --shadow-lg: 0 2px 6px rgba(21,32,30,.05), 0 20px 48px rgba(21,32,30,.10);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+      "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* 顶部渐变光晕 */
+  .halo {
+    position: absolute;
+    top: -220px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 900px;
+    height: 520px;
+    background: radial-gradient(ellipse at center, rgba(47,125,107,.16), rgba(245,158,11,.08) 55%, transparent 75%);
+    filter: blur(10px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* 导航 */
+  header { padding: 22px 0; }
+  .nav {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: .3px; }
+  .nav-brand .dot {
+    width: 26px; height: 26px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--brand), #34aba7);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 14px; font-weight: 700;
+  }
+  .nav-links { display: flex; align-items: center; gap: 22px; font-size: 14px; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--brand); }
+  .nav-cta {
+    background: var(--brand); color: #fff; padding: 8px 16px; border-radius: 10px;
+    font-weight: 600; font-size: 14px; transition: background .15s;
+  }
+  .nav-cta:hover { background: var(--brand-deep); }
+
+  /* Hero */
+  .hero { text-align: center; padding: 56px 0 40px; }
+  .hero .logo { width: 300px; max-width: 72%; height: auto; margin: 0 auto 28px; display: block; }
+  .hero h1 {
+    font-size: clamp(30px, 5vw, 46px); font-weight: 800; letter-spacing: -.5px;
+    line-height: 1.2; margin-bottom: 14px;
+  }
+  .hero h1 .en { color: var(--brand); }
+  .hero .tag {
+    font-size: clamp(16px, 2.4vw, 19px); color: var(--ink-2); max-width: 640px;
+    margin: 0 auto 30px;
+  }
+  .hero .cta-row {
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; align-items: center;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 12px; font-size: 15px; font-weight: 600;
+    transition: transform .12s, box-shadow .12s, background .15s;
+  }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary {
+    background: var(--brand); color: #fff; box-shadow: 0 6px 18px rgba(47,125,107,.30);
+  }
+  .btn-primary:hover { background: var(--brand-deep); box-shadow: 0 10px 24px rgba(47,125,107,.36); }
+  .btn-ghost {
+    background: var(--card); color: var(--ink); border: 1px solid var(--line);
+    box-shadow: var(--shadow);
+  }
+  .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+  .hero .hint { margin-top: 16px; font-size: 12.5px; color: var(--muted); }
+
+  /* 区块标题 */
+  .section { padding: 56px 0; }
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 40px; }
+  .section-head .kicker {
+    display: inline-block; font-size: 12.5px; font-weight: 600; letter-spacing: .6px;
+    color: var(--brand); background: var(--brand-soft); padding: 4px 12px; border-radius: 20px;
+    margin-bottom: 12px;
+  }
+  .section-head h2 { font-size: clamp(24px, 3.6vw, 32px); font-weight: 750; letter-spacing: -.3px; margin-bottom: 10px; }
+  .section-head p { color: var(--ink-2); font-size: 15px; }
+
+  /* 特性卡片 */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px; box-shadow: var(--shadow); transition: transform .15s, box-shadow .15s;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .card .icon {
+    width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; font-size: 20px; margin-bottom: 14px;
+    background: var(--brand-soft); color: var(--brand);
+  }
+  .card h3 { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .card p { font-size: 14px; color: var(--muted); }
+
+  /* 四端 */
+  .clients { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .client {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 26px 18px; text-align: center; box-shadow: var(--shadow);
+  }
+  .client .emoji { font-size: 34px; display: block; margin-bottom: 10px; }
+  .client .name { font-weight: 700; font-size: 15px; }
+  .client .desc { font-size: 12.5px; color: var(--muted); margin-top: 4px; }
+
+  /* 下载区 */
+  .download-panel {
+    background: linear-gradient(160deg, #1d2b27 0%, #15302a 100%);
+    border-radius: 24px; padding: 48px 40px; color: #e8f0ed;
+    box-shadow: 0 24px 64px rgba(21,32,30,.30);
+  }
+  .download-panel h2 { color: #fff; font-size: clamp(22px, 3.4vw, 30px); font-weight: 750; margin-bottom: 8px; }
+  .download-panel .sub { color: #a9bfb7; font-size: 15px; margin-bottom: 28px; }
+  .dl-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .dl-card {
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 22px;
+  }
+  .dl-card .tag { font-size: 12px; color: #f5c04a; font-weight: 600; letter-spacing: .5px; }
+  .dl-card .title { font-size: 17px; font-weight: 700; color: #fff; margin: 6px 0 4px; }
+  .dl-card .desc { font-size: 13px; color: #a9bfb7; margin-bottom: 16px; }
+  .dl-card a {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--sun); color: #3a2a05; padding: 10px 18px; border-radius: 10px;
+    font-weight: 700; font-size: 14px; transition: filter .15s, transform .12s;
+  }
+  .dl-card a:hover { filter: brightness(1.06); transform: translateY(-1px); }
+  .download-panel .note { margin-top: 18px; font-size: 12px; color: #7f9a90; }
+
+  /* 技术栈 */
+  .tech { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  .tech span {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 8px 16px; font-size: 13.5px; color: var(--ink-2); font-weight: 500;
+    box-shadow: var(--shadow);
+  }
+
+  footer {
+    border-top: 1px solid var(--line); padding: 34px 0 40px; margin-top: 20px;
+    text-align: center; color: var(--muted); font-size: 13px;
+  }
+  footer a { color: var(--brand); font-weight: 600; }
+  footer .sep { margin: 0 8px; color: var(--line); }
+
+  /* 响应式 */
+  @media (max-width: 860px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .clients { grid-template-columns: repeat(2, 1fr); }
+    .dl-cards { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 520px) {
+    .grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .download-panel { padding: 32px 22px; }
+  }
+</style>
+</head>
+<body>
+<div class="halo"></div>
+
+<header class="wrap">
+  <nav class="nav">
+    <a class="nav-brand" href="#"><span class="dot">瑞</span>Rui Calendar</a>
+    <div class="nav-links">
+      <a href="#features">特性</a>
+      <a href="#clients">多端</a>
+      <a href="#download">下载</a>
+      <a href="#tech">技术栈</a>
+      <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">源码</a>
+      <a class="nav-cta" href="#download">下载</a>
+    </div>
+  </nav>
+</header>
+
+<main>
+  <section class="hero wrap">
+    <img class="logo" src="trademark.png" alt="Rui Calendar 商标" />
+    <h1>你的日历，<span class="en">你自己的服务器</span>说了算</h1>
+    <p class="tag">
+      一套开源自托管日历系统：网页、iPhone、Android、Windows 桌面四端同步，
+      事件与联系人走标准 CalDAV / CardDAV 协议，数据 100% 落在你自己的机器上，中文优先。
+    </p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="#download">下载 Windows 桌面版</a>
+      <a class="btn btn-ghost" href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">查看源码 ↗</a>
+    </div>
+    <p class="hint">开源 · MIT 协议 · 数据自主，无需第三方账号</p>
+  </section>
+
+  <section class="section" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">为什么用瑞历</span>
+        <h2>它到底能做什么</h2>
+        <p>不是一个「日历 App」，而是一套你可以完全掌控的日历基础设施。</p>
+      </div>
+      <div class="grid">
+        <div class="card">
+          <div class="icon">📅</div>
+          <h3>四端一个数据源</h3>
+          <p>网页、iPhone、Android、Windows 桌面悬浮窗，读写同一个日历库，改一处处处同步。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🏠</div>
+          <h3>数据完全自主</h3>
+          <p>部署在你自己的 NAS 或 VPS 上，事件与联系人不经过任何第三方云，隐私自己说了算。</p>
+        </div>
+        <div class="card">
+          <div class="icon">📇</div>
+          <h3>日历 + 通讯录</h3>
+          <p>CalDAV 管日程、CardDAV 管联系人，用开放标准，任意兼容客户端都能接进来。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🀄</div>
+          <h3>中文优先</h3>
+          <p>中文界面、中文品牌、本地化日期格式（2026年10月23日），不是英文版的生硬翻译。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🔁</div>
+          <h3>订阅源聚合</h3>
+          <p>webcal 订阅外部日历（节假日、赛事），与自己的日程叠在一起看，互不干扰。</p>
+        </div>
+        <div class="card">
+          <div class="icon">🤖</div>
+          <h3>AI 助手直写</h3>
+          <p>接 AI 助手，说一句「周五下午三点提醒我开会」，日程自动落进你的日历。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="clients">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">多端覆盖</span>
+        <h2>一个账号，处处可用</h2>
+      </div>
+      <div class="clients">
+        <div class="client"><span class="emoji">🌐</span><div class="name">网页</div><div class="desc">PWA，任意浏览器</div></div>
+        <div class="client"><span class="emoji">🍎</span><div class="name">iPhone / iPad</div><div class="desc">系统日历原生接入</div></div>
+        <div class="client"><span class="emoji">🤖</span><div class="name">Android</div><div class="desc">Capacitor 原生包</div></div>
+        <div class="client"><span class="emoji">🪟</span><div class="name">Windows 桌面</div><div class="desc">悬浮 / 置顶小组件</div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download">
+    <div class="wrap">
+      <div class="download-panel">
+        <h2>下载 Windows 桌面版</h2>
+        <p class="sub">悬浮日历小组件，常驻桌面，随时看、随时记。</p>
+        <div class="dl-cards">
+          <div class="dl-card">
+            <div class="tag">免安装 · 推荐</div>
+            <div class="title">便携版</div>
+            <div class="desc">双击即用，无需安装，不写注册表，适合放进 U 盘随身带。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe">下载便携版</a>
+          </div>
+          <div class="dl-card">
+            <div class="tag">安装版</div>
+            <div class="title">Setup 安装包</div>
+            <div class="desc">标准安装向导，可创建桌面与开始菜单快捷方式，支持卸载。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe">下载安装版</a>
+          </div>
+        </div>
+        <p class="note">首次运行请在「设置」里填写你的日历服务器地址。若浏览器提示「无法验证发布者」，点「更多信息 → 仍要运行」即可（未签名的开源应用正常提示）。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="tech">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">技术栈</span>
+        <h2>基于成熟开源组件</h2>
+      </div>
+      <div class="tech">
+        <span>React 19</span><span>TypeScript</span><span>Vite</span>
+        <span>CalDAV</span><span>CardDAV</span><span>Baikal</span>
+        <span>Electron</span><span>Capacitor</span><span>PWA</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    Rui Calendar（瑞历）· 基于 <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">Calino</a> 定制的开源自托管日历
+    <span class="sep">·</span> MIT License
+    <span class="sep">·</span> <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</footer>
+</body>
+</html>

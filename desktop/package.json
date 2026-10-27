@@ -1,5 +1,5 @@
 {
-  "name": "ruili-calendar",
+  "name": "rui-calendar",
   "version": "1.1.0",
   "description": "瑞历",
   "main": "main.js",
@@ -15,7 +15,7 @@
     "electron-builder": "^26.18.0"
   },
   "build": {
-    "appId": "com.ruili.calendar",
+    "appId": "com.rui.calendar",
     "productName": "瑞历",
     "directories": {
       "output": "dist"

@@ -10,6 +10,8 @@
 </p>
 
 <p align="center">
+  🌐 <a href="https://vector9584.github.io/rui-calendar/">应用主页</a> ·
+  ⬇️ <a href="https://github.com/vector9584/rui-calendar/releases/latest">下载桌面版</a> ·
   <a href="#能做什么">能做什么</a> ·
   <a href="#架构">架构</a> ·
   <a href="#组件清单">组件</a> ·
@@ -259,12 +261,12 @@ flowchart LR
 - **主题跟随**：顶部栏颜色随网页明暗主题实时切换。
 - **无滚动条**：页面自适应填满窗口。
 
-### 产物
+### 下载
 
-两种打包形式，均基于 Electron：
+两种打包形式，均基于 Electron，已发布到 [GitHub Releases](https://github.com/vector9584/rui-calendar/releases/latest)：
 
-- **便携版**：`瑞历 1.1.0.exe`，双击直接运行，免安装。
-- **安装版**：`瑞历 Setup 1.1.0.exe`，按向导安装，带桌面/开始菜单快捷方式。
+- **便携版（免安装）**：[Rui-Calendar-1.1.0-portable.exe](https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe)，双击直接运行，免安装。
+- **安装版**：[Rui-Calendar-1.1.0-setup.exe](https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe)，按向导安装，带桌面/开始菜单快捷方式。
 
 ### 构建
 
@@ -298,6 +300,7 @@ pnpm build        # 产物在 dist/
 
 | 文档 | 内容 |
 |---|---|
+| [应用主页](https://vector9584.github.io/rui-calendar/) | 在线介绍页（卡片式，含下载地址） |
 | [JOURNEY.md](JOURNEY.md) | 完整心路历程：从调研 Y日历 到落地这套系统的决策与踩坑 |
 | [deploy/README.md](deploy/README.md) | 部署手册：Baikal → 前端 → 代理 → 隧道 → nginx → iOS → AI 集成 |
 | [desktop/README.md](desktop/README.md) | 桌面悬浮客户端：功能、安装、构建 |

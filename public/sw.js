@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ruili-v1'
+const CACHE_NAME = 'rui-v1'
 const STATIC_ASSETS = [
   '/manifest.json',
   '/apple-touch-icon.png',

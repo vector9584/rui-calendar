@@ -2,7 +2,7 @@
 
 把自托管的「瑞历」网页日历包装成一个 Windows 桌面悬浮小组件，支持悬浮/置顶、透明度调节、锁定点击穿透、开机启动等。
 
-> 本项目为桌面客户端。内嵌网页「瑞历」见 [vector9584/ruili-calendar](https://github.com/vector9584/ruili-calendar)。
+> 本项目为桌面客户端。内嵌网页「瑞历」见 [vector9584/rui-calendar](https://github.com/vector9584/rui-calendar)。
 
 ## 功能特性
 

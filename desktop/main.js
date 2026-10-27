@@ -355,7 +355,7 @@ const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
   app.quit();
 } else {
-  app.setAppUserModelId('com.ruili.calendar');
+  app.setAppUserModelId('com.rui.calendar');
 
   app.on('second-instance', () => {
     if (mainWindow) {
