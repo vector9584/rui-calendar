@@ -392,38 +392,38 @@
       }
     },
     "categoryStyles": {
-      "title": "按分类设置样式",
-      "description": "根据事件分类为其赋予视觉样式。更改会自动保存。",
+      "title": "分类样式",
+      "description": "按事件所属的分类给它换个样子，比如把会议画成手绘草图。改完立刻生效。",
       "reset": "恢复默认",
       "newRule": "新规则",
       "disabled": "已禁用",
       "addRule": "添加规则",
       "enabled": "已启用",
-      "categories": "匹配任意分类",
-      "matchHint": "逗号分隔 · 精确名称 · 忽略大小写",
+      "categories": "适用于这些分类",
+      "matchHint": "多个用逗号隔开，写全名，不分大小写",
       "style": "样式",
       "lettering": "字体",
       "accent": "强调色",
       "earlier": "↑ 更早",
       "later": "↓ 更晚",
       "remove": "移除",
-      "empty": "没有规则。添加一条规则或恢复默认。",
-      "precedence": "匹配的规则会组合。对于同一属性，靠下的规则优先。除非某条规则更改填充色，否则日历颜色保持可见。这些是视觉样式；它们不会改变事件的状态或完成情况。",
-      "suggestions": "更多可尝试的样式",
+      "empty": "还没有规则。加一条，或者恢复默认。",
+      "precedence": "多条规则会叠加，同一项以靠下的那条为准。规则只改外观、不改事件状态；没动填充色时，日历本身的颜色照常显示。",
+      "suggestions": "再试几种样式",
       "sample": "与 Alex 评审",
       "noCategories": "还没有分类",
       "treatments": {
-        "tentative": "铅笔——灰色与待定",
-        "important": "草图——手绘轮廓",
-        "focus": "安静——虚线边框",
-        "travel": "移动中——斜纹纹理",
-        "deadline": "标记——下划线",
-        "done": "完成——删除线"
+        "tentative": "铅笔 · 灰掉，像还没定",
+        "important": "草图 · 手绘轮廓",
+        "focus": "安静 · 虚线框",
+        "travel": "移动中 · 斜纹",
+        "deadline": "标记 · 底部划线",
+        "done": "完成 · 划一道删除线"
       },
       "fonts": {
-        "inherit": "保持现有",
-        "hand": "手写",
-        "standard": "标准"
+        "inherit": "保持原有",
+        "hand": "手写体",
+        "standard": "标准体"
       }
     }
   },
@@ -431,13 +431,13 @@
     "title": "分类",
     "useCategoryColors": {
       "label": "为事件使用分类颜色",
-      "desc": "禁用时，事件使用其日历颜色",
+      "desc": "关掉后，事件用所属日历的颜色",
       "ariaLabel": "为事件使用分类颜色"
     },
     "keywords": {
       "ariaLabel": "关键词",
       "removeKeyword": "移除关键词 {{keyword}}",
-      "placeholder": "输入关键词，用逗号分隔",
+      "placeholder": "输入关键词，逗号隔开",
       "addAriaLabel": "添加关键词"
     },
     "color": {
