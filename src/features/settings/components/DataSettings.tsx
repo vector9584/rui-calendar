@@ -1,0 +1,725 @@
+import type { JSX } from 'react'
+import { Capacitor } from '@capacitor/core'
+import { useTranslation } from 'react-i18next'
+import { SettingsPageHeading } from './SettingsPageHeading'
+import { WebMCPSettings } from './WebMCPSettings'
+import { useState, useRef } from 'react'
+import { useCalendarStore } from '@/store/calendarStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import { useContactStore } from '@/store/contactStore'
+import { useCalDAV } from '@/features/caldav/hooks/useCalDAV'
+import { useCardDAV } from '@/features/carddav/hooks/useCardDAV'
+import * as accountStorage from '@/features/caldav/sync/accountStorage'
+import { exportAllEventsIcs, exportCalendarIcs } from '@/lib/icsExport'
+import { IcsImportModal } from '@/features/calendar/components/IcsImportModal'
+import {
+  parseVCardFile,
+  contactsToVCardFile,
+  downloadFile,
+  readFileAsText,
+} from '@/features/carddav/lib/vCardFileUtils'
+import { showToast } from '@/lib/toast'
+import { PurgeCalendarDialog } from './PurgeCalendarDialog'
+import { MergeDuplicatesModal } from '@/features/carddav/components/MergeDuplicatesModal'
+import { ImportExportModal } from '@/features/carddav/components/ImportExportModal'
+import { formatBrokenEventDate as formatDate } from '../lib/format'
+import { useBrokenEventsActions } from '../hooks/useBrokenEventsActions'
+import type { Contact } from '@/features/carddav/types'
+import styles from './Settings.module.css'
+
+export function DataSettings({ searchControl }: { searchControl?: JSX.Element }): JSX.Element {
+  const { t } = useTranslation('settings')
+  const [isExporting, setIsExporting] = useState(false)
+  const [isImporting, setIsImporting] = useState(false)
+  const [importStatus, setImportStatus] = useState<{
+    type: 'success' | 'error'
+    message: string
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const [pendingIcs, setPendingIcs] = useState<{ text: string; fileName: string } | null>(null)
+
+  const events = useCalendarStore((state) => state.events)
+  const calendars = useCalendarStore((state) => state.calendars)
+  // '' means every calendar; otherwise a calendar id.
+  const [exportCalendarId, setExportCalendarId] = useState('')
+  const [deleteCalendarId, setDeleteCalendarId] = useState('')
+  const [purgeCalendarId, setPurgeCalendarId] = useState('')
+  const [isPurgeOpen, setIsPurgeOpen] = useState(false)
+  const [isPurging, setIsPurging] = useState(false)
+  // Webcal subscriptions are read-only mirrors; there is nothing to delete.
+  const purgeableCalendars = calendars.filter((c) => !c.readOnly)
+  const purgeCalendar = purgeableCalendars.find((c) => c.id === purgeCalendarId)
+  const brokenEvents = useCalendarStore((state) => state.brokenEvents)
+  const duplicateUidIssues = useCalendarStore((state) => state.duplicateUidIssues)
+  const clearDuplicateUidIssues = useCalendarStore((state) => state.clearDuplicateUidIssues)
+  const removeDuplicateUidResource = useCalendarStore((state) => state.removeDuplicateUidResource)
+  const [deletingHref, setDeletingHref] = useState<string | null>(null)
+  const timeFormat = useSettingsStore((state) => state.timeFormat)
+  const caldav = useCalDAV()
+  const { syncAccount } = useCardDAV()
+  const { handleFix, handleDelete, handleFixAll, handleDeleteAll } = useBrokenEventsActions(
+    'caldav',
+    {
+      updateEvent: caldav.updateEvent,
+      deleteEvent: caldav.deleteEvent,
+    }
+  )
+
+  const handleExportICS = async (): Promise<void> => {
+    setIsExporting(true)
+    try {
+      const calendar = calendars.find((c) => c.id === exportCalendarId)
+      if (calendar) exportCalendarIcs(calendar, events)
+      else exportAllEventsIcs(events)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleDeleteEvents = (): void => {
+    const calendar = calendars.find((c) => c.id === deleteCalendarId)
+    const message = calendar
+      ? t('data.deleteAllEvents.confirmCalendar', { name: calendar.name })
+      : t('data.deleteAllEvents.confirm')
+    if (!confirm(message)) return
+    const { events: allEvents, deleteEvent } = useCalendarStore.getState()
+    allEvents
+      .filter((e) => !calendar || e.calendarId === calendar.id)
+      .forEach((e) => deleteEvent(e.id))
+  }
+
+  /**
+   * Delete every event in the chosen calendar, on the server too when it is a
+   * CalDAV calendar. Recurrence overrides share a resource with their master,
+   * so the server is asked once per resource, not once per event. A local copy
+   * is only dropped after the server confirmed, so a failure leaves the event
+   * visible (and retryable) instead of silently diverging.
+   */
+  const handlePurgeCalendar = async (): Promise<void> => {
+    if (!purgeCalendar) return
+    setIsPurging(true)
+    try {
+      const { events: allEvents, deleteEvent } = useCalendarStore.getState()
+      const own = allEvents.filter((e) => e.calendarId === purgeCalendar.id)
+      let failed = 0
+
+      if (!purgeCalendar.accountId) {
+        own.forEach((e) => deleteEvent(e.id))
+      } else {
+        const byHref = new Map<string, typeof own>()
+        const unsynced: typeof own = []
+        for (const e of own) {
+          if (!e.resourceHref) unsynced.push(e)
+          else byHref.set(e.resourceHref, [...(byHref.get(e.resourceHref) ?? []), e])
+        }
+
+        const BATCH = 5
+        const resources = [...byHref.entries()]
+        for (let i = 0; i < resources.length; i += BATCH) {
+          await Promise.all(
+            resources.slice(i, i + BATCH).map(async ([href, group]) => {
+              try {
+                await caldav.deleteEventByHref(purgeCalendar.id, href)
+                group.forEach((e) => deleteEvent(e.id))
+              } catch (err) {
+                console.warn('[DataSettings] Purge failed for', href, err)
+                failed += group.length
+              }
+            })
+          )
+        }
+        // Never reached the server, so deleting by id also clears any queued
+        // create for them.
+        for (const e of unsynced) {
+          try {
+            await caldav.deleteEvent(purgeCalendar.id, e.id)
+          } catch {
+            failed += 1
+          }
+        }
+      }
+
+      const deleted = own.length - failed
+      if (failed > 0) {
+        showToast(t('data.purgeCalendar.partial', { deleted, failed, name: purgeCalendar.name }))
+      } else {
+        showToast(t('data.purgeCalendar.done', { count: deleted, name: purgeCalendar.name }))
+      }
+      setIsPurgeOpen(false)
+      setPurgeCalendarId('')
+    } finally {
+      setIsPurging(false)
+    }
+  }
+
+  const handleImport = (): void => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setIsImporting(true)
+    const fileName = file.name.toLowerCase()
+    try {
+      const text = await file.text()
+
+      if (fileName.endsWith('.json')) {
+        const data = JSON.parse(text)
+        if (data.events && Array.isArray(data.events)) {
+          for (const event of data.events) {
+            useCalendarStore.getState().addEvent(event)
+          }
+          setImportStatus({
+            type: 'success',
+            message: t('data.importedEvents', { count: data.events.length }),
+          })
+        } else {
+          setImportStatus({ type: 'error', message: t('data.noEventsInJson') })
+        }
+      } else if (fileName.endsWith('.ics')) {
+        // Don't import directly — hand off to the shared review modal so the
+        // user picks (or creates) the target calendar first, rather than
+        // silently dropping events into whatever calendar happens to be
+        // default. Same component the drag-and-drop drop zone uses.
+        setPendingIcs({ text, fileName: file.name })
+      }
+    } catch {
+      setImportStatus({ type: 'error', message: t('data.importFailed') })
+    } finally {
+      setIsImporting(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+      if (!fileName.endsWith('.ics')) {
+        setTimeout(() => setImportStatus(null), 3000)
+      }
+    }
+  }
+
+  const handleIcsImported = (count: number): void => {
+    setImportStatus({ type: 'success', message: t('data.importedEvents', { count }) })
+    setTimeout(() => setImportStatus(null), 3000)
+  }
+
+  const handleDeleteDuplicateResource = async (
+    issue: { uid: string; calendarId: string },
+    href: string
+  ): Promise<void> => {
+    setDeletingHref(href)
+    try {
+      await caldav.deleteEventByHref(issue.calendarId, href)
+      removeDuplicateUidResource(issue.uid, issue.calendarId, href)
+      showToast(t('data.duplicateDeleted'))
+    } catch {
+      showToast(t('data.duplicateDeleteFailed'))
+    } finally {
+      setDeletingHref(null)
+    }
+  }
+
+  const [isResyncing, setIsResyncing] = useState(false)
+
+  /**
+   * Forget every change cursor (sync token and ctag) and sync again. Without a
+   * cursor the sync takes its full-listing path, which refetches and re-parses
+   * every resource, while accounts, credentials, settings and any unsynced
+   * local changes stay as they are.
+   */
+  const handleResync = async (): Promise<void> => {
+    if (!confirm(t('data.resync.confirm'))) return
+    setIsResyncing(true)
+    try {
+      for (const calendar of accountStorage.getAllCalendars()) {
+        accountStorage.updateCalendar(calendar.id, { syncToken: null, ctag: null })
+      }
+      const contactState = useContactStore.getState()
+      const addressBookAccountIds = new Set(contactState.addressBooks.map((ab) => ab.accountId))
+      contactState.setAddressBooks(
+        contactState.addressBooks.map((ab) => ({ ...ab, syncToken: null, ctag: null }))
+      )
+
+      // Both protocols get their turn even if one fails.
+      const results = await Promise.allSettled([
+        caldav.syncAll(),
+        ...[...addressBookAccountIds].map((accountId) => syncAccount(accountId)),
+      ])
+      if (results.some((r) => r.status === 'rejected')) {
+        showToast(t('data.resync.failed'))
+      } else {
+        showToast(t('data.resync.done'))
+      }
+    } finally {
+      setIsResyncing(false)
+    }
+  }
+
+  const handleClearData = async (): Promise<void> => {
+    if (!confirm(t('data.resetApp.confirm'))) return
+    localStorage.clear()
+    sessionStorage.clear()
+    window.location.reload()
+  }
+
+  // --------------------------------------------------------------------------
+  // Contacts import/export
+  // --------------------------------------------------------------------------
+  const [isImportOpen, setIsImportOpen] = useState(false)
+  const [parsedImportContacts, setParsedImportContacts] = useState<Contact[]>([])
+  const [isMergeOpen, setIsMergeOpen] = useState(false)
+  const contactFileInputRef = useRef<HTMLInputElement>(null)
+  const contacts = useContactStore((s) => s.contacts)
+
+  const handleContactImportClick = (): void => {
+    contactFileInputRef.current?.click()
+  }
+
+  const handleContactImportFile = async (e: React.ChangeEvent<HTMLInputElement>): Promise<void> => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    try {
+      const content = await readFileAsText(file)
+      const addressBooks = useContactStore.getState().addressBooks
+      const visibleAbs = addressBooks.filter((ab) => ab.isVisible)
+      const targetAbId = visibleAbs[0]?.id ?? ''
+      const accountId = visibleAbs[0]?.accountId ?? ''
+      const parsed = parseVCardFile(content, targetAbId, accountId)
+
+      if (parsed.length === 0) {
+        showToast(t('data.noContactsInFile'))
+        return
+      }
+
+      setParsedImportContacts(parsed)
+      setIsImportOpen(true)
+    } catch {
+      showToast(t('data.failedToParseVCard'))
+    } finally {
+      if (contactFileInputRef.current) contactFileInputRef.current.value = ''
+    }
+  }
+
+  const handleContactExport = (): void => {
+    if (contacts.length === 0) {
+      showToast(t('data.noContactsToExport'))
+      return
+    }
+    const vcf = contactsToVCardFile(contacts)
+    downloadFile(vcf, 'contacts.vcf')
+    showToast(t('data.exportedContacts', { count: contacts.length }))
+  }
+
+  return (
+    <section className={`${styles.section} ${styles.sectionActive}`} data-component="data-settings">
+      <SettingsPageHeading title={t('data.title')} searchControl={searchControl} />
+
+      <div className={styles.group}>
+        <div className={styles.groupLabel}>{t('data.importExport')}</div>
+        <div className={`${styles.actionRow} ${styles.actionRowStacked}`}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.exportCalendar.label')}</div>
+            <div className={styles.rowDesc}>{t('data.exportCalendar.desc')}</div>
+          </div>
+          <div className={`${styles.rowControl} ${styles.rowControlGroup}`}>
+            <select
+              className={styles.select}
+              value={exportCalendarId}
+              onChange={(e) => setExportCalendarId(e.target.value)}
+              aria-label={t('data.calendarPickerLabel')}
+              data-component="calendar-picker"
+              data-action="export-calendar-select"
+            >
+              <option value="">{t('data.allCalendars')}</option>
+              {calendars.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className={styles.actionBtn}
+              onClick={handleExportICS}
+              disabled={isExporting}
+              data-component="action-button"
+              data-action="export-ics"
+              type="button"
+            >
+              {isExporting ? t('data.exportCalendar.exporting') : t('data.exportCalendar.export')}
+            </button>
+          </div>
+        </div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.importCalendar.label')}</div>
+            <div className={styles.rowDesc}>{t('data.importCalendar.desc')}</div>
+          </div>
+          <button
+            className={styles.actionBtn}
+            onClick={handleImport}
+            disabled={isImporting}
+            data-component="action-button"
+            data-action="import-calendar"
+            type="button"
+          >
+            {isImporting ? t('data.importCalendar.importing') : t('data.importCalendar.chooseFile')}
+          </button>
+        </div>
+        {importStatus && (
+          <div
+            className={`${styles.importStatus} ${importStatus.type === 'success' ? styles.importStatusSuccess : styles.importStatusError}`}
+            data-component="import-status"
+          >
+            {importStatus.message}
+          </div>
+        )}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,.ics"
+          onChange={handleFileChange}
+          style={{ display: 'none' }}
+          data-testid="import-calendar-input"
+        />
+      </div>
+
+      {isPurgeOpen && purgeCalendar && (
+        <PurgeCalendarDialog
+          isOpen
+          calendarName={purgeCalendar?.name ?? ''}
+          eventCount={events.filter((e) => e.calendarId === purgeCalendarId).length}
+          isRemote={Boolean(purgeCalendar?.accountId)}
+          isDeleting={isPurging}
+          onClose={() => setIsPurgeOpen(false)}
+          onConfirm={() => void handlePurgeCalendar()}
+        />
+      )}
+
+      {pendingIcs !== null && (
+        <IcsImportModal
+          isOpen
+          icsText={pendingIcs.text}
+          fileName={pendingIcs.fileName}
+          onClose={() => setPendingIcs(null)}
+          onImported={handleIcsImported}
+        />
+      )}
+
+      {/* Contacts */}
+      <div className={styles.group}>
+        <div className={styles.groupLabel}>{t('data.contacts')}</div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.exportContacts.label')}</div>
+            <div className={styles.rowDesc}>{t('data.exportContacts.desc')}</div>
+          </div>
+          <button className={styles.actionBtn} onClick={handleContactExport} type="button">
+            {t('data.exportContacts.export')}
+          </button>
+        </div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.importContacts.label')}</div>
+            <div className={styles.rowDesc}>{t('data.importContacts.desc')}</div>
+          </div>
+          <button className={styles.actionBtn} onClick={handleContactImportClick} type="button">
+            {t('data.importContacts.chooseFile')}
+          </button>
+        </div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.mergeDuplicates.label')}</div>
+            <div className={styles.rowDesc}>{t('data.mergeDuplicates.desc')}</div>
+          </div>
+          <button className={styles.actionBtn} onClick={() => setIsMergeOpen(true)} type="button">
+            {t('data.mergeDuplicates.merge')}
+          </button>
+        </div>
+        <input
+          ref={contactFileInputRef}
+          type="file"
+          accept=".vcf,text/vcard"
+          onChange={handleContactImportFile}
+          style={{ display: 'none' }}
+          data-testid="import-contacts-input"
+        />
+      </div>
+
+      {/* Broken Events */}
+      <div className={styles.group} data-component="broken-events">
+        <div className={styles.groupLabel}>{t('data.dataIssues')}</div>
+        {brokenEvents.length === 0 && duplicateUidIssues.length === 0 && (
+          <div className={styles.rowDesc} style={{ padding: '12px 20px 16px' }}>
+            {t('data.noIssues')}
+          </div>
+        )}
+        {brokenEvents.length > 0 && (
+          <>
+            <p className={styles.rowDesc} style={{ padding: '12px 20px 0' }}>
+              {t('data.brokenEventsIntro')}
+            </p>
+
+            <div className={styles.brokenList}>
+              {brokenEvents.map((broken) => (
+                <div
+                  key={broken.event.id}
+                  className={styles.brokenItem}
+                  data-component="broken-event-row"
+                  data-event-id={broken.event.id}
+                >
+                  <div className={styles.brokenInfo}>
+                    <div className={styles.brokenTitle}>
+                      {broken.event.title || t('ui.data.untitledEvent')}
+                    </div>
+                    <div className={styles.brokenDates}>
+                      <span>
+                        {t('ui.data.start', { date: formatDate(broken.event.start, timeFormat) })}
+                      </span>
+                      <span className={styles.brokenArrow}>→</span>
+                      <span>
+                        {t('ui.data.end', { date: formatDate(broken.event.end, timeFormat) })}
+                      </span>
+                    </div>
+                    <div className={styles.brokenReason}>{broken.reason}</div>
+                  </div>
+                  <div className={styles.brokenActions}>
+                    <button
+                      className={styles.actionBtn}
+                      onClick={() => void handleFix(broken)}
+                      data-component="action-button"
+                      data-action="fix-broken-event"
+                      type="button"
+                    >
+                      {t('ui.data.fix')}
+                    </button>
+                    <button
+                      className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                      onClick={() => void handleDelete(broken)}
+                      data-component="action-button"
+                      data-action="delete-broken-event"
+                      type="button"
+                    >
+                      {t('ui.data.delete')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {brokenEvents.length > 1 && (
+              <div className={styles.brokenBatchActions}>
+                <button
+                  className={styles.actionBtn}
+                  onClick={() => void handleFixAll(brokenEvents)}
+                  data-component="action-button"
+                  data-action="fix-all-broken"
+                  type="button"
+                >
+                  {t('ui.data.fixAll', { count: brokenEvents.length })}
+                </button>
+                <button
+                  className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+                  onClick={() => void handleDeleteAll(brokenEvents)}
+                  data-component="action-button"
+                  data-action="delete-all-broken"
+                  type="button"
+                >
+                  {t('ui.data.deleteAll')}
+                </button>
+              </div>
+            )}
+          </>
+        )}
+
+        {duplicateUidIssues.length > 0 && (
+          <div data-component="duplicate-uid-issues">
+            <p className={styles.rowDesc} style={{ padding: '16px 20px 0' }}>
+              {t('ui.data.duplicateIntro')}
+            </p>
+
+            <div className={styles.brokenList}>
+              {duplicateUidIssues.map((issue) => (
+                <div
+                  key={`${issue.calendarId}-${issue.uid}`}
+                  className={styles.brokenItem}
+                  data-component="duplicate-uid-row"
+                  data-uid={issue.uid}
+                >
+                  <div className={styles.brokenInfo}>
+                    <div className={styles.brokenTitle}>
+                      {t('ui.data.duplicateUid', { uid: issue.uid })}
+                    </div>
+                    {issue.resources.map((res) => (
+                      <div
+                        key={res.href}
+                        className={styles.brokenDates}
+                        data-component="duplicate-uid-resource"
+                        data-href={res.href}
+                      >
+                        <span>{res.title || t('ui.data.untitledEvent')}</span>
+                        <span className={styles.brokenArrow}>·</span>
+                        <span>{formatDate(res.start, timeFormat)}</span>
+                        <span className={styles.brokenArrow}>·</span>
+                        <span>{res.kept ? t('ui.data.kept') : t('ui.data.hidden')}</span>
+                        <button
+                          className={styles.duplicateResourceDeleteBtn}
+                          onClick={() => void handleDeleteDuplicateResource(issue, res.href)}
+                          disabled={deletingHref === res.href}
+                          data-component="action-button"
+                          data-action="delete-duplicate-uid-resource"
+                          type="button"
+                        >
+                          {deletingHref === res.href ? t('ui.data.deleting') : t('ui.data.delete')}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <div className={styles.brokenActions}>
+                    <button
+                      className={styles.actionBtn}
+                      onClick={() => clearDuplicateUidIssues()}
+                      data-component="action-button"
+                      data-action="dismiss-duplicate-uid"
+                      type="button"
+                    >
+                      {t('ui.data.dismiss')}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className={styles.group}>
+        <div className={styles.groupLabel}>{t('data.resync.group')}</div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.resync.label')}</div>
+            <div className={styles.rowDesc}>{t('data.resync.desc')}</div>
+          </div>
+          <button
+            className={styles.actionBtn}
+            onClick={handleResync}
+            disabled={isResyncing}
+            data-component="action-button"
+            data-action="resync-accounts"
+            type="button"
+          >
+            {isResyncing ? t('data.resync.running') : t('data.resync.action')}
+          </button>
+        </div>
+      </div>
+
+      {!Capacitor.isNativePlatform() && <WebMCPSettings />}
+
+      <div className={`${styles.group} ${styles.dangerZone}`}>
+        <div className={`${styles.groupLabel} ${styles.dangerZoneLabel}`}>
+          {t('data.dangerZone')}
+        </div>
+        <div className={`${styles.actionRow} ${styles.actionRowStacked}`}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.deleteAllEvents.label')}</div>
+            <div className={styles.rowDesc}>{t('data.deleteAllEvents.desc')}</div>
+          </div>
+          <div className={`${styles.rowControl} ${styles.rowControlGroup}`}>
+            <select
+              className={styles.select}
+              value={deleteCalendarId}
+              onChange={(e) => setDeleteCalendarId(e.target.value)}
+              aria-label={t('data.calendarPickerLabel')}
+              data-component="calendar-picker"
+              data-action="delete-events-calendar-select"
+            >
+              <option value="">{t('data.allCalendars')}</option>
+              {calendars.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+              onClick={handleDeleteEvents}
+              data-component="action-button"
+              data-action="delete-all-events"
+              type="button"
+            >
+              {t('data.deleteAllEvents.action')}
+            </button>
+          </div>
+        </div>
+        <div
+          className={`${styles.actionRow} ${styles.actionRowStacked}`}
+          data-component="purge-calendar-row"
+        >
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.purgeCalendar.label')}</div>
+            <div className={styles.rowDesc}>{t('data.purgeCalendar.desc')}</div>
+          </div>
+          <div className={`${styles.rowControl} ${styles.rowControlGroup}`}>
+            <select
+              className={styles.select}
+              value={purgeCalendarId}
+              onChange={(e) => setPurgeCalendarId(e.target.value)}
+              aria-label={t('data.calendarPickerLabel')}
+              data-component="calendar-picker"
+              data-action="purge-calendar-select"
+            >
+              <option value="">{t('data.purgeCalendar.placeholder')}</option>
+              {purgeableCalendars.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <button
+              className={`${styles.actionBtn} ${styles.actionBtnDangerSolid}`}
+              onClick={() => setIsPurgeOpen(true)}
+              disabled={!purgeCalendar}
+              data-component="action-button"
+              data-action="purge-calendar"
+              type="button"
+            >
+              {t('data.purgeCalendar.action')}
+            </button>
+          </div>
+        </div>
+        <div className={styles.actionRow}>
+          <div className={styles.rowInfo}>
+            <div className={styles.rowLabel}>{t('data.resetApp.label')}</div>
+            <div className={styles.rowDesc}>{t('data.resetApp.desc')}</div>
+          </div>
+          <button
+            className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
+            onClick={handleClearData}
+            data-component="action-button"
+            data-action="reset-app"
+            type="button"
+          >
+            {t('data.resetApp.action')}
+          </button>
+        </div>
+      </div>
+
+      {/* Import contacts modal */}
+      <ImportExportModal
+        isOpen={isImportOpen}
+        onClose={() => {
+          setIsImportOpen(false)
+          setParsedImportContacts([])
+        }}
+        parsedContacts={parsedImportContacts}
+        onImportComplete={() => {
+          const addressBooks = useContactStore.getState().addressBooks
+          const ab = addressBooks.find((a) => a.isVisible)
+          if (ab?.accountId) syncAccount(ab.accountId).catch(() => {})
+        }}
+      />
+
+      {/* Merge duplicates modal */}
+      <MergeDuplicatesModal isOpen={isMergeOpen} onClose={() => setIsMergeOpen(false)} />
+    </section>
+  )
+}

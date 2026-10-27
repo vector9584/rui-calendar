@@ -1,0 +1,39 @@
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 48px 24px;
+  gap: var(--space-2);
+  color: var(--color-text-secondary, #5f6368);
+  min-height: 240px;
+  /* Re-enable interactions on the message itself so any action button
+     inside is clickable when the parent is `pointer-events: none`. */
+  pointer-events: auto;
+}
+
+.icon {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 4px;
+  opacity: 0.7;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-text-primary, #202124);
+}
+
+.description {
+  font-size: 14px;
+  line-height: 1.4;
+  margin: 0;
+  max-width: 360px;
+}
+
+.action {
+  margin-top: 12px;
+}

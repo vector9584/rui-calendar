@@ -1,0 +1,973 @@
+import { describe, it, expect, beforeEach } from 'vitest'
+import { screen, fireEvent, waitFor } from '@testing-library/react'
+import { render } from '@/test/caldavRender'
+import { format, parseISO } from 'date-fns'
+import { EventPreviewPopup } from '../components/EventPreviewPopup'
+import { useCalendarStore } from '@/store/calendarStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import { formatTime, formatEventTime, toEventInstant, toZoneWallClock } from '@/lib/datetime'
+import type { CalendarEvent } from '@/types'
+
+const mockEvent: CalendarEvent = {
+  id: 'test-event-1',
+  title: 'Test Meeting',
+  start: '2024-03-15T10:00:00.000Z',
+  end: '2024-03-15T11:00:00.000Z',
+  calendarId: 'default',
+  isAllDay: false,
+  location: 'Conference Room A',
+  description: 'This is a test meeting description.',
+}
+
+const mockAllDayEvent: CalendarEvent = {
+  id: 'test-event-2',
+  title: 'All Day Event',
+  start: '2024-03-15T00:00:00.000Z',
+  end: '2024-03-15T23:59:59.000Z',
+  calendarId: 'default',
+  isAllDay: true,
+}
+
+const mockTask: CalendarEvent = {
+  id: 'test-task-1',
+  title: 'Test Task',
+  start: '2024-03-15T10:00:00.000Z',
+  end: '2024-03-15T11:00:00.000Z',
+  calendarId: 'default',
+  isAllDay: false,
+  type: 'task',
+  dueDate: '2024-03-15',
+  priority: 3,
+}
+
+// Times are chosen 8 hours apart, spanning midnight, so the event lands on
+// different local calendar days regardless of the test runner's timezone
+// offset (unlike a tight 23:00→01:00 span, which can collapse onto the same
+// local day under positive UTC offsets).
+const mockOvernightEvent: CalendarEvent = {
+  id: 'test-event-overnight',
+  title: 'Overnight Event',
+  start: '2024-03-13T20:00:00.000Z',
+  end: '2024-03-14T04:00:00.000Z',
+  calendarId: 'default',
+  isAllDay: false,
+}
+
+const mockRecurringEvent: CalendarEvent = {
+  id: 'test-event-3',
+  title: 'Recurring Meeting',
+  start: '2024-03-15T10:00:00.000Z',
+  end: '2024-03-15T11:00:00.000Z',
+  calendarId: 'default',
+  isAllDay: false,
+  recurrence: {
+    frequency: 'weekly',
+    interval: 1,
+  },
+}
+
+describe('EventPreviewPopup', () => {
+  const mockPosition = { x: 100, y: 200 }
+
+  beforeEach(() => {
+    const store = useCalendarStore.getState()
+    store.events.forEach((e) => store.deleteEvent(e.id))
+    store.calendars.forEach((c) => store.deleteCalendar(c.id))
+    store.addCalendar({
+      id: 'default',
+      name: 'Default Calendar',
+      color: '#4285F4',
+      isVisible: true,
+      isDefault: true,
+      showTasksInViews: true,
+    })
+    store.addEvent(mockEvent)
+  })
+
+  it('renders event title', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByText('Test Meeting')).toBeInTheDocument()
+  })
+
+  it('renders event date', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByText(/15 Mar 2024/)).toBeInTheDocument()
+  })
+
+  it('renders event time', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    // Compare against the same local-time formatting the popup uses, so this
+    // assertion holds regardless of the test runner's timezone.
+    const tf = useSettingsStore.getState().timeFormat
+    const expected = `${formatTime(mockEvent.start, tf)} - ${formatTime(mockEvent.end, tf)}`
+    expect(screen.getByText(expected)).toBeInTheDocument()
+  })
+
+  it('renders "All day" for all-day events', () => {
+    render(
+      <EventPreviewPopup
+        event={mockAllDayEvent}
+        position={mockPosition}
+        clickedEventId="test-event-2"
+      />
+    )
+    expect(screen.getByText('All day')).toBeInTheDocument()
+  })
+
+  it('renders location', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByText('Conference Room A')).toBeInTheDocument()
+  })
+
+  it('renders description', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByText('This is a test meeting description.')).toBeInTheDocument()
+  })
+  it('renders recurring event indicator', () => {
+    render(
+      <EventPreviewPopup
+        event={mockRecurringEvent}
+        position={mockPosition}
+        clickedEventId="test-event-3"
+      />
+    )
+    expect(document.body.querySelector('[data-tooltip]')).toBeInTheDocument()
+  })
+
+  it('renders task with priority', () => {
+    render(
+      <EventPreviewPopup event={mockTask} position={mockPosition} clickedEventId="test-task-1" />
+    )
+    expect(screen.getByText('Priority: 3')).toBeInTheDocument()
+  })
+
+  it('renders "Open event" button for regular events', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByText('Open event')).toBeInTheDocument()
+  })
+
+  it('renders "Open task" button for tasks', () => {
+    render(
+      <EventPreviewPopup event={mockTask} position={mockPosition} clickedEventId="test-task-1" />
+    )
+    expect(screen.getByText('Open task')).toBeInTheDocument()
+  })
+
+  it('shows and completes direct subtasks in the task preview', async () => {
+    const store = useCalendarStore.getState()
+    const parent = { ...mockTask, id: 'preview-parent', title: 'Preview parent' }
+    const child: CalendarEvent = {
+      ...mockTask,
+      id: 'preview-child',
+      title: 'Preview child',
+      parentTaskId: parent.id,
+      completed: false,
+    }
+    store.addEvent(parent)
+    store.addEvent(child)
+
+    render(<EventPreviewPopup event={parent} position={mockPosition} clickedEventId={parent.id} />)
+
+    expect(screen.getByText('Subtasks')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Preview child' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Mark "Preview child" as complete' }))
+
+    await waitFor(() => {
+      expect(
+        useCalendarStore.getState().events.find((event) => event.id === child.id)?.completed
+      ).toBe(true)
+    })
+    expect(useCalendarStore.getState().isModalOpen).toBe(false)
+  })
+
+  it('completes a recurring occurrence without completing its master series', () => {
+    const store = useCalendarStore.getState()
+    const master: CalendarEvent = {
+      ...mockTask,
+      id: 'preview-recurring-task',
+      title: 'Recurring task',
+      recurrence: { frequency: 'daily', interval: 1 },
+      completed: false,
+    }
+    const occurrenceId = 'preview-recurring-task-2024-03-16T10:00:00.000Z'
+    store.addEvent(master)
+
+    render(
+      <EventPreviewPopup event={master} position={mockPosition} clickedEventId={occurrenceId} />
+    )
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Mark "Recurring task" as complete' }))
+
+    expect(
+      useCalendarStore.getState().events.find((event) => event.id === master.id)?.completed
+    ).not.toBe(true)
+  })
+
+  it('identifies a previewed subtask by its parent', () => {
+    const parent: CalendarEvent = { ...mockTask, id: 'preview-parent', title: 'Preview parent' }
+    const child: CalendarEvent = {
+      ...mockTask,
+      id: 'preview-child',
+      title: 'Preview child',
+      parentTaskId: parent.id,
+    }
+    useCalendarStore.getState().addEvent(parent)
+    useCalendarStore.getState().addEvent(child)
+
+    render(<EventPreviewPopup event={child} position={mockPosition} clickedEventId={child.id} />)
+
+    expect(screen.getByText('Subtask of Preview parent')).toBeInTheDocument()
+  })
+
+  it('has delete button', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+    expect(screen.getByLabelText('Delete')).toBeInTheDocument()
+  })
+
+  it('closes popup when Escape is pressed', async () => {
+    const store = useCalendarStore.getState()
+    store.openPreview('test-event-1', mockPosition)
+
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    fireEvent.keyDown(document, { key: 'Escape' })
+
+    // R3.10 removed the duplicate immediate-close handler. Escape now
+    // triggers animateClose() (150ms close animation), then closePreview()
+    // clears previewEventId. Wait for that to settle.
+    await waitFor(() => {
+      expect(useCalendarStore.getState().previewEventId).toBeNull()
+    })
+  })
+
+  it('makes title editable when clicked', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    const title = screen.getByText('Test Meeting')
+    fireEvent.click(title)
+
+    expect(screen.getByDisplayValue('Test Meeting')).toBeInTheDocument()
+  })
+
+  it('makes date editable when clicked', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    const date = screen.getByText(/15 Mar 2024/)
+    fireEvent.click(date)
+
+    expect(screen.getByDisplayValue('2024-03-15')).toBeInTheDocument()
+  })
+
+  it('makes time editable when clicked', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    // Derived from the fixture rather than hardcoded: mockEvent's start is a
+    // UTC instant, so its rendered wall-clock time depends on the runner's
+    // zone. The assertion is about the time becoming editable, not about a
+    // particular clock reading.
+    const start = new Date(mockEvent.start)
+    const hhmm = `${String(start.getHours()).padStart(2, '0')}:${String(start.getMinutes()).padStart(2, '0')}`
+
+    const time = screen.getByText(new RegExp(hhmm))
+    fireEvent.click(time)
+
+    expect(screen.getByDisplayValue(hhmm)).toBeInTheDocument()
+  })
+
+  it('makes location editable when clicked', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    const location = screen.getByText('Conference Room A')
+    fireEvent.click(location)
+
+    expect(screen.getByDisplayValue('Conference Room A')).toBeInTheDocument()
+  })
+
+  it('makes description editable when clicked', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    const description = screen.getByText('This is a test meeting description.')
+    fireEvent.click(description)
+
+    expect(screen.getByDisplayValue('This is a test meeting description.')).toBeInTheDocument()
+  })
+
+  it('shows save button when changes are made', () => {
+    render(
+      <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
+    )
+
+    const title = screen.getByText('Test Meeting')
+    fireEvent.click(title)
+
+    const input = screen.getByDisplayValue('Test Meeting')
+    fireEvent.change(input, { target: { value: 'Updated Meeting' } })
+
+    expect(screen.getByRole('button', { name: 'Save changes' })).toBeInTheDocument()
+  })
+
+  it('shows add description option when no description exists', () => {
+    const eventWithoutDescription: CalendarEvent = {
+      ...mockEvent,
+      description: undefined,
+    }
+
+    render(
+      <EventPreviewPopup
+        event={eventWithoutDescription}
+        position={mockPosition}
+        clickedEventId="test-event-1"
+      />
+    )
+
+    expect(screen.getByText('+ Add description')).toBeInTheDocument()
+  })
+
+  it('renders reminder when present', () => {
+    const eventWithReminder: CalendarEvent = {
+      ...mockEvent,
+      reminders: [{ id: '1', minutesBefore: 15, method: 'popup' }],
+    }
+
+    render(
+      <EventPreviewPopup
+        event={eventWithReminder}
+        position={mockPosition}
+        clickedEventId="test-event-1"
+      />
+    )
+
+    expect(screen.getByText('15 minutes before')).toBeInTheDocument()
+  })
+
+  it('renders travel time when present', () => {
+    const eventWithTravel: CalendarEvent = {
+      ...mockEvent,
+      travelDuration: 30,
+    }
+
+    render(
+      <EventPreviewPopup
+        event={eventWithTravel}
+        position={mockPosition}
+        clickedEventId="test-event-1"
+      />
+    )
+
+    expect(screen.getByText('30 min travel')).toBeInTheDocument()
+  })
+
+  describe('editing a recurring occurrence', () => {
+    // Master starts 2024-03-01; the popup is opened on the 3rd occurrence
+    // (2024-03-15) via its instance id `series-<ISO>`.
+    const seedSeries = (): CalendarEvent => {
+      const store = useCalendarStore.getState()
+      const master: CalendarEvent = {
+        id: 'series',
+        title: 'Weekly Sync',
+        start: '2024-03-01T10:00:00.000Z',
+        end: '2024-03-01T11:00:00.000Z',
+        calendarId: 'default',
+        isAllDay: false,
+        recurrence: { frequency: 'weekly', interval: 1 },
+      }
+      store.addEvent(master)
+      return master
+    }
+    const instanceId = 'series-2024-03-15T10:00:00.000Z'
+
+    it('"All events" title edit does NOT move the series anchor (no dropped occurrences)', async () => {
+      const master = seedSeries()
+      render(
+        <EventPreviewPopup event={master} position={mockPosition} clickedEventId={instanceId} />
+      )
+
+      fireEvent.click(screen.getByText('Weekly Sync'))
+      fireEvent.change(screen.getByDisplayValue('Weekly Sync'), {
+        target: { value: 'Renamed Sync' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+      fireEvent.click(screen.getByRole('button', { name: 'All events' }))
+
+      await waitFor(() => {
+        const updated = useCalendarStore.getState().events.find((e) => e.id === 'series')
+        expect(updated?.title).toBe('Renamed Sync')
+        // The anchor stays on the master's original start — earlier occurrences survive.
+        expect(updated?.start).toBe('2024-03-01T10:00:00.000Z')
+        expect(updated?.recurrence?.endDate).toBeUndefined()
+      })
+    })
+
+    it('"This and following events" truncates the master and starts a new series at the occurrence', async () => {
+      const master = seedSeries()
+      render(
+        <EventPreviewPopup event={master} position={mockPosition} clickedEventId={instanceId} />
+      )
+
+      fireEvent.click(screen.getByText('Weekly Sync'))
+      fireEvent.change(screen.getByDisplayValue('Weekly Sync'), {
+        target: { value: 'New Series' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+      fireEvent.click(screen.getByRole('button', { name: 'This and following events' }))
+
+      await waitFor(() => {
+        const events = useCalendarStore.getState().events
+        const original = events.find((e) => e.id === 'series')
+        // Master keeps its title/anchor but is truncated to before the split.
+        expect(original?.title).toBe('Weekly Sync')
+        expect(original?.start).toBe('2024-03-01T10:00:00.000Z')
+        // For a timed series the UNTIL boundary sits immediately before the
+        // clicked occurrence (10:00 on 03-15), so it excludes that occurrence
+        // while still keeping the prior one (03-08). Assert the boundary rather
+        // than a specific string form, which is timezone/representation-robust.
+        const endMs = new Date(original!.recurrence!.endDate!).getTime()
+        expect(endMs).toBeLessThan(new Date('2024-03-15T10:00:00.000Z').getTime())
+        expect(endMs).toBeGreaterThanOrEqual(new Date('2024-03-08T11:00:00.000Z').getTime())
+        // A new series carries the new title starting on the clicked occurrence.
+        const newSeries = events.find((e) => e.id !== 'series' && e.title === 'New Series')
+        expect(newSeries).toBeDefined()
+        expect(newSeries?.start).toContain('2024-03-15')
+        expect(newSeries?.recurrence?.frequency).toBe('weekly')
+      })
+    })
+
+    it('"This event only" edits just the occurrence and excludes it from the master', async () => {
+      const master = seedSeries()
+      render(
+        <EventPreviewPopup event={master} position={mockPosition} clickedEventId={instanceId} />
+      )
+
+      fireEvent.click(screen.getByText('Weekly Sync'))
+      fireEvent.change(screen.getByDisplayValue('Weekly Sync'), {
+        target: { value: 'Just This One' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+      fireEvent.click(screen.getByRole('button', { name: 'This event only' }))
+
+      await waitFor(() => {
+        const events = useCalendarStore.getState().events
+        const original = events.find((e) => e.id === 'series')
+        expect(original?.title).toBe('Weekly Sync')
+        expect(original?.excludedDates ?? []).not.toContain('2024-03-15T10:00:00.000Z')
+        // Exception lands on the clicked occurrence date, not the master's start.
+        const exception = events.find((e) => e.id === instanceId)
+        expect(exception?.title).toBe('Just This One')
+        expect(exception?.start).toContain('2024-03-15')
+        expect(exception?.recurrence).toBeUndefined()
+      })
+    })
+
+    it('re-edits a detached occurrence without showing recurrence options', async () => {
+      const master = seedSeries()
+      const exception: CalendarEvent = {
+        ...master,
+        id: instanceId,
+        title: 'Detached occurrence',
+        start: '2024-03-15T10:00:00.000Z',
+        end: '2024-03-15T11:00:00.000Z',
+        recurrence: undefined,
+        recurrenceId: '2024-03-15T10:00:00.000Z',
+        recurrenceMasterId: master.id,
+      }
+      useCalendarStore.getState().addEvent(exception)
+      render(
+        <EventPreviewPopup event={exception} position={mockPosition} clickedEventId={instanceId} />
+      )
+
+      fireEvent.click(screen.getByText('Detached occurrence'))
+      fireEvent.change(screen.getByDisplayValue('Detached occurrence'), {
+        target: { value: 'Detached occurrence updated' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      expect(screen.queryByText('Edit recurring event')).not.toBeInTheDocument()
+      await waitFor(() => {
+        const events = useCalendarStore.getState().events
+        expect(events.find((event) => event.id === master.id)?.title).toBe('Weekly Sync')
+        expect(events.find((event) => event.id === instanceId)?.title).toBe(
+          'Detached occurrence updated'
+        )
+      })
+    })
+  })
+
+  describe('date field changes preserve start<=end (issue #44)', () => {
+    // Local-time (test-runner timezone) representations of the fixture, matching
+    // what the component itself derives via date-fns `format`/`parseISO`.
+    const startLocalDate = format(parseISO(mockOvernightEvent.start), 'yyyy-MM-dd')
+    const startLocalTime = format(parseISO(mockOvernightEvent.start), 'HH:mm')
+    const endLocalDate = format(parseISO(mockOvernightEvent.end), 'yyyy-MM-dd')
+    const endLocalTime = format(parseISO(mockOvernightEvent.end), 'HH:mm')
+    const startDisplay = format(parseISO(mockOvernightEvent.start), 'd MMM yyyy')
+    const endDisplay = format(parseISO(mockOvernightEvent.end), 'd MMM yyyy')
+
+    it('shifts the end date along with the start date for an overnight event, keeping the range valid', async () => {
+      const store = useCalendarStore.getState()
+      store.addEvent(mockOvernightEvent)
+      render(
+        <EventPreviewPopup
+          event={mockOvernightEvent}
+          position={mockPosition}
+          clickedEventId="test-event-overnight"
+        />
+      )
+
+      fireEvent.click(screen.getByText(startDisplay))
+      const shiftedStartDate = format(
+        new Date(new Date(`${startLocalDate}T00:00:00`).getTime() + 86400000),
+        'yyyy-MM-dd'
+      )
+      const shiftedEndDate = format(
+        new Date(new Date(`${endLocalDate}T00:00:00`).getTime() + 86400000),
+        'yyyy-MM-dd'
+      )
+      fireEvent.change(screen.getByDisplayValue(startLocalDate), {
+        target: { value: shiftedStartDate },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await waitFor(() => {
+        const updated = useCalendarStore
+          .getState()
+          .events.find((e) => e.id === 'test-event-overnight')
+        // The popup writes device-frame Z instants (Phase 2 C3) for timed
+        // events, which the store keeps as UTC for timezone-less events.
+        // Derive the expectation from the same device-frame math so it holds
+        // in any test zone (previously the popup stored a bare naive string).
+        expect(updated?.start).toBe(
+          new Date(`${shiftedStartDate}T${startLocalTime}:00`).toISOString()
+        )
+        expect(updated?.end).toBe(new Date(`${shiftedEndDate}T${endLocalTime}:00`).toISOString())
+      })
+    })
+
+    it('refuses to save when the end date is edited to a date before the start date', async () => {
+      const store = useCalendarStore.getState()
+      store.addEvent(mockOvernightEvent)
+      render(
+        <EventPreviewPopup
+          event={mockOvernightEvent}
+          position={mockPosition}
+          clickedEventId="test-event-overnight"
+        />
+      )
+
+      fireEvent.click(screen.getByText(endDisplay))
+      const beforeStartDate = format(
+        new Date(new Date(`${startLocalDate}T00:00:00`).getTime() - 86400000),
+        'yyyy-MM-dd'
+      )
+      fireEvent.change(screen.getByDisplayValue(endLocalDate), {
+        target: { value: beforeStartDate },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await waitFor(() => {
+        const updated = useCalendarStore
+          .getState()
+          .events.find((e) => e.id === 'test-event-overnight')
+        // The invalid edit must not be persisted — start/end stay as originally seeded.
+        expect(updated?.start).toBe(mockOvernightEvent.start)
+        expect(updated?.end).toBe(mockOvernightEvent.end)
+      })
+    })
+  })
+
+  describe('editing a task’s due date', () => {
+    // A task carrying a time of day, expressed the way the app stores one:
+    // dueDate holds the time and isAllDay is false.
+    const mockTimedTask: CalendarEvent = {
+      id: 'test-task-timed',
+      title: 'Timed Task',
+      start: '2024-03-15T14:30:00',
+      end: '2024-03-15T14:30:00',
+      dueDate: '2024-03-15T14:30:00',
+      calendarId: 'default',
+      isAllDay: false,
+      type: 'task',
+    }
+
+    it('keeps the time when only the date is edited', async () => {
+      // Editing the date alone used to force the task to all-day and drop the
+      // time: the save path read the time from the edit field, which is empty
+      // unless the user opened it. The time is only removable by clearing it.
+      const store = useCalendarStore.getState()
+      store.addEvent(mockTimedTask)
+
+      render(
+        <EventPreviewPopup
+          event={mockTimedTask}
+          position={mockPosition}
+          clickedEventId="test-task-timed"
+        />
+      )
+
+      fireEvent.click(screen.getByText(/15 Mar 2024/))
+      fireEvent.change(screen.getByDisplayValue('2024-03-15'), {
+        target: { value: '2024-03-20' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      // R1 — timed task saves now write a device-frame Z instant (matching
+      // the non-task branch from the review fixes: timezone-less edits persist
+      // as Z instants). The kept time-of-day is the device-frame '14:30'.
+      const expectedKept = new Date('2024-03-20T14:30:00').toISOString()
+      await waitFor(() => {
+        const updated = useCalendarStore.getState().events.find((e) => e.id === 'test-task-timed')
+        expect(updated?.dueDate).toBe(expectedKept)
+        expect(updated?.start).toBe(expectedKept)
+        expect(updated?.isAllDay).toBe(false)
+      })
+    })
+
+    it('leaves an all-day task all-day', async () => {
+      const allDayTask: CalendarEvent = {
+        id: 'test-task-allday',
+        title: 'All-day Task',
+        start: '2024-03-15T00:00:00',
+        end: '2024-03-15T00:00:00',
+        dueDate: '2024-03-15',
+        calendarId: 'default',
+        isAllDay: true,
+        type: 'task',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(allDayTask)
+
+      render(
+        <EventPreviewPopup
+          event={allDayTask}
+          position={mockPosition}
+          clickedEventId="test-task-allday"
+        />
+      )
+
+      // An all-day task renders its date in both the date and the time row,
+      // so target the first (the date field).
+      fireEvent.click(screen.getAllByText(/15 Mar 2024/)[0])
+      fireEvent.change(screen.getByDisplayValue('2024-03-15'), {
+        target: { value: '2024-03-20' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      await waitFor(() => {
+        const updated = useCalendarStore.getState().events.find((e) => e.id === 'test-task-allday')
+        expect(updated?.dueDate).toBe('2024-03-20')
+        expect(updated?.isAllDay).toBe(true)
+      })
+    })
+  })
+
+  describe('TZID events render and edit in the device frame (Phase 2)', () => {
+    // A TZID event stores a naive wall clock in the event zone. The popup must
+    // resolve it through toEventInstant for display and edit-field seeding:
+    // this Copenhagen 10:00 must read 04:00 in an America/New_York runner and
+    // 10:00 in a Europe/Copenhagen one. Expectations derive from the same
+    // helpers so the identical assertions hold in both vitest projects — the
+    // old parseISO-based code renders 10:00 in both and fails the west run.
+    const mockTzidEvent: CalendarEvent = {
+      id: 'test-event-tzid',
+      title: 'Copenhagen Sync',
+      start: '2026-02-10T10:00:00',
+      end: '2026-02-10T11:00:00',
+      calendarId: 'default',
+      isAllDay: false,
+      timezone: 'Europe/Copenhagen',
+    }
+
+    it('renders the time in the device frame, not the event zone', () => {
+      const store = useCalendarStore.getState()
+      store.addEvent(mockTzidEvent)
+      render(
+        <EventPreviewPopup
+          event={mockTzidEvent}
+          position={mockPosition}
+          clickedEventId="test-event-tzid"
+        />
+      )
+      const tf = useSettingsStore.getState().timeFormat
+      const expected = `${formatEventTime(
+        mockTzidEvent.start,
+        mockTzidEvent.timezone,
+        tf
+      )} - ${formatEventTime(mockTzidEvent.end, mockTzidEvent.timezone, tf)}`
+      expect(screen.getByText(expected)).toBeInTheDocument()
+    })
+
+    it('renders the date in the device frame when the zone crosses midnight', () => {
+      const crossMidnight: CalendarEvent = {
+        ...mockTzidEvent,
+        id: 'test-event-tzid-cross',
+        start: '2026-02-10T00:30:00',
+        end: '2026-02-10T01:30:00',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(crossMidnight)
+      render(
+        <EventPreviewPopup
+          event={crossMidnight}
+          position={mockPosition}
+          clickedEventId="test-event-tzid-cross"
+        />
+      )
+      // 'd MMM yyyy' — the popup's pattern for the default 'dd/MM/yyyy' setting
+      // (west: 9 Feb 2026, east: 10 Feb 2026).
+      const expected = format(
+        toEventInstant(crossMidnight.start, crossMidnight.timezone),
+        'd MMM yyyy'
+      )
+      expect(screen.getByText(expected)).toBeInTheDocument()
+    })
+
+    it('initializes the edit fields from the device-frame instant', () => {
+      const store = useCalendarStore.getState()
+      store.addEvent(mockTzidEvent)
+      render(
+        <EventPreviewPopup
+          event={mockTzidEvent}
+          position={mockPosition}
+          clickedEventId="test-event-tzid"
+        />
+      )
+      const expectedTime = format(
+        toEventInstant(mockTzidEvent.start, mockTzidEvent.timezone),
+        'HH:mm'
+      )
+      const time = screen.getByText(new RegExp(expectedTime))
+      fireEvent.click(time)
+      expect(screen.getByDisplayValue(expectedTime)).toBeInTheDocument()
+    })
+
+    it('writes edits back as device-frame Z instants the store re-frames into the event zone', async () => {
+      const store = useCalendarStore.getState()
+      store.addEvent(mockTzidEvent)
+      render(
+        <EventPreviewPopup
+          event={mockTzidEvent}
+          position={mockPosition}
+          clickedEventId="test-event-tzid"
+        />
+      )
+
+      // Open the time editor and type a new device-frame start time. The
+      // preserved 1h duration shifts the end to 13:00.
+      const expectedTime = format(
+        toEventInstant(mockTzidEvent.start, mockTzidEvent.timezone),
+        'HH:mm'
+      )
+      fireEvent.click(screen.getByText(new RegExp(expectedTime)))
+      fireEvent.change(screen.getByDisplayValue(expectedTime), {
+        target: { value: '12:00' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      // The store normalizes the device-frame Z instant back to the event
+      // zone's naive wall clock (calendarStore.updateEvent / toZoneWallClock).
+      const tz = mockTzidEvent.timezone!
+      const expectedStart = toZoneWallClock(new Date('2026-02-10T12:00:00').toISOString(), tz)
+      const expectedEnd = toZoneWallClock(new Date('2026-02-10T13:00:00').toISOString(), tz)
+      await waitFor(() => {
+        const updated = useCalendarStore.getState().events.find((e) => e.id === 'test-event-tzid')
+        expect(updated?.start).toBe(expectedStart)
+        expect(updated?.end).toBe(expectedEnd)
+      })
+    })
+
+    it('renders a timed TZID task due time in the device frame', () => {
+      const tzidTask: CalendarEvent = {
+        id: 'test-task-tzid',
+        title: 'Copenhagen Task',
+        start: '2026-02-10T14:30:00',
+        end: '2026-02-10T14:30:00',
+        dueDate: '2026-02-10T14:30:00',
+        calendarId: 'default',
+        isAllDay: false,
+        type: 'task',
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(tzidTask)
+      render(
+        <EventPreviewPopup
+          event={tzidTask}
+          position={mockPosition}
+          clickedEventId="test-task-tzid"
+        />
+      )
+      const tf = useSettingsStore.getState().timeFormat
+      const expected = formatEventTime(tzidTask.dueDate!, tzidTask.timezone, tf)
+      expect(screen.getByText(expected)).toBeInTheDocument()
+    })
+
+    it('renders a timed TZID task due DATE in the device frame across midnight (R1)', () => {
+      // 00:30 Copenhagen is still Feb 9 in America/New_York — the due date
+      // must come from toEventInstant, not a naive parseISO of the wall clock.
+      const tzidTask: CalendarEvent = {
+        id: 'test-task-tzid-date',
+        title: 'Copenhagen Midnight Task',
+        start: '2026-02-10T00:30:00',
+        end: '2026-02-10T00:30:00',
+        dueDate: '2026-02-10T00:30:00',
+        calendarId: 'default',
+        isAllDay: false,
+        type: 'task',
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(tzidTask)
+      render(
+        <EventPreviewPopup
+          event={tzidTask}
+          position={mockPosition}
+          clickedEventId="test-task-tzid-date"
+        />
+      )
+      const expected = format(toEventInstant(tzidTask.dueDate!, tzidTask.timezone), 'd MMM yyyy')
+      expect(screen.getByText(expected)).toBeInTheDocument()
+    })
+
+    it('seeds timed TZID task edit fields from the device-frame instant (R1)', () => {
+      const tzidTask: CalendarEvent = {
+        id: 'test-task-tzid-seed',
+        title: 'Copenhagen Task',
+        start: '2026-02-10T14:30:00',
+        end: '2026-02-10T14:30:00',
+        dueDate: '2026-02-10T14:30:00',
+        calendarId: 'default',
+        isAllDay: false,
+        type: 'task',
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(tzidTask)
+      render(
+        <EventPreviewPopup
+          event={tzidTask}
+          position={mockPosition}
+          clickedEventId="test-task-tzid-seed"
+        />
+      )
+      const instant = toEventInstant(tzidTask.dueDate!, tzidTask.timezone)
+      // Time editor seeds the device-frame 'HH:mm' (08:30 west / 14:30 east).
+      fireEvent.click(screen.getByText(new RegExp(format(instant, 'HH:mm'))))
+      expect(screen.getByDisplayValue(format(instant, 'HH:mm'))).toBeInTheDocument()
+    })
+
+    it('writes timed TZID task edits as device-frame Z instants the store re-frames (R1)', async () => {
+      const tzidTask: CalendarEvent = {
+        id: 'test-task-tzid-save',
+        title: 'Copenhagen Task',
+        start: '2026-02-10T14:30:00',
+        end: '2026-02-10T14:30:00',
+        dueDate: '2026-02-10T14:30:00',
+        calendarId: 'default',
+        isAllDay: false,
+        type: 'task',
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(tzidTask)
+      render(
+        <EventPreviewPopup
+          event={tzidTask}
+          position={mockPosition}
+          clickedEventId="test-task-tzid-save"
+        />
+      )
+      // Move the task to Feb 12 keeping its device-frame time-of-day. The
+      // popup writes a device-frame Z instant; the store must re-frame all of
+      // dueDate/start/end into the event zone's naive wall clock.
+      const instant = toEventInstant(tzidTask.dueDate!, tzidTask.timezone)
+      fireEvent.click(screen.getByText(new RegExp(format(instant, 'd MMM yyyy'))))
+      fireEvent.change(screen.getByDisplayValue(format(instant, 'yyyy-MM-dd')), {
+        target: { value: '2026-02-12' },
+      })
+      fireEvent.click(screen.getByRole('button', { name: 'Save changes' }))
+
+      const tz = tzidTask.timezone!
+      const devTime = format(instant, 'HH:mm')
+      const expectedDue = toZoneWallClock(new Date(`2026-02-12T${devTime}:00`).toISOString(), tz)
+      await waitFor(() => {
+        const updated = useCalendarStore
+          .getState()
+          .events.find((e) => e.id === 'test-task-tzid-save')
+        expect(updated?.dueDate).toBe(expectedDue)
+        expect(updated?.start).toBe(expectedDue)
+        expect(updated?.end).toBe(expectedDue)
+      })
+    })
+
+    it('keeps all-day TZID events floating ("All day")', () => {
+      const allDayTzid: CalendarEvent = {
+        id: 'test-event-allday-tzid',
+        title: 'All-day Holiday',
+        start: '2026-02-10T00:00:00',
+        end: '2026-02-10T23:59:59',
+        calendarId: 'default',
+        isAllDay: true,
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(allDayTzid)
+      render(
+        <EventPreviewPopup
+          event={allDayTzid}
+          position={mockPosition}
+          clickedEventId="test-event-allday-tzid"
+        />
+      )
+      expect(screen.getByText('All day')).toBeInTheDocument()
+    })
+
+    it('keeps all-day TZID edit dates floating (no day shift)', () => {
+      const allDayTzid: CalendarEvent = {
+        id: 'test-event-allday-tzid-edit',
+        title: 'All-day Holiday',
+        start: '2026-02-10T00:00:00',
+        end: '2026-02-10T23:59:59',
+        calendarId: 'default',
+        isAllDay: true,
+        timezone: 'Europe/Copenhagen',
+      }
+      const store = useCalendarStore.getState()
+      store.addEvent(allDayTzid)
+      render(
+        <EventPreviewPopup
+          event={allDayTzid}
+          position={mockPosition}
+          clickedEventId="test-event-allday-tzid-edit"
+        />
+      )
+      fireEvent.click(screen.getByText(/10 Feb 2026/))
+      // The floating date is kept as-is — resolving it through toEventInstant
+      // would shift it a day west of UTC (to Feb 9 in America/New_York).
+      expect(screen.getByDisplayValue('2026-02-10')).toBeInTheDocument()
+    })
+  })
+})

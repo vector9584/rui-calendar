@@ -1,0 +1,2562 @@
+/* ============================================================================
+   CALINO — Settings page (CSS Module)
+   Based on Claude Design handoff. All values derive from theme tokens.
+   ========================================================================== */
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--canvas);
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-top: var(--safe-area-top);
+  }
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+@media (max-width: 768px) {
+  .body {
+    flex-direction: column;
+  }
+}
+
+/* ── Back Button (toolbar) ──────────────────────────────────────────────── */
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  margin: 0 0 24px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, var(--line));
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel));
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--accent-strong-on-soft, var(--accent-strong, var(--accent)));
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s;
+}
+
+.back:hover {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--line));
+  box-shadow: 0 2px 8px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+}
+
+.back:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.back svg {
+  box-sizing: content-box;
+  width: 13px;
+  height: 13px;
+  padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 50%;
+  background: var(--panel);
+}
+
+/* ── Settings Nav ───────────────────────────────────────────────────────── */
+.nav {
+  width: 280px;
+  padding: 28px 16px 20px;
+  flex-shrink: 0;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .nav {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px;
+  }
+
+  .navTitle {
+    font-size: 20px;
+    margin-bottom: 12px;
+    padding: 0;
+  }
+
+  .navList {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: var(--space-1);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .navList::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.navTitle {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  padding: 0 10px;
+  margin: 0 0 20px;
+  line-height: 1;
+}
+
+.navList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+  user-select: none;
+  border: none;
+  background: none;
+  width: 100%;
+  text-align: left;
+}
+
+@media (max-width: 768px) {
+  .navItem {
+    padding: 8px 12px;
+    font-size: 12px;
+    white-space: nowrap;
+    width: auto;
+    gap: 6px;
+  }
+}
+
+.navItem:hover {
+  background: rgba(var(--ink-raw), 0.05);
+  color: var(--ink);
+}
+
+.navItem:active {
+  transform: scale(0.98);
+  transition-duration: 0.05s;
+}
+
+.navItemActive {
+  background: var(--accent-soft);
+  /* --accent-strong is 4.25:1 on --accent-soft — just under AA at 14px — so
+     both built-in themes define a one-step variant for this surface instead of
+     moving the shared token, which also sits behind white text elsewhere
+     (light darkens to 4.61:1, dark lightens to 5.42:1). User-supplied themes
+     don't define it, so they fall back to their own --accent-strong rather
+     than a hard-coded hex from the wrong palette. */
+  color: var(--accent-strong-on-soft, var(--accent-strong, var(--accent)));
+  font-weight: 500;
+}
+
+.navBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-error-muted, var(--color-error));
+  color: var(--color-bg-primary, #fff);
+  font-size: 11px;
+  font-weight: 600;
+  margin-left: auto;
+}
+
+.navIcon {
+  width: 17px;
+  height: 17px;
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.navItemActive .navIcon {
+  opacity: 1;
+}
+
+/* ── Settings Main ──────────────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  padding: 32px 48px 80px;
+  overflow-y: auto;
+  background: var(--canvas);
+}
+
+/* Programmatic skip-link target — no focus ring around the whole panel. */
+.main:focus {
+  outline: none;
+}
+
+/* ── "Saved" indicator ──────────────────────────────────────────────────── */
+.savedBar {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  height: 0; /* float over content without occupying vertical space */
+  display: flex;
+  align-items: flex-start; /* don't stretch the pill to the 0-height bar */
+  justify-content: flex-start;
+  pointer-events: none;
+}
+
+.savedPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  margin-right: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--accent-strong, var(--accent));
+  color: var(--accent-contrast, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 10px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.18 * var(--shadow-opacity, 1)));
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.savedPillVisible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .savedPill {
+    transition: opacity 0.1s ease;
+    transform: none;
+  }
+  .savedPillVisible {
+    transform: none;
+  }
+}
+
+.sectionHeader {
+  display: none;
+}
+
+.sectionTitle {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin: 6px 0 0;
+  line-height: 1;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 28px;
+}
+
+.pageTitleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+}
+
+.pageTitleSearch {
+  flex: 0 1 420px;
+  min-width: min(220px, 40%);
+}
+
+.search {
+  position: relative;
+  width: 100%;
+  z-index: 8;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 18px;
+  height: 18px;
+  color: var(--ink-3);
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 0 44px 0 42px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)));
+  transition:
+    border-color 0.14s ease,
+    box-shadow 0.14s ease,
+    background 0.14s ease;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-3);
+  opacity: 1;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  appearance: none;
+}
+
+.searchInput:hover {
+  border-color: var(--line-2);
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: var(--accent-strong, var(--accent));
+  box-shadow:
+    0 0 0 3px var(--focus-ring),
+    0 2px 8px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.05 * var(--shadow-opacity, 1)));
+}
+
+.searchClear {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  transform: translateY(-50%);
+  transition:
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.searchClear:hover {
+  color: var(--ink);
+  background: rgba(var(--ink-raw), 0.06);
+}
+
+.searchClear svg {
+  width: 15px;
+  height: 15px;
+}
+
+.searchResults {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  max-height: min(380px, calc(100vh - 120px));
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow:
+    0 12px 30px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.14 * var(--shadow-opacity, 1))),
+    0 2px 6px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.06 * var(--shadow-opacity, 1)));
+}
+
+.searchResult {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color 0.12s ease,
+    background 0.12s ease;
+}
+
+.searchResult:hover,
+.searchResult:focus-visible {
+  outline: none;
+  background: var(--accent-soft);
+  color: var(--accent-strong-on-soft, var(--accent-strong, var(--accent)));
+}
+
+.searchResultTitle {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 13.5px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.searchResultSection {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.searchEmpty {
+  margin: 0;
+  padding: 14px 12px;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: var(--space-4);
+    padding-bottom: calc(84px + var(--safe-area-bottom));
+    box-sizing: border-box;
+  }
+
+  .header {
+    display: flex;
+    margin-bottom: 18px;
+  }
+
+  .search {
+    width: 100%;
+  }
+
+  .searchResults {
+    max-height: min(360px, calc(100dvh - 150px));
+  }
+
+  .nav {
+    display: none;
+  }
+
+  .pageTitle {
+    display: none;
+  }
+
+  .pageTitleRow {
+    display: none;
+  }
+
+  .sectionHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    margin-bottom: 18px;
+    padding: 12px 10px 0;
+    position: relative;
+  }
+
+  .mobileTitle {
+    font-family: var(--font-serif, Georgia, serif);
+    font-size: 34px;
+    font-weight: 400;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+    margin: 14px 0 24px;
+    padding: 0 4px;
+    line-height: 1;
+  }
+
+  /* Mobile category accordion */
+  .categoryList {
+    display: flex;
+    flex-direction: column;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .accordionItem {
+    border-bottom: 1px solid var(--line-2);
+  }
+
+  .accordionItem:last-child {
+    border-bottom: none;
+  }
+
+  .categoryItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 16px;
+    border: none;
+    background: none;
+    font-size: 15px;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .categoryItem:hover {
+    background: rgba(var(--ink-raw), 0.05);
+    color: var(--ink);
+  }
+
+  .categoryItem:active {
+    background: rgba(var(--ink-raw), 0.05);
+  }
+
+  .categoryLabel {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .categoryTrailing {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+
+  .chevron,
+  .chevronOpen {
+    color: var(--ink-3);
+    flex-shrink: 0;
+    transition: transform 0.16s ease;
+  }
+
+  .chevronOpen {
+    transform: rotate(180deg);
+  }
+
+  .accordionPanel {
+    padding: 0 0 4px;
+    background: var(--panel);
+    border-top: 1px solid var(--line-2);
+  }
+
+  /* Flatten the card look of settings groups when nested inside the
+     accordion — the panel/border/shadow duplicates the outer accordion
+     box, so strip it back to plain rows that read as a continuation of
+     the category list instead of a box-in-a-box. */
+  .accordionPanel .group {
+    background: none;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin-bottom: 0;
+  }
+
+  .accordionPanel .group + .group {
+    border-top: 1px solid var(--line-2);
+  }
+
+  .accordionPanel .groupLabel {
+    padding: 14px 16px 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .main {
+    padding: 8px 12px calc(84px + var(--safe-area-bottom));
+  }
+
+  .sectionTitle {
+    font-size: 22px;
+  }
+
+  .mobileTitle {
+    font-size: 28px;
+    margin: 10px 0 20px;
+  }
+}
+
+.section {
+  display: none;
+}
+
+.sectionActive {
+  display: block;
+}
+
+.pageTitle {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 40px;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1;
+}
+
+.searchResultHighlight {
+  position: relative;
+  z-index: 1;
+  border-radius: var(--radius-sm);
+  animation: settingsSearchHighlight 2.3s ease-out both;
+}
+
+@keyframes settingsSearchHighlight {
+  0%,
+  18% {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  100% {
+    background: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@media (max-width: 1100px) and (min-width: 769px) {
+  .pageTitleRow {
+    gap: 16px;
+  }
+
+  .pageTitle {
+    font-size: 32px;
+  }
+}
+
+/* ── Settings Group (card) ──────────────────────────────────────────────── */
+.group {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  margin-bottom: 28px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1))),
+    0 6px 16px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.03 * var(--shadow-opacity, 1)));
+}
+
+.groupLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 14px 20px 0;
+  margin-bottom: 8px;
+}
+
+.presetHint {
+  font-size: 12px;
+  color: var(--ink-3);
+  padding: 0 20px;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.weatherPicker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+/* ── Settings Row ───────────────────────────────────────────────────────── */
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  gap: 48px;
+  border-bottom: 1px solid var(--line-2);
+  min-height: 64px;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* Label-only heading that introduces the card row directly beneath it.
+   No divider or fixed height so the label reads as connected to its cards. */
+.rowSubhead {
+  min-height: 0;
+  padding: 18px 20px 2px;
+  border-bottom: none;
+}
+
+.rowInfo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.rowLabel {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 3px;
+}
+
+.rowDesc {
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.4;
+}
+
+.rowControl {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* A picker followed by the action it scopes (e.g. calendar select + Export). */
+.rowControlGroup {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* ── Custom Select ──────────────────────────────────────────────────────── */
+.select {
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  height: 32px;
+  padding: 0 34px 0 12px;
+  font-size: 14px;
+  color: var(--ink);
+  font-family: inherit;
+  min-width: 200px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%23a39d93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: border-color 0.14s;
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)));
+}
+
+/* Narrower select for short option sets (e.g. duration) so the control
+   doesn't stretch far wider than its content. */
+.selectCompact {
+  min-width: 120px;
+}
+
+@media (max-width: 768px) {
+  .select {
+    width: 100%;
+    min-width: auto;
+    height: 48px;
+    font-size: 16px;
+  }
+}
+
+.select:hover {
+  border-color: rgba(var(--ink-raw), 0.18);
+}
+
+.select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ── Number input (e.g. custom duration) ────────────────────────────────── */
+.numberInputWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+.numberInput {
+  width: 72px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  font-size: 14px;
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.numberInput:hover {
+  border-color: rgba(var(--ink-raw), 0.18);
+}
+
+.numberInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.numberInputUnit {
+  font-size: 13px;
+  color: var(--ink-muted, rgba(var(--ink-raw), 0.55));
+}
+
+/* ── Text input (e.g. secondary timezone custom label) ───────────────────── */
+.textInput {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  height: 32px;
+  padding: 0 12px;
+  font-size: 14px;
+  color: var(--ink);
+  font-family: inherit;
+  min-width: 140px;
+  max-width: 200px;
+  transition: border-color 0.14s;
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)));
+}
+
+.textInput:hover {
+  border-color: rgba(var(--ink-raw), 0.18);
+}
+
+.textInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* ── Toggle ─────────────────────────────────────────────────────────────── */
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex-shrink: 0;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.toggle input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pill {
+  display: block;
+  width: 44px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgba(var(--ink-raw), 0.14);
+  transition: background 0.2s;
+}
+
+.toggle input:checked + .pill {
+  background: var(--accent);
+}
+
+.knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.25 * var(--shadow-opacity, 1)));
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+.toggle input:checked ~ .knob {
+  transform: translateX(18px);
+}
+
+/* ── Segmented Control ──────────────────────────────────────────────────── */
+.seg {
+  background: var(--color-bg-tertiary, rgba(var(--ink-raw), 0.045));
+  padding: var(--space-1);
+  border-radius: var(--radius-md);
+  display: inline-flex;
+  gap: 2px;
+}
+
+.segTab {
+  height: 32px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  transition: color 0.14s;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.segTab:hover {
+  color: var(--ink);
+}
+
+.segTabActive {
+  background: var(--panel);
+  color: var(--ink);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1))),
+    0 0 0 1px var(--line);
+}
+
+/* ── Theme Appearance Cards ─────────────────────────────────────────────── */
+.themeCards {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 6px 20px 18px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.themeCard {
+  flex: 1 1 120px;
+  min-width: 120px;
+  max-width: 180px;
+  border-radius: 13px;
+  border: 2px solid var(--line);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    border-color 0.14s,
+    box-shadow 0.14s;
+  background: none;
+  padding: 0;
+}
+
+.themeCard:hover {
+  border-color: rgba(var(--ink-raw), 0.18);
+}
+
+.themeCard:active {
+  transform: scale(0.98);
+  transition-duration: 0.05s;
+}
+
+.themeCardActive {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.themeCardPreview {
+  height: 96px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow: hidden;
+}
+
+.themeCardPreviewLight {
+  background: #faf8f3;
+}
+
+.themeCardPreviewDark {
+  background: #1a1815;
+}
+
+.themeCardPreviewSystem {
+  background: linear-gradient(135deg, #faf8f3 50%, #1a1815 50%);
+}
+
+.tcBar {
+  height: 10px;
+  border-radius: 3px;
+}
+
+.tcGrid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.tcDay {
+  border-radius: 2px;
+}
+
+.themeCardLabel {
+  padding: 9px 12px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.themeCardActive .themeCardLabel {
+  color: var(--accent-strong, var(--accent));
+}
+
+.tcCheck {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.themeCardActive .tcCheck {
+  display: flex;
+}
+
+.tcCheck svg {
+  width: 9px;
+  height: 9px;
+}
+
+/* ── Theme Preview Grid ─────────────────────────────────────────────────── */
+.themePreviewGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 6px 20px 18px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.themePreviewCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: var(--radius-md);
+  padding: 6px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    transform 0.1s;
+  min-width: 100px;
+}
+
+.themePreviewCard:hover {
+  border-color: var(--line);
+  transform: translateY(-1px);
+}
+
+.themePreviewCard:active {
+  transform: translateY(0);
+}
+
+.themePreviewCardActive {
+  border-color: var(--accent) !important;
+}
+
+.themePreviewSwatch {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-2);
+  gap: 6px;
+}
+
+.themePreviewPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  gap: var(--space-1);
+  overflow: hidden;
+}
+
+.themePreviewBar {
+  height: 4px;
+  flex-shrink: 0;
+}
+
+.themePreviewRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.themePreviewRow {
+  height: 6px;
+  flex-shrink: 0;
+}
+
+.themePreviewLabel {
+  font-size: 11px;
+  color: var(--ink-2);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.mochaAccentOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.mochaAccentOption {
+  width: 24px;
+  height: 24px;
+  border: 2px solid transparent;
+  border-radius: 50%;
+  background: var(--mocha-accent);
+  cursor: pointer;
+}
+
+.mochaAccentOption:hover,
+.mochaAccentOption:focus-visible {
+  transform: scale(1.1);
+}
+
+.mochaAccentOption:focus-visible {
+  outline: 2px solid var(--color-text-primary);
+  outline-offset: 2px;
+}
+
+.mochaAccentOptionActive {
+  border-color: var(--color-text-primary);
+}
+
+/* ── Accent Color Swatches ──────────────────────────────────────────────── */
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+/* Category add/edit forms show the full palette. The swatches sit inline with a
+   name field and buttons, so they need their own full-width line to wrap into
+   rather than overflowing the row and hiding the later colours. */
+.catSwatches {
+  flex: 1 1 100%;
+  gap: var(--space-1);
+}
+
+.swatchSm {
+  width: 22px;
+  height: 22px;
+  border-width: 2px;
+}
+
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--swatch-color);
+  border: 2.5px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s;
+  box-shadow: 0 1px 3px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.15 * var(--shadow-opacity, 1)));
+}
+
+.swatch:hover {
+  transform: scale(1.1);
+}
+
+.swatchActive {
+  border-color: var(--panel);
+  outline: 2px solid var(--swatch-color);
+}
+
+.customColorPicker {
+  position: relative;
+  display: block;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  overflow: hidden;
+  border-radius: 50%;
+  background: conic-gradient(#e85b5b, #e6c24f, #63b46d, #4fa8c9, #7468c7, #d261a4, #e85b5b);
+  cursor: pointer;
+  transition: transform 0.12s;
+}
+
+.customColorPicker:hover {
+  transform: scale(1.1);
+}
+
+.customColorPickerSelected::after {
+  content: '✓';
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(var(--ink-raw), 0.65);
+  pointer-events: none;
+}
+
+.customColorPicker:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.customColorPicker input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* ── Categories List ────────────────────────────────────────────────────── */
+.catList {
+  display: flex;
+  flex-direction: column;
+}
+
+.catRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--line-2);
+  transition: background 0.1s;
+}
+
+.catRow:last-child {
+  border-bottom: none;
+}
+
+.catRow:hover {
+  background: rgba(var(--ink-raw), 0.02);
+}
+
+.catSwatch {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--cat-color);
+}
+
+.catName {
+  flex: 1 1 auto;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.catCount {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: right;
+}
+
+.catActions {
+  display: flex;
+  gap: var(--space-1);
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.catRow:hover .catActions {
+  opacity: 1;
+}
+
+/* Editing or deleting a category was unreachable without a hover state. */
+@media (hover: none) {
+  .catRow .catActions {
+    opacity: 1;
+  }
+}
+
+.catBtn {
+  height: 28px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: rgba(var(--ink-raw), 0.06);
+  transition:
+    color 0.12s,
+    background 0.12s;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.catBtn:hover {
+  color: var(--ink);
+  background: rgba(var(--ink-raw), 0.1);
+}
+
+.catBtnDanger {
+  color: var(--color-error-muted, var(--color-error));
+  background: var(--error-bg);
+}
+
+.catBtnDanger:hover {
+  color: var(--color-error-muted, var(--color-error));
+  background: var(--error-bg-strong);
+}
+
+.catAdd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 20px;
+  font-size: 14px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.12s;
+  border: none;
+  background: none;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+
+.catAdd:hover {
+  color: var(--accent-strong, var(--accent));
+}
+
+.catAdd svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Sync / Connected Accounts ──────────────────────────────────────────── */
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--line-2);
+}
+
+.accountRow:last-child {
+  border-bottom: none;
+}
+
+.accountIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.accountInfo {
+  flex: 1 1 auto;
+}
+
+.accountName {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.accountStatus {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 1px;
+}
+
+.statusDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.statusDotOk {
+  background: var(--color-success);
+}
+
+.statusDotWarn {
+  background: var(--color-warning);
+}
+
+.statusDotTesting {
+  background: var(--ink-3);
+  animation: statusDotPulse 1s ease-in-out infinite;
+}
+
+@keyframes statusDotPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .statusDotTesting {
+    animation: none;
+    opacity: 0.6;
+  }
+}
+
+.accountActions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.disconnect,
+.rowBtn {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  background: rgba(var(--ink-raw), 0.06);
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.disconnect:hover,
+.rowBtn:hover {
+  background: rgba(var(--ink-raw), 0.1);
+}
+
+.rowBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.accountHint {
+  padding: 0 20px 14px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.connectBtn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 13px 20px;
+  font-size: 14px;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: color 0.12s;
+  border: none;
+  background: none;
+  font-family: inherit;
+  width: 100%;
+  text-align: left;
+}
+
+.connectBtn:hover {
+  color: var(--accent-strong, var(--accent));
+}
+
+.connectBtn svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ── Data / Danger Zone ─────────────────────────────────────────────────── */
+.actionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line-2);
+  gap: 48px;
+}
+
+/* Rows whose control is a picker plus a button are too wide to sit beside the
+   description without crushing it, so the controls drop underneath. */
+.actionRowStacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.actionRowStacked .rowControlGroup {
+  width: 100%;
+}
+
+.actionRow:last-child {
+  border-bottom: none;
+}
+
+.actionBtn {
+  /* Labels like "Reset this device" must stay on one line; the description
+     beside the button is what gives way when the row is tight. */
+  flex-shrink: 0;
+  white-space: nowrap;
+  height: 36px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)));
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.actionBtn:hover {
+  background: rgba(var(--ink-raw), 0.04);
+}
+
+.actionBtn:active {
+  transform: translateY(1px);
+  transition-duration: 0.05s;
+}
+
+.actionBtnDanger {
+  background: color-mix(in srgb, var(--color-error, #c2697f) 8%, var(--panel));
+  border-color: var(--error-border);
+  color: var(--color-error-muted, var(--color-error));
+}
+
+.actionBtnDanger:hover {
+  background: color-mix(in srgb, var(--color-error, #c2697f) 14%, var(--panel));
+}
+
+.actionBtnDanger:active {
+  transform: translateY(1px);
+  transition-duration: 0.05s;
+}
+
+/* Solid red for the irreversible action (as opposed to the tinted default). */
+.actionBtnDangerSolid {
+  background: var(--color-error, #c2697f);
+  border-color: var(--color-error, #c2697f);
+  color: #fff;
+  font-weight: 600;
+}
+
+.actionBtnDangerSolid:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--color-error, #c2697f) 85%, black);
+}
+
+.actionBtnDangerSolid:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dangerZone {
+  border-color: var(--error-border);
+}
+
+.dangerZoneLabel {
+  color: var(--color-error-muted, var(--color-error));
+}
+
+/* ── Broken Events ───────────────────────────────────────────────────── */
+.brokenList {
+  display: flex;
+  flex-direction: column;
+}
+
+.brokenItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line-2);
+  gap: var(--space-4);
+}
+
+.brokenItem:last-child {
+  border-bottom: none;
+}
+
+.brokenInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.brokenTitle {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 4px;
+}
+
+.brokenDates {
+  font-size: 13px;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.brokenArrow {
+  color: var(--ink-3);
+}
+
+.duplicateResourceDeleteBtn {
+  height: 22px;
+  padding: 0 10px;
+  font-size: 11.5px;
+  border-radius: var(--radius-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  background: color-mix(in srgb, var(--color-error, #c2697f) 8%, var(--panel));
+  border: 1px solid var(--error-border);
+  color: var(--color-error-muted, var(--color-error));
+  transition: background 0.12s;
+}
+
+.duplicateResourceDeleteBtn:hover {
+  background: color-mix(in srgb, var(--color-error, #c2697f) 14%, var(--panel));
+}
+
+.duplicateResourceDeleteBtn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.brokenReason {
+  font-size: 12px;
+  color: var(--color-error-muted, var(--color-error));
+  margin-top: 4px;
+}
+
+.brokenActions {
+  display: flex;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.brokenBatchActions {
+  display: flex;
+  gap: var(--space-3);
+  padding: 16px 20px;
+  border-top: 1px solid var(--line-2);
+}
+
+.emptyState {
+  padding: 32px 20px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 14px;
+}
+
+/* ── Notification dependency ────────────────────────────────────────────── */
+.rowDisabled {
+  opacity: 0.45;
+}
+
+.rowDisabled .swatch,
+.rowDisabled .segTab,
+.rowDisabled button {
+  pointer-events: none;
+}
+
+.spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--line);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ── Mobile (≤768px) ────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Stack row label above control */
+  .row,
+  .actionRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+    padding: 14px 16px;
+  }
+
+  .rowControl {
+    width: 100%;
+  }
+
+  /* Stacking suits wide controls like selects, but a toggle is only 44px —
+     dropping it onto its own line wastes vertical space and separates the
+     switch from the label it belongs to. Keep those rows horizontal.
+     Browsers without :has() fall back to the stacked layout above. */
+  .row:has(.toggle) {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+  }
+
+  .row:has(.toggle) .rowControl {
+    width: auto;
+  }
+
+  .select {
+    width: 100%;
+    height: 44px;
+    font-size: 16px;
+  }
+
+  /* Smaller titles */
+  .pageTitle {
+    font-size: 28px;
+    margin-bottom: 20px;
+  }
+
+  .navTitle {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+
+  /* Hide back button inside main header (shown above nav instead) */
+  .header .back {
+    display: none;
+  }
+
+  /* Tighter group padding */
+  .group {
+    border-radius: var(--radius-md);
+    margin-bottom: 20px;
+  }
+
+  /* Back button visible at top */
+  .back {
+    margin-bottom: 12px;
+  }
+
+  /* Roomier swatches so the wrapped palette stays tappable. */
+  .swatchSm {
+    width: 28px;
+    height: 28px;
+  }
+
+  .catSwatches {
+    gap: var(--space-2);
+  }
+
+  .customColorPicker {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+  }
+}
+
+/* ============================================================================
+   Modals (Account Picker, Disable Confirm)
+   =========================================================================== */
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modalPanel {
+  background: var(--panel);
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+}
+
+.modalTitle {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.modalText {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.modalTextSmall {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+
+.modalFooter {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.modalCancelBtn {
+  margin-top: 16px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--ink-2);
+  width: 100%;
+  font-family: inherit;
+}
+
+.modalCancelBtn:hover {
+  color: var(--ink);
+}
+
+.confirmBtn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.confirmBtn:hover {
+  background: rgba(var(--ink-raw), 0.04);
+}
+
+.confirmBtnDanger {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--error-border);
+  background: color-mix(in srgb, var(--color-error, #c2697f) 8%, var(--panel));
+  color: var(--color-error-muted, var(--color-error));
+  cursor: pointer;
+  font-size: 14px;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+
+.confirmBtnDanger:hover {
+  background: color-mix(in srgb, var(--color-error, #c2697f) 14%, var(--panel));
+}
+
+/* Account picker buttons */
+.accountPickerBtn {
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  cursor: pointer;
+  text-align: left;
+  font-size: 14px;
+  font-family: inherit;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.1s,
+    opacity 0.15s;
+  transform: scale(1);
+  box-shadow: 0 1px 2px rgba(44, 40, 33, 0.04);
+}
+
+.accountPickerBtn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(44, 40, 33, 0.08);
+  transform: scale(1.01);
+}
+
+.accountPickerBtn:active {
+  transform: scale(0.98);
+}
+
+.accountPickerBtnLoading {
+  background: var(--accent-soft);
+  cursor: wait;
+}
+
+.accountPickerBtnDisabled {
+  opacity: 0.5;
+}
+
+.accountPickerBtnName {
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.accountPickerBtnLoadingText {
+  font-size: 12px;
+  color: var(--accent-strong, var(--accent));
+}
+
+.accountPickerBtnServer {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+/* Sync error box */
+.syncError {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-error, #c2697f) 8%, var(--panel));
+  border: 1px solid var(--error-border);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.syncErrorTitle {
+  font-weight: 600;
+  color: var(--color-error-muted, var(--color-error));
+  margin-bottom: 4px;
+}
+
+.syncErrorBody {
+  color: var(--ink-2);
+}
+
+.syncInfo {
+  font-size: 12px;
+  color: var(--ink-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.syncTime {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ============================================================================
+   KeywordInput (Auto-categorize tags)
+   =========================================================================== */
+.keywordInput {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: var(--canvas);
+  min-height: 32px;
+  align-items: center;
+  flex: 1;
+}
+
+.keywordInput:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.keywordTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong, var(--accent));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.keywordRemove {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.keywordRemove:hover {
+  opacity: 1;
+}
+
+.keywordField {
+  flex: 1;
+  min-width: 80px;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  color: var(--ink);
+  padding: 2px 0;
+  font-family: inherit;
+}
+
+/* ============================================================================
+   Auto-categorize section
+   =========================================================================== */
+.autoCatHeader {
+  padding: 16px 20px 12px;
+}
+
+.autoCatTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.autoCatDesc {
+  font-size: 13px;
+  color: var(--ink-3);
+  margin-top: 4px;
+}
+
+/* Rule rows */
+.ruleRow {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.ruleMainRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.ruleKeywords {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  flex: 1;
+}
+
+.ruleKeywordTag {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong, var(--accent));
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ruleArrow {
+  font-size: 13px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.ruleCategoryBadge {
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-strong, var(--accent));
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ruleSelect {
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  background: var(--canvas);
+  color: var(--ink);
+  min-width: 120px;
+  font-family: inherit;
+}
+
+.rulePreview {
+  font-size: 12px;
+  color: var(--ink-3);
+  padding-left: 4px;
+}
+
+.rulePreviewCalendar {
+  margin-top: 4px;
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Add rule/category form rows */
+.formRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.formInput {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* Apply section */
+.applySection {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.applySectionText {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-left: 8px;
+}
+
+/* Category edit input */
+.catEditInput {
+  flex: 1;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  font-size: 14px;
+  font-weight: 500;
+  background: var(--canvas);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.catEditInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* Import status */
+.importStatus {
+  padding: 0 20px 16px;
+  font-size: 13px;
+}
+
+.importStatusSuccess {
+  color: var(--color-success);
+}
+
+.importStatusError {
+  color: var(--color-error);
+}
+
+/* Action button enhanced hover (replaces inline mouse handlers) */
+.actionBtnElevated {
+  position: relative;
+  z-index: 1;
+}
+
+.actionBtnElevated:hover {
+  background: rgba(var(--ink-raw), 0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(44, 40, 33, 0.08);
+}
+
+.actionBtnElevated:active {
+  transform: translateY(0) scale(0.97);
+  box-shadow: none;
+  transition-duration: 0.05s;
+}
+
+.actionBtnElevated:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Feature explainer modal ─────────────────────────────────────────── */
+.infoBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.infoBody h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.infoBody p,
+.infoBody ul {
+  margin: 0;
+}
+
+.infoBody ul {
+  padding-left: 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.infoSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+/* Toggle with label text */
+.toggleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.toggleLabel {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* Synced badge */
+.syncedBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.adjustablePanel {
+  margin: var(--space-4) 0;
+  padding: var(--space-4) 20px;
+}
+
+.adjustableHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.adjustableReset {
+  flex: 0 0 auto;
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-visible);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+}
+
+.adjustableReset:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.adjustablePreview {
+  margin-bottom: var(--space-4);
+  overflow: hidden;
+  border: 1px solid var(--preview-border);
+  border-radius: var(--radius-md);
+  background: var(--preview-panel);
+}
+
+.adjustablePreviewHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--preview-border);
+}
+
+.adjustablePreviewLive {
+  flex: 0 0 auto;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--preview-accent) 14%, transparent);
+  color: var(--preview-accent);
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+
+.adjustablePreviewStage {
+  padding: calc(14px * var(--preview-density)) calc(16px * var(--preview-density));
+  background: var(--preview-canvas);
+}
+
+.adjustablePreviewDate {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: calc(10px * var(--preview-density));
+  color: var(--preview-text);
+  font-size: var(--text-xs);
+}
+
+.adjustablePreviewDate span {
+  color: var(--preview-muted-text);
+}
+
+.adjustablePreviewCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: calc(8px * var(--preview-density));
+}
+
+.adjustablePreviewCard {
+  position: relative;
+  min-width: 0;
+  padding: calc(9px * var(--preview-density)) calc(10px * var(--preview-density))
+    calc(10px * var(--preview-density)) calc(14px * var(--preview-density));
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--preview-border) 72%, transparent);
+  border-radius: calc(var(--preview-radius) * 0.7);
+  background: color-mix(
+    in srgb,
+    var(--preview-event-color) var(--preview-event-tint),
+    var(--preview-canvas)
+  );
+  box-shadow: 0 2px 7px rgb(0 0 0 / calc(0.12 * var(--preview-shadow-strength)));
+}
+
+.adjustablePreviewCard::before {
+  position: absolute;
+  inset: 6px auto 6px 5px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--preview-event-color);
+  content: '';
+}
+
+.adjustablePreviewCardTitle {
+  overflow: hidden;
+  color: var(--preview-text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adjustablePreviewCardMeta {
+  margin-top: 3px;
+  overflow: hidden;
+  color: var(--preview-muted-text);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adjustableFontControl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-width: 360px;
+  margin-bottom: var(--space-4);
+}
+
+.adjustableFontControl .select {
+  min-width: 0;
+  margin-top: var(--space-1);
+}
+
+.adjustableColorGrid,
+.adjustableRangeGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+
+.adjustableRangeGrid {
+  margin-top: var(--space-4);
+}
+
+.adjustableColorControl,
+.adjustableRangeControl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.adjustableControlLabel {
+  color: var(--color-text-primary);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.adjustableControlDescription {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.adjustableColorInputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
+}
+
+.adjustableColorInputRow input[type='color'] {
+  width: 34px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--color-border-visible);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-secondary);
+  cursor: pointer;
+}
+
+.adjustableColorInputRow code {
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  text-transform: uppercase;
+}
+
+.adjustableRangeControl > span {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.adjustableRangeControl output {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.adjustableSlider {
+  width: 100%;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.adjustableContrastWarning {
+  margin-top: var(--space-3);
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 2px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  opacity: 0.72;
+}
+
+.adjustableContrastWarning[data-status='warning'] {
+  color: var(--color-warning-text, var(--color-warning));
+  opacity: 0.86;
+}
+
+.adjustableContrastDot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--color-success, #277d3e);
+}
+
+.adjustableContrastWarning[data-status='warning'] .adjustableContrastDot {
+  background: var(--color-warning, #fbbc04);
+}
+
+@media (max-width: 560px) {
+  .adjustableColorGrid,
+  .adjustableRangeGrid,
+  .adjustablePreviewCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .select,
+  .numberInput,
+  .keywordField,
+  .formInput,
+  .catEditInput {
+    font-size: 16px;
+  }
+}
+
+/* Built-in webcal subscription presets block in sync settings. */
+.presetGroup {
+  padding-bottom: 12px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}

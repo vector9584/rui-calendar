@@ -1,0 +1,859 @@
+/* Theme: Brutalist | both */
+/* Calino Brutalist Theme — hard lines, rust oxide, concrete canvas */
+
+[data-theme='light'] {
+  /* Canvas & Surfaces */
+  --canvas: #f5f1e8;
+  --side: #ffffff;
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--side);
+  --color-bg-tertiary: #ebe7de;
+  --color-bg-hover: rgba(0, 0, 0, 0.06);
+  --color-bg-input: var(--side);
+  --color-surface: var(--side);
+  --color-surface-raised: var(--side);
+  --color-surface-glass: rgba(255, 255, 255, 0.95);
+
+  /* Ink */
+  --ink: #000000;
+  --ink-2: #333333;
+  --ink-3: #777777;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: var(--ink-3);
+
+  /* Borders — heavy black */
+  --line: rgba(0, 0, 0, 0.85);
+  --line-2: rgba(0, 0, 0, 0.25);
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  /* Accent — rust oxide */
+  --accent: #b7410e;
+  --accent-soft: rgba(183, 65, 14, 0.12);
+  --color-accent: var(--accent);
+  --color-accent-hover: #9a370c;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: var(--ink);
+  --color-primary-hover: #222222;
+  --color-primary-light: rgba(0, 0, 0, 0.08);
+
+  /* Semantic */
+  --color-success: #00b050;
+  --color-success-light: rgba(0, 176, 80, 0.12);
+  --color-warning: #ff8c00;
+  --color-error: #ff2b2b;
+  --color-error-muted: #cc2222;
+  --color-danger: #ff2b2b;
+  --color-danger-bg: rgba(255, 43, 43, 0.08);
+  --color-info: #333333;
+
+  /* Event Cards */
+  --ink-raw: 0, 0, 0;
+  --event-bg-mix: 10%;
+  --event-bg-mix-hover: 15%;
+
+  /* Overlay & Focus */
+  --color-overlay: rgba(0, 0, 0, 0.7);
+  --color-focus: var(--ink);
+
+  /* Scrollbar */
+  --color-scrollbar: #cccccc;
+  --color-scrollbar-hover: #888888;
+
+  /* Shadows — hard offset, no blur */
+  --shadow-event: 2px 2px 0 #000000;
+  --shadow-event-hover: 4px 4px 0 #000000;
+  --shadow-card: 4px 4px 0 #000000;
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: 3px 3px 0 #000000;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 0 0 2px rgba(0, 0, 0, 0.15);
+
+  /* Modal / Popover — hard brutalist frames */
+  --modal-bg: var(--side);
+  --popover-bg: var(--side);
+  --modal-scrim: rgba(0, 0, 0, 0.7);
+  --modal-blur: none;
+  --modal-border: #000000;
+  --popover-border: #000000;
+  --modal-card-border: 2px solid #000000;
+  --modal-shadow: 6px 6px 0 #000000;
+
+  /* Typography — raw sans */
+  --font-serif: 'Arial Black', Impact, sans-serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+
+  /* Spacing */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* Border Radius — zero everywhere */
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 40px;
+  --event-border-radius: 0px;
+  --event-gap: 2px;
+  --today-btn-radius: 0px;
+
+  /* Calendar Grid */
+  --day-cell-radius: 0px;
+  --day-cell-hover-bg: rgba(0, 0, 0, 0.04);
+  --day-cell-today-bg: rgba(183, 65, 14, 0.1);
+  --day-cell-other-month-bg: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.06) 4px,
+    rgba(0, 0, 0, 0.06) 5px
+  );
+
+  /* View Switcher */
+  --view-switcher-bg: rgba(0, 0, 0, 0.06);
+  --view-switcher-radius: 0px;
+  --view-switcher-indicator-bg: #ffffff;
+  --view-switcher-indicator-shadow: 2px 2px 0 #000000;
+  --view-switcher-indicator-radius: 0px;
+  --view-switcher-indicator-height: 28px;
+
+  /* Panel alias */
+  --panel: #ffffff;
+
+  /* Font mono */
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: auto;
+
+}
+
+/* ── Component Overrides ────────────────────────────────────────── */
+
+/* Sidebar — stark white panel, thick left border */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar"] {
+  background: #ffffff;
+  border-right: 2px solid #000000;
+}
+
+/* Header — white bar, thick bottom border */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="header"] {
+  background: #ffffff;
+  border-bottom: 2px solid #000000;
+}
+
+/* View switcher — hard tabs, flat indicator */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="view-switcher"] {
+  background: var(--view-switcher-bg);
+  border: 2px solid #000000;
+  border-radius: var(--view-switcher-radius);
+  padding: 2px;
+  gap: 0px;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="view-switcher"] .active,
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="view-switcher"] [aria-selected="true"] {
+  background: var(--view-switcher-indicator-bg);
+  border-radius: var(--view-switcher-indicator-radius);
+  box-shadow: var(--view-switcher-indicator-shadow);
+}
+
+/* Today button — rust accent */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="today-button"] {
+  background: #b7410e;
+  color: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="today-button"]:hover {
+  background: #9a370c;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+/* Calendar grid — concrete canvas, hard grid lines */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="calendar-grid"] {
+  background: var(--canvas);
+  border-top: 2px solid #000000;
+}
+
+/* Outside / other-month days — diagonal hatch pattern */
+[data-theme-id="brutalist"] [data-theme='light'] [data-other-month] {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(0, 0, 0, 0.06) 4px,
+    rgba(0, 0, 0, 0.06) 5px
+  ) !important;
+  opacity: 0.4;
+}
+
+/* Weekend cells — slightly dimmed */
+[data-theme-id="brutalist"] [data-theme='light'] [data-weekend] {
+  opacity: 0.85;
+}
+
+/* Drop target — rust dashed outline */
+[data-theme-id="brutalist"] [data-theme='light'] [data-drop-target] {
+  background: rgba(183, 65, 14, 0.12) !important;
+  outline: 2px dashed #b7410e;
+}
+
+/* Event cards — hard-edge pills with black border */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="event-card"] {
+  border: 1.5px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: calc(11px * var(--font-scale, 1));
+}
+
+/* Day tasks — compact row in month cell */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="day-tasks"] {
+  border-top: 1px solid rgba(0, 0, 0, 0.15);
+  padding-top: 2px;
+}
+
+/* Tasks section in sidebar */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="tasks-section"] {
+  border-top: 2px solid rgba(0, 0, 0, 0.85);
+  padding-top: 12px;
+}
+
+/* Sidebar today button — rust pill in mini calendar */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar-today-button"] {
+  background: #b7410e !important;
+  color: #ffffff !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  padding: 4px 10px !important;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar-today-button"]:hover {
+  background: #9a370c !important;
+  box-shadow: 3px 3px 0 #000000 !important;
+}
+
+/* Multi-day event — spanning pill, hard frame */
+[data-theme-id="brutalist"] [data-theme='light'] [data-multi-day] {
+  border: 1.5px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  font-size: calc(11px * var(--font-scale, 1)) !important;
+  background: rgba(183, 65, 14, 0.1) !important;
+  color: #000000 !important;
+}
+
+/* Modal backdrop — hard scrim, no blur */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="modal-backdrop"] {
+  backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+/* Modal card — thick black frame + hard shadow */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="modal-card"] {
+  border: 2px solid #000000;
+  border-radius: 0px;
+  box-shadow: 6px 6px 0 #000000;
+}
+
+/* Modal band — rust accent strip */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="modal-band"] {
+  background: #b7410e;
+  height: 6px;
+}
+
+/* Modal body */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="modal-body"] {
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+
+/* Modal footer — black border top */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="modal-footer"] {
+  border-top: 2px solid #000000;
+  background: #ffffff;
+}
+
+[data-theme-id="brutalist"] [data-component="modal-save"] {
+  padding: 7px 18px !important;
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  background: #b7410e !important;
+  color: #ffffff !important;
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 500 !important;
+}
+
+[data-theme-id="brutalist"] [data-component="modal-save"]:hover {
+  box-shadow: 3px 3px 0 #000000 !important;
+  background: #9a370c !important;
+}
+
+[data-theme-id="brutalist"] [data-component="modal-save"]:disabled {
+  opacity: 0.5;
+  box-shadow: 2px 2px 0 #000000 !important;
+}
+
+[data-theme-id="brutalist"] [data-component="modal-footer"] button {
+  border: 2px solid #000000 !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  padding: 7px 18px !important;
+}
+
+[data-theme-id="brutalist"] [data-component="modal-footer"] button:hover {
+  box-shadow: 3px 3px 0 #000000 !important;
+}
+
+[data-theme-id="brutalist"] [data-component="add-task-button"] {
+  border-radius: 0px;
+}
+
+/* Command palette — industrial overlay */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="command-palette"] {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="command-palette"] .modal {
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 0px;
+  box-shadow: 6px 6px 0 #000000;
+}
+
+/* Calendar grid cells — hard edges, no radius */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="calendar-grid"] .day {
+  border-radius: 0px;
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="calendar-grid"] .day:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="calendar-grid"] .today {
+  background: rgba(183, 65, 14, 0.1);
+  border-radius: 0px;
+}
+
+/* Today cell — bold rust highlight */
+[data-theme-id="brutalist"] [data-theme='light'] [data-today] {
+  box-shadow: inset 0 0 0 3px #b7410e, 3px 3px 0 #000000;
+  font-weight: 800;
+}
+
+/* Buttons — brutalist primary (black) + accent (rust) */
+[data-theme-id="brutalist"] [data-theme='light'] button[data-variant="primary"],
+[data-theme-id="brutalist"] [data-theme='light'] button.primary {
+  background: #000000;
+  color: #b7410e;
+  border: 2px solid #000000;
+  border-radius: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 #b7410e;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] button[data-variant="primary"]:hover,
+[data-theme-id="brutalist"] [data-theme='light'] button.primary:hover {
+  background: #222222;
+  box-shadow: 4px 4px 0 #b7410e;
+}
+
+/* Input fields — stark border, no radius */
+[data-theme-id="brutalist"] [data-theme='light'] input,
+[data-theme-id="brutalist"] [data-theme='light'] textarea,
+[data-theme-id="brutalist"] [data-theme='light'] select {
+  border: 2px solid #000000;
+  border-radius: 0px;
+  background: #ffffff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] input:focus,
+[data-theme-id="brutalist"] [data-theme='light'] textarea:focus,
+[data-theme-id="brutalist"] [data-theme='light'] select:focus {
+  outline: 3px solid #000000;
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px #b7410e;
+}
+
+/* Mini calendar in sidebar — compact, hard grid */
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar"] table {
+  border-collapse: collapse;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar"] td,
+[data-theme-id="brutalist"] [data-theme='light'] [data-component="sidebar"] th {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+}
+
+/* Scrollbar — visible, industrial */
+[data-theme-id="brutalist"] [data-theme='light'] ::-webkit-scrollbar {
+  width: 10px;
+  background: #e8e4db;
+}
+
+[data-theme-id="brutalist"] [data-theme='light'] ::-webkit-scrollbar-thumb {
+  background: #000000;
+  border: 2px solid #e8e4db;
+}
+
+/* Focus visible — brutalist ring */
+[data-theme-id="brutalist"] [data-theme='light'] *:focus-visible {
+  outline: 3px solid #000000;
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px #b7410e;
+}
+
+/* Selection highlight — rust */
+[data-theme-id="brutalist"] [data-theme='light'] ::selection {
+  background: #b7410e;
+  color: #ffffff;
+}
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* Dark Mode                                                        */
+/* ══════════════════════════════════════════════════════════════════ */
+
+[data-theme='dark'] {
+  --canvas: #1a1a1a;
+  --side: #222222;
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--side);
+  --color-bg-tertiary: #2a2a2a;
+  --color-bg-hover: rgba(255, 255, 255, 0.08);
+  --color-bg-input: #2a2a2a;
+  --color-surface: var(--side);
+  --color-surface-raised: #2a2a2a;
+  --color-surface-glass: rgba(34, 34, 34, 0.95);
+
+  --ink: #f0f0f0;
+  --ink-2: #bbbbbb;
+  --ink-3: #777777;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: var(--ink-3);
+
+  --line: rgba(240, 240, 240, 0.2);
+  --line-2: rgba(240, 240, 240, 0.08);
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  --accent: #d4652a;
+  --accent-soft: rgba(183, 65, 14, 0.15);
+  --color-accent: var(--accent);
+  --color-accent-hover: #c05a1e;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: #f0f0f0;
+  --color-primary-hover: #ffffff;
+  --color-primary-light: rgba(255, 255, 255, 0.06);
+
+  --color-success: #00cc66;
+  --color-success-light: rgba(0, 204, 102, 0.12);
+  --color-warning: #ff9900;
+  --color-error: #ff4444;
+  --color-error-muted: #ff4444;
+  --color-danger: #ff4444;
+  --color-danger-bg: rgba(255, 68, 68, 0.1);
+  --color-info: #888888;
+
+  --ink-raw: 240, 240, 240;
+  --event-bg-mix: 18%;
+  --event-bg-mix-hover: 22%;
+
+  --color-overlay: rgba(0, 0, 0, 0.8);
+  --color-focus: var(--accent);
+
+  --color-scrollbar: #444444;
+  --color-scrollbar-hover: #666666;
+
+  --shadow-event: 2px 2px 0 #000000;
+  --shadow-event-hover: 4px 4px 0 #000000;
+  --shadow-card: 4px 4px 0 #000000;
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: 3px 3px 0 rgba(255, 255, 255, 0.1);
+  --shadow-glass: none;
+  --shadow-inset: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+
+  --modal-bg: #2a2a2a;
+  --popover-bg: #333333;
+  --modal-scrim: rgba(0, 0, 0, 0.85);
+  --modal-blur: none;
+  --modal-border: rgba(240, 240, 240, 0.12);
+  --popover-border: rgba(240, 240, 240, 0.12);
+  --modal-card-border: 2px solid rgba(240, 240, 240, 0.12);
+  --modal-shadow: 6px 6px 0 #000000;
+
+  --font-serif: 'Arial Black', Impact, sans-serif;
+  --font-sans: Arial, Helvetica, sans-serif;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
+  --sidebar-width: 280px;
+  --sidebar-collapsed-width: 40px;
+  --event-border-radius: 0px;
+  --event-gap: 2px;
+  --today-btn-radius: 0px;
+
+  /* Calendar Grid */
+  --day-cell-radius: 0px;
+  --day-cell-hover-bg: rgba(255, 255, 255, 0.06);
+  --day-cell-today-bg: rgba(212, 101, 42, 0.15);
+  --day-cell-other-month-bg: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(240, 240, 240, 0.05) 4px,
+    rgba(240, 240, 240, 0.05) 5px
+  );
+
+  /* View Switcher */
+  --view-switcher-bg: rgba(240, 240, 240, 0.06);
+  --view-switcher-radius: 0px;
+  --view-switcher-indicator-bg: #222222;
+  --view-switcher-indicator-shadow: 2px 2px 0 #000000;
+  --view-switcher-indicator-radius: 0px;
+  --view-switcher-indicator-height: 28px;
+
+  /* Panel alias */
+  --panel: #222222;
+
+  /* Font mono */
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: auto;
+
+}
+
+/* Dark mode component overrides */
+[data-theme='dark'] [data-component="sidebar"] {
+  background: #222222;
+  border-right: 2px solid rgba(240, 240, 240, 0.12);
+}
+
+[data-theme='dark'] [data-component="header"] {
+  background: #222222;
+  border-bottom: 2px solid rgba(240, 240, 240, 0.12);
+}
+
+[data-theme='dark'] [data-component="view-switcher"] {
+  background: var(--view-switcher-bg);
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: var(--view-switcher-radius);
+  padding: 2px;
+  gap: 0px;
+}
+
+[data-theme='dark'] [data-component="view-switcher"] .active,
+[data-theme='dark'] [data-component="view-switcher"] [aria-selected="true"] {
+  background: var(--view-switcher-indicator-bg);
+  border-radius: var(--view-switcher-indicator-radius);
+  box-shadow: var(--view-switcher-indicator-shadow);
+}
+
+
+
+[data-theme='dark'] [data-component="today-button"] {
+  background: #d4652a;
+  color: #ffffff;
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 2px 2px 0 #000000;
+}
+
+[data-theme='dark'] [data-component="today-button"]:hover {
+  background: #c05a1e;
+  box-shadow: 3px 3px 0 #000000;
+}
+
+[data-theme='dark'] [data-component="calendar-grid"] {
+  background: var(--canvas);
+  border-top: 2px solid rgba(240, 240, 240, 0.12);
+}
+
+/* Outside / other-month days — diagonal hatch pattern (dark) */
+[data-theme='dark'] [data-other-month] {
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 4px,
+    rgba(240, 240, 240, 0.05) 4px,
+    rgba(240, 240, 240, 0.05) 5px
+  ) !important;
+  opacity: 0.3;
+}
+
+/* Weekend cells — slightly dimmed (dark) */
+[data-theme='dark'] [data-weekend] {
+  opacity: 0.85;
+}
+
+/* Drop target — rust dashed outline (dark) */
+[data-theme='dark'] [data-drop-target] {
+  background: rgba(212, 101, 42, 0.15) !important;
+  outline: 2px dashed #d4652a;
+}
+
+[data-theme='dark'] [data-component="event-card"] {
+  border: 1.5px solid rgba(240, 240, 240, 0.12) !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: calc(11px * var(--font-scale, 1));
+}
+
+[data-theme='dark'] [data-component="day-tasks"] {
+  border-top: 1px solid rgba(240, 240, 240, 0.1);
+  padding-top: 2px;
+}
+
+[data-theme='dark'] [data-component="tasks-section"] {
+  border-top: 2px solid rgba(240, 240, 240, 0.2);
+  padding-top: 12px;
+}
+
+/* Sidebar today button — rust pill in mini calendar (dark) */
+[data-theme='dark'] [data-component="sidebar-today-button"] {
+  background: #d4652a !important;
+  color: #ffffff !important;
+  border: 2px solid rgba(240, 240, 240, 0.12) !important;
+  border-radius: 0px !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  padding: 4px 10px !important;
+}
+
+[data-theme='dark'] [data-component="sidebar-today-button"]:hover {
+  background: #c05a1e !important;
+  box-shadow: 3px 3px 0 #000000 !important;
+}
+
+/* Multi-day event — spanning pill, hard frame (dark) */
+[data-theme='dark'] [data-multi-day] {
+  border: 1.5px solid rgba(240, 240, 240, 0.12) !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase !important;
+  font-size: calc(11px * var(--font-scale, 1)) !important;
+  background: rgba(212, 101, 42, 0.15) !important;
+  color: #f0f0f0 !important;
+}
+
+[data-theme='dark'] [data-component="modal-backdrop"] {
+  backdrop-filter: none;
+  background: rgba(0, 0, 0, 0.85);
+}
+
+[data-theme='dark'] [data-component="modal-card"] {
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: 0px;
+  box-shadow: 6px 6px 0 #000000;
+}
+
+[data-theme='dark'] [data-component="modal-band"] {
+  background: #d4652a;
+  height: 6px;
+}
+
+[data-theme='dark'] [data-component="modal-body"] {
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: 1.5;
+}
+
+[data-theme='dark'] [data-component="modal-footer"] {
+  border-top: 2px solid rgba(240, 240, 240, 0.12);
+  background: #2a2a2a;
+}
+
+[data-theme-id="brutalist"] [data-theme='dark'] [data-component="modal-save"] {
+  padding: 7px 18px !important;
+  border: 2px solid rgba(240, 240, 240, 0.12) !important;
+  border-radius: 0px !important;
+  box-shadow: 2px 2px 0 #000000 !important;
+  background: #b7410e !important;
+  color: #ffffff !important;
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 500 !important;
+}
+
+[data-theme-id="brutalist"] [data-theme='dark'] [data-component="modal-save"]:hover {
+  box-shadow: 3px 3px 0 #000000 !important;
+  background: #9a370c !important;
+}
+
+[data-theme='dark'] [data-component="command-palette"] {
+  background: rgba(0, 0, 0, 0.85);
+}
+
+[data-theme='dark'] [data-component="command-palette"] .modal {
+  background: #2a2a2a;
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: 0px;
+  box-shadow: 6px 6px 0 #000000;
+}
+
+[data-theme='dark'] [data-component="calendar-grid"] .day {
+  border-radius: 0px;
+  border-color: rgba(240, 240, 240, 0.1);
+}
+
+[data-theme='dark'] [data-component="calendar-grid"] .day:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] [data-component="calendar-grid"] .today {
+  background: rgba(212, 101, 42, 0.15);
+  border-radius: 0px;
+}
+
+[data-theme='dark'] [data-today] {
+  box-shadow: inset 0 0 0 3px #d4652a, 3px 3px 0 #000000;
+  font-weight: 800;
+}
+
+[data-theme='dark'] button[data-variant="primary"],
+[data-theme='dark'] button.primary {
+  background: #f0f0f0;
+  color: #d4652a;
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: 0px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: 3px 3px 0 #d4652a;
+}
+
+[data-theme='dark'] button[data-variant="primary"]:hover,
+[data-theme='dark'] button.primary:hover {
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #d4652a;
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] textarea,
+[data-theme='dark'] select {
+  border: 2px solid rgba(240, 240, 240, 0.12);
+  border-radius: 0px;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+[data-theme='dark'] input:focus,
+[data-theme='dark'] textarea:focus,
+[data-theme='dark'] select:focus {
+  outline: 3px solid #f0f0f0;
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px #d4652a;
+}
+
+[data-theme='dark'] [data-component="sidebar"] table {
+  border-collapse: collapse;
+}
+
+[data-theme='dark'] [data-component="sidebar"] td,
+[data-theme='dark'] [data-component="sidebar"] th {
+  border: 1px solid rgba(240, 240, 240, 0.12);
+}
+
+[data-theme='dark'] ::-webkit-scrollbar {
+  width: 10px;
+  background: #1a1a1a;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #f0f0f0;
+  border: 2px solid #1a1a1a;
+}
+
+[data-theme='dark'] *:focus-visible {
+  outline: 3px solid #f0f0f0;
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px #d4652a;
+}
+
+[data-theme='dark'] ::selection {
+  background: #d4652a;
+  color: #ffffff;
+}
+
+/* ── Modal: remove double bezel ─────────────────────────────── */
+[data-theme-id="brutalist"] [data-component="modal-card"] {
+  box-shadow: 6px 6px 0 #000000 !important;
+}
+
+/* ── Sidebar: no soft shadows ───────────────────────────────── */
+[data-theme-id="brutalist"] [data-component="sidebar"] * {
+  box-shadow: none !important;
+}
+
+/* ── Event preview: sharp corners ───────────────────────────── */
+[data-theme-id="brutalist"] [data-component="event-preview"] {
+  border-radius: 0 !important;
+  box-shadow: 6px 6px 0 #000000 !important;
+}
+
+[data-theme-id="brutalist"] [data-component="event-preview"] button {
+  border-radius: 0 !important;
+}

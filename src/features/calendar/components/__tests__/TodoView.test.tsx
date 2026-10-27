@@ -1,0 +1,335 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { screen } from '@testing-library/react'
+import { render } from '@/test/caldavRender'
+import userEvent from '@testing-library/user-event'
+import { BrowserRouter } from 'react-router'
+import { TodoView } from '../TodoView'
+import { useCalendarStore } from '@/store/calendarStore'
+
+vi.mock('@/hooks/useIsMobile')
+
+const renderWithRouter = (component: React.ReactElement) => {
+  return render(<BrowserRouter>{component}</BrowserRouter>)
+}
+
+describe('TodoView', () => {
+  beforeEach(() => {
+    const store = useCalendarStore.getState()
+    store.setCurrentView('todo')
+    store.setCurrentDate('2024-03-15')
+    store.events.forEach((e) => store.deleteEvent(e.id))
+  })
+
+  it('shows filter tabs', () => {
+    renderWithRouter(<TodoView />)
+    expect(screen.getByRole('button', { name: 'All' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Active' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Done' })).toBeInTheDocument()
+  })
+
+  it('shows add task button', () => {
+    renderWithRouter(<TodoView />)
+    expect(screen.getByRole('button', { name: /add task/i })).toBeInTheDocument()
+  })
+
+  it('shows empty state when no active tasks (default filter)', () => {
+    renderWithRouter(<TodoView />)
+    expect(screen.getByText('All clear')).toBeInTheDocument()
+    expect(screen.getByText('Nothing here right now.')).toBeInTheDocument()
+  })
+
+  it('shows tasks when they exist', async () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'task-1',
+      calendarId: 'default',
+      title: 'Test Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+
+    renderWithRouter(<TodoView />)
+    expect(screen.getByText('Test Task')).toBeInTheDocument()
+  })
+
+  it('filters by active tasks', async () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'task-1',
+      calendarId: 'default',
+      title: 'Active Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: false,
+    })
+    store.addEvent({
+      id: 'task-2',
+      calendarId: 'default',
+      title: 'Completed Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: true,
+    })
+
+    renderWithRouter(<TodoView />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Active' }))
+    expect(screen.getByText('Active Task')).toBeInTheDocument()
+    expect(screen.queryByText('Completed Task')).not.toBeInTheDocument()
+  })
+
+  it('filters by completed tasks', async () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'task-1',
+      calendarId: 'default',
+      title: 'Active Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: false,
+    })
+    store.addEvent({
+      id: 'task-2',
+      calendarId: 'default',
+      title: 'Completed Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: true,
+    })
+
+    renderWithRouter(<TodoView />)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(screen.queryByText('Active Task')).not.toBeInTheDocument()
+    expect(screen.getByText('Completed Task')).toBeInTheDocument()
+  })
+
+  it('shows task count', () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'task-1',
+      calendarId: 'default',
+      title: 'Active Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: false,
+    })
+    store.addEvent({
+      id: 'task-2',
+      calendarId: 'default',
+      title: 'Completed Task',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+      completed: true,
+    })
+
+    renderWithRouter(<TodoView />)
+    // Count is split across elements: <b>1</b> active · 1 completed
+    const countEl = screen.getByText(/active/)
+    expect(countEl).toBeInTheDocument()
+    expect(countEl.textContent).toContain('active')
+  })
+
+  it('shows description when present', () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'task-1',
+      calendarId: 'default',
+      title: 'Task with description',
+      description: 'This is a description',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+
+    renderWithRouter(<TodoView />)
+    expect(screen.getByText('This is a description')).toBeInTheDocument()
+  })
+
+  it('renders nested subtasks below their root task even with different due dates', () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'parent',
+      calendarId: 'default',
+      title: 'Parent task',
+      dueDate: '2024-03-15',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T10:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+    store.addEvent({
+      id: 'child',
+      calendarId: 'default',
+      title: 'Child task',
+      parentTaskId: 'parent',
+      dueDate: '2024-03-20',
+      start: '2024-03-20T10:00:00.000Z',
+      end: '2024-03-20T10:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+    store.addEvent({
+      id: 'grandchild',
+      calendarId: 'default',
+      title: 'Grandchild task',
+      parentTaskId: 'child',
+      dueDate: '2024-03-25',
+      start: '2024-03-25T10:00:00.000Z',
+      end: '2024-03-25T10:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+
+    renderWithRouter(<TodoView />)
+
+    expect(
+      screen.getByText('Parent task').compareDocumentPosition(screen.getByText('Child task')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy()
+    expect(screen.getByText('Child task').closest('[data-component="task-row"]')).toHaveAttribute(
+      'data-task-depth',
+      '1'
+    )
+    expect(
+      screen.getByText('Grandchild task').closest('[data-component="task-row"]')
+    ).toHaveAttribute('data-task-depth', '2')
+  })
+
+  it("renders the checkbox as the row's first interactive cell", () => {
+    // Regression test for the row structure: the completion checkbox must
+    // be the first child of every task row, before the title, so layout
+    // regressions (e.g. accidentally swapping column order) are caught
+    // before they ship. jsdom doesn't fully realize the CSS-modules grid,
+    // so this stays at the structure level — pixel alignment is asserted
+    // by the Playwright spec in e2e/todo-row-alignment.spec.ts.
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'grid',
+      calendarId: 'default',
+      title: 'Grid check',
+      start: '2024-03-15T10:00:00.000Z',
+      end: '2024-03-15T11:00:00.000Z',
+      isAllDay: false,
+      type: 'task',
+    })
+
+    renderWithRouter(<TodoView />)
+
+    const row = document.querySelector('[data-component="task-row"]')!
+    // The checkbox is the *only* direct button-like descendant of the row
+    // that triggers task completion, so it's the first action element. Both
+    // the title and the date chip sit in their own cells and the layout is
+    // grid: [22px (checkbox) | 1fr (title) | auto (meta)].
+    const checkbox = row.querySelector('button[aria-label="Mark as complete"]')!
+    const title = row.querySelector('[class*="taskTitle"]')!
+    expect(checkbox).not.toBeNull()
+    expect(title).not.toBeNull()
+    // Both elements live in the same row — they're definitely siblings in
+    // the grid. Document order: checkbox first.
+    const positions = checkbox.compareDocumentPosition(title)
+    expect(positions & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  describe('row context menu', () => {
+    const addTask = (overrides: Record<string, unknown> = {}): void => {
+      useCalendarStore.getState().addEvent({
+        id: 'menu-task',
+        calendarId: 'default',
+        title: 'Menu task',
+        start: '2024-03-15T10:00',
+        end: '2024-03-15T11:00',
+        isAllDay: false,
+        type: 'task',
+        dueDate: '2024-03-15',
+        ...overrides,
+      } as never)
+    }
+
+    const openMenu = async (): Promise<void> => {
+      const row = document.querySelector('[data-component="task-row"]')!
+      await userEvent.pointer({ keys: '[MouseRight]', target: row })
+    }
+
+    it('opens on right-click with the task actions', async () => {
+      addTask()
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      expect(screen.getByRole('button', { name: 'Edit' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Move to next week' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Mark as done' })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: 'Delete' })).toBeInTheDocument()
+    })
+
+    it('offers "move to today" for a task that is not due today', async () => {
+      addTask({ dueDate: '2020-01-02', start: '2020-01-02T10:00', end: '2020-01-02T11:00' })
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      expect(screen.getByRole('button', { name: 'Move to today' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: 'Move to tomorrow' })).not.toBeInTheDocument()
+    })
+
+    it('writes the new due date and start when rescheduling', async () => {
+      addTask({ dueDate: '2020-01-02', start: '2020-01-02T10:00', end: '2020-01-02T11:00' })
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Move to today' }))
+
+      const today = new Date()
+      const iso = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+      const updated = useCalendarStore.getState().events.find((e) => e.id === 'menu-task')!
+      expect(updated.dueDate).toBe(iso)
+      expect(updated.start).toBe(`${iso}T10:00`)
+      expect(updated.end).toBe(`${iso}T11:00`)
+    })
+
+    it('marks the task done', async () => {
+      addTask()
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Mark as done' }))
+
+      expect(useCalendarStore.getState().events.find((e) => e.id === 'menu-task')!.completed).toBe(
+        true
+      )
+    })
+
+    it('deletes the task', async () => {
+      addTask()
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+      expect(useCalendarStore.getState().events.find((e) => e.id === 'menu-task')).toBeUndefined()
+    })
+
+    it('hides the reschedule items for a repeating task', async () => {
+      addTask({ rruleString: 'FREQ=WEEKLY' })
+      renderWithRouter(<TodoView />)
+      await openMenu()
+
+      expect(screen.getByRole('button', { name: 'Mark as done' })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /^Move to/ })).not.toBeInTheDocument()
+    })
+  })
+})

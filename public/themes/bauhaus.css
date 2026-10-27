@@ -1,0 +1,485 @@
+/* Theme: Bauhaus | both */
+
+/* ================================================================
+   BAUHAUS THEME
+   
+   Inspired by the Bauhaus movement (1919-1933): primary colors,
+   geometric precision, sharp edges, bold typography, and
+   function-first design. No ornament. No radius. No compromise.
+   
+   Primary palette: Red, Blue, Yellow, Black, White
+   Typography: Geometric sans-serif (Futura, DIN, system)
+   Edges: Sharp (0 radius)
+   Grid: Strong, visible structure
+   ================================================================ */
+
+
+/* ================================================================
+   PART 1: CSS VARIABLES (tokens)
+   ================================================================ */
+
+/* ── Light Theme ──────────────────────────────────────────────── */
+[data-theme='light'] {
+
+  /* Canvas & Surfaces — clean Bauhaus white */
+  --canvas: #F2F0EC;
+  --panel: #FFFFFF;
+  --side: #EAE8E3;
+
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--panel);
+  --color-bg-tertiary: #E8E3DA;
+  --color-bg-hover: rgba(0, 0, 0, 0.05);
+  --color-bg-input: var(--canvas);
+
+  --color-surface: var(--panel);
+  --color-surface-raised: var(--panel);
+  --color-surface-glass: rgba(255, 255, 255, 0.85);
+
+  /* Text — high contrast, near-black */
+  --ink: #1A1A1A;
+  --ink-2: #4A4A4A;
+  --ink-3: #8A8A8A;
+
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: var(--ink-3);
+
+  /* Borders — bold, structural black */
+  --line: rgba(0, 0, 0, 0.22);
+  --line-2: rgba(0, 0, 0, 0.12);
+
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  /* Accent — Bauhaus Red */
+  --accent: #D12920;
+  --accent-soft: rgba(209, 41, 32, 0.10);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: #B8221A;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: var(--accent);
+  --color-primary-hover: #B8221A;
+  --color-primary-light: var(--accent-soft);
+
+  /* Secondary — Bauhaus Blue */
+  --color-info: #1B3A8C;
+
+  /* Tertiary — Bauhaus Yellow */
+  --color-warning: #D4A520;
+
+  /* Status */
+  --color-success: #2D7D46;
+  --color-success-light: rgba(45, 125, 70, 0.10);
+  --color-error: #D12920;
+  --color-error-muted: #C44040;
+  --color-danger: #D12920;
+  --color-danger-bg: rgba(209, 41, 32, 0.08);
+
+  /* Event Cards */
+  --ink-raw: 26, 26, 26;
+  --event-bg-mix: 10%;
+  --event-bg-mix-hover: 15%;
+
+  /* Overlay & Focus */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-focus: var(--accent);
+
+  /* Scrollbar */
+  --color-scrollbar: #C8C3BA;
+  --color-scrollbar-hover: #8A8A8A;
+
+  /* Shadows — crisp, geometric */
+  --shadow-event: 0 1px 0 rgba(0, 0, 0, 0.10);
+  --shadow-event-hover: 0 2px 8px rgba(0, 0, 0, 0.14);
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.10), 0 4px 12px rgba(0, 0, 0, 0.05);
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 1px 0 rgba(0, 0, 0, 0.06);
+
+  /* Modal / Popover */
+  --modal-bg: var(--panel);
+  --popover-bg: var(--panel);
+  --modal-scrim: rgba(0, 0, 0, 0.5);
+  --modal-blur: blur(2px);
+  --modal-border: rgba(0, 0, 0, 0.12);
+  --popover-border: rgba(0, 0, 0, 0.12);
+  --modal-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08), 0 24px 80px rgba(0, 0, 0, 0.2);
+
+  /* Typography — Bauhaus geometric */
+  --font-serif: 'Futura', 'Century Gothic', 'DIN Alternate', system-ui, sans-serif;
+  --font-sans: 'Futura', 'Century Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: thin;
+
+  /* Spacing — geometric grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* Border Radius — SHARP (Bauhaus rejected ornament) */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+
+  /* Layout */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+
+  /* Event Pill — sharp edges */
+  --event-border-radius: 0;
+  --event-gap: 2px;
+
+  /* Calendar Grid — sharp cells, visible structure */
+  --day-cell-radius: 0;
+  --day-cell-hover-bg: rgba(var(--ink-raw), 0.05);
+  --day-cell-today-bg: var(--selected-bg);
+  --day-cell-other-month-bg: rgba(var(--ink-raw), 0.04);
+
+  /* View Switcher — geometric tabs */
+  --view-switcher-bg: rgba(var(--ink-raw), 0.06);
+  --view-switcher-radius: 0;
+  --view-switcher-indicator-bg: var(--panel);
+  --view-switcher-indicator-shadow: 0 0 0 1px var(--line);
+  --view-switcher-indicator-radius: 0;
+  --view-switcher-indicator-height: 28px;
+
+  /* Sidebar Today Button */
+  --today-btn-radius: 0;
+  --today-btn-weight: 700;
+
+  /* Multi-day Event Shape */
+  --multi-day-clip: none;
+}
+
+/* ── Dark Theme ───────────────────────────────────────────────── */
+[data-theme='dark'] {
+
+  /* Canvas & Surfaces — deep charcoal */
+  --canvas: #141210;
+  --panel: #1E1C1A;
+  --side: #181614;
+
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--panel);
+  --color-bg-tertiary: #262422;
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-input: #262422;
+
+  --color-surface: var(--panel);
+  --color-surface-raised: #262422;
+  --color-surface-glass: rgba(30, 28, 26, 0.85);
+
+  /* Text — high contrast on dark */
+  --ink: #F0ECE6;
+  --ink-2: #A8A4A0;
+  --ink-3: #6A6662;
+
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: var(--ink-3);
+
+  /* Borders — visible on dark */
+  --line: rgba(240, 236, 230, 0.12);
+  --line-2: rgba(240, 236, 230, 0.06);
+
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  /* Accent — brighter Bauhaus Red for dark */
+  --accent: #E8352B;
+  --accent-soft: rgba(232, 53, 43, 0.12);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: #F04538;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: var(--accent);
+  --color-primary-hover: #F04538;
+  --color-primary-light: var(--accent-soft);
+
+  /* Secondary — brighter Bauhaus Blue */
+  --color-info: #4A6FD4;
+
+  /* Tertiary — brighter Bauhaus Yellow */
+  --color-warning: #F0C830;
+
+  /* Status */
+  --color-success: #4AAA68;
+  --color-success-light: rgba(74, 170, 104, 0.12);
+  --color-error: #E8352B;
+  --color-error-muted: #E85048;
+  --color-danger: #E8352B;
+  --color-danger-bg: rgba(232, 53, 43, 0.10);
+
+  /* Event Cards */
+  --ink-raw: 240, 236, 230;
+  --event-bg-mix: 16%;
+  --event-bg-mix-hover: 20%;
+
+  /* Overlay & Focus */
+  --color-overlay: rgba(0, 0, 0, 0.65);
+  --color-focus: var(--accent);
+
+  /* Scrollbar */
+  --color-scrollbar: #3A3836;
+  --color-scrollbar-hover: #5A5856;
+
+  /* Shadows — subtle on dark */
+  --shadow-event: 0 1px 0 rgba(0, 0, 0, 0.2);
+  --shadow-event-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.15), 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 1px 0 rgba(0, 0, 0, 0.2);
+
+  /* Modal / Popover */
+  --modal-bg: #2A2824;
+  --popover-bg: #342E28;
+  --modal-scrim: rgba(0, 0, 0, 0.65);
+  --modal-blur: blur(3px);
+  --modal-border: rgba(255, 247, 235, 0.10);
+  --popover-border: rgba(255, 247, 235, 0.12);
+  --modal-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 24px 80px rgba(0, 0, 0, 0.5);
+
+  /* Typography — same Bauhaus geometric stack */
+  --font-serif: 'Futura', 'Century Gothic', 'DIN Alternate', system-ui, sans-serif;
+  --font-sans: 'Futura', 'Century Gothic', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: thin;
+
+  /* Spacing — same geometric grid */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* Border Radius — SHARP */
+  --radius-sm: 0;
+  --radius-md: 0;
+  --radius-lg: 0;
+
+  /* Layout */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+
+  /* Event Pill — sharp edges */
+  --event-border-radius: 0;
+  --event-gap: 2px;
+
+  /* Calendar Grid — sharp cells */
+  --day-cell-radius: 0;
+  --day-cell-hover-bg: rgba(var(--ink-raw), 0.05);
+  --day-cell-today-bg: var(--selected-bg);
+  --day-cell-other-month-bg: rgba(var(--ink-raw), 0.04);
+
+  /* View Switcher — geometric pills */
+  --view-switcher-bg: rgba(var(--ink-raw), 0.06);
+  --view-switcher-radius: 0;
+  --view-switcher-indicator-bg: var(--panel);
+  --view-switcher-indicator-shadow: 0 0 0 1px var(--line);
+  --view-switcher-indicator-radius: 0;
+  --view-switcher-indicator-height: 28px;
+
+  /* Sidebar Today Button */
+  --today-btn-radius: 0;
+  --today-btn-weight: 700;
+
+  /* Multi-day Event Shape */
+  --multi-day-clip: none;
+}
+
+
+/* ================================================================
+   PART 2: COMPONENT OVERRIDES
+   ================================================================ */
+
+/* ── Geometric accent bar on sidebar ─────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="sidebar"] {
+  border-right: 3px solid var(--accent);
+}
+
+/* ── Header — clean, structural ──────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="header"] {
+  border-bottom: 2px solid var(--ink);
+}
+
+/* ── Today button — bold, filled ─────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="today-button"] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 0;
+}
+
+[data-theme-id="bauhaus"] [data-component="today-button"]:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ── View switcher — geometric tabs ──────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="view-switcher"] {
+  background: var(--color-bg-tertiary);
+  border-radius: 0;
+  padding: 2px;
+  gap: 0;
+  border: 1px solid var(--line);
+}
+
+[data-theme-id="bauhaus"] [data-component="view-switcher"] button {
+  border-radius: 0;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: calc(12px * var(--font-scale, 1));
+}
+
+
+
+
+/* ── Event cards — sharp, all-side border ────────────────────── */
+[data-theme-id="bauhaus"] [data-component="event-card"] {
+  border-left: 1px solid rgba(var(--ink-raw, 44, 40, 33), 0.06) !important;
+  border-radius: 0;
+}
+
+/* ── Event fragments — restore left border for first fragment only ─ */
+[data-theme-id="bauhaus"] [data-component="event-card"][data-fragment-first] {
+  border-left: 1px solid rgba(var(--ink-raw, 44, 40, 33), 0.06) !important;
+}
+
+/* ── Calendar grid — visible cell borders ────────────────────── */
+[data-theme-id="bauhaus"] [data-component="calendar-grid"] > div {
+  border-radius: 0;
+  border: 1px solid var(--line-2);
+}
+
+[data-theme-id="bauhaus"] [data-component="calendar-grid"] [data-today] {
+  box-shadow: inset 0 0 0 2px var(--accent);
+  background: var(--day-cell-today-bg);
+}
+
+[data-theme-id="bauhaus"] [data-component="calendar-grid"] [data-other-month] {
+  background: var(--day-cell-other-month-bg);
+  opacity: 0.6;
+}
+
+[data-theme-id="bauhaus"] [data-component="calendar-grid"] [data-weekend] {
+  background: rgba(var(--ink-raw), 0.02);
+}
+
+[data-theme-id="bauhaus"] [data-component="calendar-grid"] [data-drop-target] {
+  background: var(--accent-soft);
+  outline: 2px dashed var(--accent);
+}
+
+/* ── Modal — geometric, no radius ────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="modal-card"] {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+}
+
+[data-theme-id="bauhaus"] [data-component="modal-backdrop"] {
+  backdrop-filter: blur(2px);
+}
+
+[data-theme-id="bauhaus"] [data-component="modal-band"] {
+  height: 4px;
+  background: var(--accent);
+}
+
+/* ── Command palette — sharp geometric ───────────────────────── */
+[data-theme-id="bauhaus"] [data-component="command-palette"] {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+}
+
+[data-theme-id="bauhaus"] [data-component="command-palette"] .modal {
+  border-radius: 0;
+  border: 2px solid var(--ink);
+}
+
+/* ── Tasks section — clean divider ───────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="tasks-section"] {
+  border-top: 2px solid var(--ink);
+  padding-top: 12px;
+}
+
+
+/* ── Sidebar today button — filled accent ────────────────────── */
+[data-theme-id="bauhaus"] [data-component="sidebar-today-button"] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+[data-theme-id="bauhaus"] [data-component="sidebar-today-button"]:hover {
+  background: var(--color-accent-hover);
+}
+
+/* ── Multi-day events — bold stripe ──────────────────────────── */
+[data-theme-id="bauhaus"][data-multi-day] {
+  border-left: 4px solid var(--accent);
+}
+
+/* ── Glass surfaces — subtle tint ────────────────────────────── */
+[data-theme-id="bauhaus"][data-theme='dark'] [data-component="sidebar"] {
+  background: rgba(20, 18, 16, 0.85);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-right: 3px solid var(--accent);
+}
+
+[data-theme-id="bauhaus"][data-theme='light'] [data-component="sidebar"] {
+  background: rgba(245, 240, 232, 0.9);
+  backdrop-filter: blur(12px) saturate(1.2);
+  border-right: 3px solid var(--accent);
+}
+
+/* ── Modal: remove double bezel ─────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="modal-card"] {
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.25) !important;
+}
+
+/* ── Sidebar: no soft shadows ───────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="sidebar"] * {
+  box-shadow: none !important;
+}
+
+/* ── Save button: no soft glow ──────────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="modal-footer"] button[type="submit"]:hover {
+  box-shadow: none !important;
+}
+
+/* ── Event preview: sharp corners ───────────────────────────── */
+[data-theme-id="bauhaus"] [data-component="event-preview"] {
+  border-radius: 0 !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2) !important;
+}
+
+[data-theme-id="bauhaus"] [data-component="event-preview"] button {
+  border-radius: 0 !important;
+}

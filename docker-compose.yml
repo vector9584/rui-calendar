@@ -1,0 +1,72 @@
+services:
+  calino:
+    build:
+      context: .
+      args:
+        - VITE_SITE_URL=${VITE_SITE_URL:-https://calino.io}
+        - CALINO_ENABLE_SW=${CALINO_ENABLE_SW:-false}
+        - CALINO_GITHUB_REPO=${CALINO_GITHUB_REPO:-ivan-malinovski/Calino}
+        - CALINO_CONTACT_EMAIL=${CALINO_CONTACT_EMAIL:-calendar@malinov.ski}
+        - CALINO_SELF_HOSTED=${CALINO_SELF_HOSTED:-true}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    # ⚠️ cap_drop ALL removed — Docker Desktop 4.7.1 (runc v1.0.3) has a bug
+    # where it drops capabilities needed by the container init process itself,
+    # causing "standard_init_linux.go:228: operation not permitted" crashes.
+    # The container is already hardened via no-new-privileges,
+    # pids_limit, and mem_limit.
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional self-hosted CORS proxy for CalDAV servers that don't send CORS
+  # headers. Off by default — enable with:  docker compose --profile proxy up -d
+  # Then set the Proxy URL in Calino settings to http://<your-host>:8081
+  caldav-proxy:
+    profiles: ["proxy"]
+    # Pull the published multi-arch image by default. Compose falls back to
+    # this local build context when the image is unavailable; use --build to
+    # force a local rebuild while developing the proxy.
+    image: ${CALINO_PROXY_IMAGE:-ghcr.io/ivan-malinovski/calino-proxy:latest}
+    build:
+      context: ./proxy
+    ports:
+      - "8081:8081"
+    environment:
+      # Leave empty to allow any origin, or restrict to your Calino instance(s),
+      # e.g. ALLOWED_ORIGINS=https://calendar.example.com
+      - ALLOWED_ORIGINS=${CALINO_PROXY_ALLOWED_ORIGINS:-}
+      # Leave empty to allow any public HTTPS target, or restrict to your
+      # CalDAV host(s), e.g. ALLOWED_TARGETS=dav.example.com
+      - ALLOWED_TARGETS=${CALINO_PROXY_ALLOWED_TARGETS:-}
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 128m
+    memswap_limit: 128m
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 3s
+      start_period: 5s
+      retries: 3
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

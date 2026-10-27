@@ -1,0 +1,839 @@
+/* ============================================================================
+   ContactsView — 2-column email-style layout
+   Left panel: Contact list with search
+   Right panel: Contact detail (redesigned)
+   ============================================================================ */
+
+/* ---- Entrance animation ---- */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---- Page Layout ---- */
+.contactsPage {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: minmax(280px, 340px) 1fr;
+  height: 100%;
+  background: var(--canvas, #faf8f3);
+}
+
+/* ---- Left Panel (Contact List) ---- */
+.clist {
+  display: flex;
+  flex-direction: column;
+  background: var(--panel, #ffffff);
+  min-height: 0;
+  position: relative;
+  border-radius: var(--radius-lg) 0 0 var(--radius-lg);
+  border: 1px solid var(--line);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07);
+}
+
+/* ---- Right Panel (Contact Detail) ---- */
+.cdetail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-y: auto;
+  background: var(--canvas, #faf8f3);
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+/* ---- Detail Empty State ---- */
+.cdetailEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--ink-3, #a39d93);
+  font-size: 15px;
+  gap: var(--space-3);
+}
+
+.cdetailEmpty svg {
+  width: 48px;
+  height: 48px;
+  opacity: 0.3;
+}
+
+/* ============================================================================
+   ContactDetail
+   ============================================================================ */
+
+.detailContent {
+  margin: 0 auto;
+  padding: 0 16px 48px 0;
+  width: 100%;
+}
+
+/* ---- Hero ---- */
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-left: none;
+  border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+  padding: 30px 28px;
+  margin-bottom: 10px;
+  animation: fadeSlideIn 0.3s ease-out;
+}
+
+.heroAvatar {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.heroAvatar span {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--accent-contrast, #fff);
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.heroAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.heroText {
+  flex: 1;
+  min-width: 0;
+}
+
+.heroName {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink, #2c2823);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.heroRole {
+  font-size: 14px;
+  color: var(--ink-2, #6f6a62);
+  margin: 0 0 14px;
+  line-height: 1.4;
+}
+
+.heroActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+/* ---- Primary button ---- */
+.btnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: var(--accent-strong, var(--accent, #b07d4f));
+  color: var(--accent-contrast, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btnPrimary:hover {
+  opacity: 0.85;
+}
+
+.btnPrimary:active {
+  transform: scale(0.96);
+}
+
+.btnPrimary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- Secondary button ---- */
+.btnSecondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 14px;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-radius: var(--radius-sm);
+  background: var(--panel, #ffffff);
+  color: var(--ink, #2c2823);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btnSecondary:hover {
+  background: var(--canvas, #faf8f3);
+}
+
+.btnSecondary:active {
+  transform: scale(0.96);
+}
+
+/* ---- Hero icon buttons (edit / delete) ---- */
+.heroIconActions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: var(--space-1);
+}
+
+.iconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-3, #a39d93);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.iconBtn:hover:not(:disabled) {
+  background: var(--canvas, #faf8f3);
+  color: var(--ink, #2c2823);
+}
+
+.iconBtn:active:not(:disabled) {
+  transform: scale(0.9);
+}
+
+.iconBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ---- Body layout ---- */
+.body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: flex-start;
+  padding-left: 10px;
+}
+
+.bodyMain {
+  flex: 1 1 280px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.bodyAside {
+  flex: 1 1 260px;
+  width: 260px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-start;
+  align-content: flex-start;
+}
+
+.bodyAside > * {
+  flex: 1 1 120px;
+  min-width: 120px;
+}
+
+/* ---- Notes full width ---- */
+.notesFull {
+  flex: 1 1 100%;
+  min-width: 0;
+}
+
+/* ---- Info Card ---- */
+.infoCard {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  transition: box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.infoCard:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.infoField {
+  padding: 14px 20px;
+  transition: background 0.14s;
+}
+
+.infoField:hover {
+  background: color-mix(in srgb, var(--ink, #2c2823) 2%, transparent);
+}
+
+.infoField + .infoField {
+  border-top: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+}
+
+.infoFieldLabel {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  margin-bottom: 6px;
+}
+
+.infoFieldGrid {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 0 8px;
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+.infoFieldSub {
+  font-size: 13px;
+  color: var(--ink-3, #a39d93);
+}
+
+.infoFieldValue {
+  font-size: 14px;
+  color: var(--ink, #2c2823);
+  line-height: 1.5;
+  word-break: break-word;
+}
+
+.infoFieldValue a {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  text-decoration: none;
+  transition: color 0.14s;
+}
+
+.infoFieldValue a:hover {
+  text-decoration: underline;
+}
+
+/* ---- Notes Card ---- */
+.notesCard {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(44, 40, 33, 0.03);
+  transition: box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.notesCard:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.notesTitle {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  margin-bottom: 10px;
+}
+
+.notesCard .notesText {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 5%, var(--panel, #ffffff));
+  border-left: 3px solid var(--tag-border);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 14px 16px;
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink, #2c2823);
+}
+
+.notesCard .notesText h1,
+.notesCard .notesText h2,
+.notesCard .notesText h3,
+.notesCard .notesText h4 {
+  font-family: var(--font-serif, Georgia, serif);
+  font-weight: 500;
+  margin: 12px 0 6px;
+  line-height: 1.3;
+}
+
+.notesCard .notesText h1 { font-size: 18px; }
+.notesCard .notesText h2 { font-size: 16px; }
+.notesCard .notesText h3 { font-size: 15px; }
+
+.notesCard .notesText p {
+  margin: 0 0 8px;
+}
+
+.notesCard .notesText p:last-child {
+  margin-bottom: 0;
+}
+
+.notesCard .notesText ul,
+.notesCard .notesText ol {
+  padding-left: 20px;
+  margin: 6px 0;
+}
+
+.notesCard .notesText code {
+  font-size: 13px;
+  background: var(--color-bg-tertiary, #f3f2f0);
+  padding: 1px 5px;
+  border-radius: var(--radius-sm);
+}
+
+.notesCard .notesText pre {
+  background: var(--color-bg-tertiary, #f3f2f0);
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  overflow-x: auto;
+  margin: 8px 0;
+}
+
+.notesCard .notesText blockquote {
+  border-left: 3px solid var(--line, rgba(0, 0, 0, 0.09));
+  padding-left: 12px;
+  margin: 8px 0;
+  color: var(--ink-2, #6f6a62);
+}
+
+.notesCard .notesText a {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent, #b07d4f) 30%, transparent);
+}
+
+.notesCard .notesText a:hover {
+  text-decoration-color: var(--accent, #b07d4f);
+}
+
+/* ---- Birthday Card ---- */
+.birthdayCard {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 6%, var(--panel, #ffffff));
+  border: 1px solid color-mix(in srgb, var(--accent, #b07d4f) 18%, var(--line, rgba(0, 0, 0, 0.09)));
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  text-align: center;
+  transition: box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.birthdayCard:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.birthdayEmoji {
+  font-size: 28px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.birthdayLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.birthdayDate {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+  margin-bottom: 2px;
+}
+
+.birthdayAge {
+  font-size: 12.5px;
+  color: var(--ink-2, #6f6a62);
+}
+
+.birthdayCountdown {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ---- Categories Card ---- */
+.categoriesCard {
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  transition: box-shadow 0.2s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.categoriesCard:hover {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+}
+
+.asideSectionLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  margin-bottom: 10px;
+}
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tagPill {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--canvas, #faf8f3);
+  color: var(--ink-2, #6f6a62);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  transition: background 0.14s, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.14s;
+  cursor: pointer;
+}
+
+.tagPill:hover {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 8%, var(--canvas, #faf8f3));
+  border-color: color-mix(in srgb, var(--accent, #b07d4f) 25%, var(--line, rgba(0, 0, 0, 0.09)));
+}
+
+.tagPill:active {
+  transform: scale(0.95);
+}
+
+/* ============================================================================
+   Responsive
+   ============================================================================ */
+@media (max-width: 1024px) {
+  .contactsPage {
+    grid-template-columns: minmax(220px, 280px) 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .contactsPage {
+    grid-template-columns: 1fr;
+    position: relative;
+  }
+
+  .clist {
+    border-right: none;
+    border-radius: 0;
+  }
+
+  .contactsPage.showDetail .clist {
+    display: none;
+  }
+
+  .contactsPage.showDetail .cdetail {
+    position: absolute;
+    inset: 0;
+    background: var(--canvas, #faf8f3);
+    z-index: 10;
+  }
+
+  .detailContent {
+    padding: 16px 16px calc(84px + var(--safe-area-bottom));
+  }
+
+  .hero {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .heroAvatar {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-lg);
+  }
+
+  .heroAvatar span {
+    font-size: 18px;
+  }
+
+  .heroName {
+    font-size: 24px;
+  }
+
+  .heroIconActions {
+    top: 12px;
+    right: 12px;
+  }
+
+  .body {
+    flex-direction: column;
+  }
+
+  .bodyMain {
+    flex: none;
+    width: 100%;
+  }
+
+  .bodyAside {
+    flex: none;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+
+  .bodyAside > * {
+    flex: 1 1 140px;
+    min-width: 140px;
+  }
+
+  .notesFull {
+    width: 100%;
+  }
+}
+
+/* ---- Mobile Back Button ---- */
+.mobileBack {
+  display: none;
+}
+
+/* ============================================================================
+   Delete confirmation
+   ============================================================================ */
+
+.btnDeleteConfirm {
+  background: var(--color-error-muted, #c47068) !important;
+  color: var(--color-bg-primary, #fff) !important;
+  border-color: var(--color-error-muted, #c47068) !important;
+}
+
+.btnDeleteConfirm svg {
+  color: var(--color-bg-primary, #fff);
+}
+
+.btnDeleteConfirm:hover {
+  background: var(--color-error) !important;
+  border-color: var(--color-error) !important;
+}
+
+.btnDeleteLabel {
+  font-size: 11px;
+  font-weight: 500;
+  margin-left: 6px;
+  color: var(--color-bg-primary, #fff);
+}
+
+/* ============================================================================
+   Inline editing
+   ============================================================================ */
+
+.inlineEditWrapper {
+  display: inline;
+  cursor: text;
+}
+
+.inlineInput {
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: inherit;
+  color: inherit;
+  background: var(--color-bg-tertiary, #f3f2f0);
+  border: 1px solid var(--accent, #b07d4f);
+  border-radius: var(--radius-sm);
+  padding: 2px 6px;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(176, 125, 79, 0.15);
+  min-width: 100px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.inlineInput:focus {
+  border-color: var(--accent, #b07d4f);
+  box-shadow: 0 0 0 3px rgba(176, 125, 79, 0.2);
+}
+
+/* Hero name inline input */
+.heroNameInput {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: -0.018em;
+  color: var(--ink, #2c2823);
+  line-height: 1.2;
+  background: var(--color-bg-tertiary, #f3f2f0);
+}
+
+/* ============================================================================
+   Responsive
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  .mobileBack {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    border: none;
+    background: transparent;
+    color: var(--accent-strong, var(--accent, #b07d4f));
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+  }
+
+  .mobileBack:active {
+    background: var(--canvas, #faf8f3);
+  }
+
+  .mobileBack svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* ============================================================================
+   Address Book Picker
+   ============================================================================ */
+
+.addressBookPicker {
+  /* Anchored to .clist (position: relative), sitting just under the
+     search bar + meta bar row that holds the "+ New" button. */
+  position: absolute;
+  top: 84px;
+  right: 14px;
+  z-index: 100;
+  min-width: 180px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  animation: fadeSlideIn 0.15s ease-out;
+}
+
+.addressBookPickerLabel {
+  padding: 8px 12px 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  border-bottom: 1px solid var(--line, rgba(0, 0, 0, 0.09));
+}
+
+.addressBookPickerItem {
+  display: block;
+  width: 100%;
+  padding: 9px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink, #2c2823);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.addressBookPickerItem:hover {
+  background: var(--canvas, #faf8f3);
+}
+
+.addressBookPickerItem:active {
+  background: var(--color-bg-tertiary, #f3f2f0);
+}
+
+/* Calendar picker shown when a contact's birthday/anniversary could go into
+   more than one writable calendar. */
+.calendarPickerList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.calendarPickerItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 11px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-family: inherit;
+  color: var(--ink, #2c2823);
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.calendarPickerItem:hover {
+  background: var(--canvas, #faf8f3);
+}
+
+.calendarPickerItem:active {
+  background: var(--color-bg-tertiary, #f3f2f0);
+}
+
+.calendarPickerDot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .inlineInput {
+    font-size: 16px;
+  }
+}

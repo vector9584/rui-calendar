@@ -1,0 +1,826 @@
+/* JournalDayModal — View + Compose/Edit Modal */
+
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: var(--modal-scrim, rgba(26, 26, 26, 0.25));
+  backdrop-filter: var(--modal-blur, blur(3px));
+  -webkit-backdrop-filter: var(--modal-blur, blur(3px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.panel {
+  background: var(--modal-bg, #faf9f7);
+  border: 1px solid var(--modal-border, transparent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--modal-shadow, 0 24px 80px rgba(0, 0, 0, 0.18), 0 6px 20px rgba(0, 0, 0, 0.1));
+  width: 520px;
+  max-width: calc(100vw - 40px);
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 0 28px;
+  position: relative;
+  animation: slideUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile sheet only — see the drag handle rule in the mobile block below. */
+.dragHandle {
+  display: none;
+}
+
+.close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition:
+    background 0.14s,
+    color 0.14s;
+}
+
+.close:hover {
+  background: rgba(var(--ink-raw), 0.06);
+  color: var(--ink);
+}
+
+.close svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Date Column */
+.dateCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.day {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 52px;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  font-variant-numeric: tabular-nums;
+}
+
+.weekday {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-top: 6px;
+}
+
+.month {
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-top: 3px;
+  letter-spacing: 0.01em;
+}
+
+/* Content Column */
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding-top: 4px;
+}
+
+.rule {
+  height: 1px;
+  background: var(--line);
+  margin-bottom: 16px;
+}
+
+/* Entries */
+.entries {
+  display: flex;
+  flex-direction: column;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.emptyState p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding-bottom: 16px;
+  cursor: default;
+  border-radius: var(--radius-sm);
+  padding: 8px 8px 16px;
+  transition: background 0.12s;
+}
+
+.entry:focus {
+  outline: none;
+}
+
+.entryFocused {
+  background: var(--selected-bg);
+}
+
+.entryHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.entryEditBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--ink-3);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  flex-shrink: 0;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    background 0.15s;
+}
+
+.entry:hover .entryEditBtn,
+.entryFocused .entryEditBtn {
+  opacity: 1;
+}
+
+.entryEditBtn:hover {
+  background: var(--color-bg-hover);
+  color: var(--ink);
+}
+
+.entrySep {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 0 20px;
+  color: var(--ink-3);
+  font-size: 13px;
+  letter-spacing: 0.25em;
+}
+
+.summary {
+  font-size: 18px;
+  font-weight: 600;
+  font-family: var(--font-serif, Georgia, serif);
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  line-height: 1.3;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.body p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.75;
+  text-wrap: pretty;
+}
+
+.body p + p {
+  margin-top: 10px;
+}
+
+.body strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.body em {
+  font-style: italic;
+}
+
+.body code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: rgba(var(--ink-raw), 0.06);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+.body blockquote {
+  border-left: 3px solid var(--line);
+  padding-left: 12px;
+  color: var(--ink-3);
+  font-style: italic;
+  margin: 8px 0;
+}
+
+.body ul,
+.body ol {
+  padding-left: 20px;
+  margin: 8px 0;
+}
+
+.body li {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+.body hr {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: 16px 0;
+}
+
+.body h1,
+.body h2,
+.body h3 {
+  font-family: var(--font-serif, Georgia, serif);
+  color: var(--ink);
+  margin-top: 16px;
+  margin-bottom: 4px;
+}
+
+.body h1 {
+  font-size: 20px;
+}
+.body h2 {
+  font-size: 17px;
+}
+.body h3 {
+  font-size: 15px;
+}
+
+/* Entry categories and link */
+.entryCategories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.entryCategoryTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: var(--accent-soft, rgba(196, 168, 154, 0.08));
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.entryLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin-top: 4px;
+  padding: 2px 0;
+  color: var(--accent-strong, var(--accent));
+  font-size: 12px;
+  text-decoration: none;
+  word-break: break-all;
+  transition: color 0.12s;
+}
+
+.entryLink:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* Compose / Edit Mode */
+.inputTitle {
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 10px;
+  box-shadow: none;
+}
+
+.inputTitle:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.inputTitle::placeholder {
+  color: var(--ink-3);
+  font-weight: 400;
+}
+
+.inputBody {
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-2);
+  border: none;
+  outline: none;
+  background: transparent;
+  width: 100%;
+  resize: none;
+  min-height: 120px;
+  margin-top: 12px;
+}
+
+.inputBody::placeholder {
+  color: var(--ink-3);
+}
+
+.categoryPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.addCategories {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.addCategories:hover {
+  color: var(--accent-strong, var(--accent));
+}
+
+.categoryChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.categoryChip:hover {
+  background: var(--accent-soft, rgba(196, 168, 154, 0.08));
+}
+
+.categoryChipActive {
+  background: var(--chip-bg);
+  border-color: var(--chip-color, var(--accent));
+  color: var(--ink);
+}
+
+.categoryDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.composeHint {
+  font-size: 12px;
+  color: var(--ink-3);
+  margin-top: 2px;
+}
+
+.composeActions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* Add panel */
+.addPanel {
+  margin-top: 8px;
+}
+
+.addToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 0;
+  border: none;
+  background: none;
+  color: var(--ink-3);
+  font-size: 13px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.12s;
+}
+
+.addToggle:hover {
+  color: var(--accent-strong, var(--accent));
+}
+
+.addPanelContent {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+}
+
+.addSection {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.addSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.addSectionLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.removeFieldButton {
+  background: none;
+  border: none;
+  color: var(--ink-3);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.12s;
+}
+
+.removeFieldButton:hover {
+  color: var(--ink);
+}
+
+.urlInput {
+  width: 100%;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--panel);
+  color: var(--ink);
+  transition: border-color 0.12s;
+}
+
+.urlInput:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.calendarRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.calendarLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.calendarSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--panel);
+  color: var(--ink);
+  transition: border-color 0.12s;
+}
+
+.calendarSelect:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.relatedList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.relatedChip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+  color: var(--ink);
+  transition:
+    border-color 0.12s,
+    background 0.12s;
+}
+
+.relatedChip:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft, rgba(196, 168, 154, 0.04));
+}
+
+.relatedChipActive {
+  border-color: var(--accent);
+  background: var(--accent-soft, rgba(196, 168, 154, 0.08));
+}
+
+.relatedChipTitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relatedChipDate {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.btnAccent {
+  padding: 7px 22px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-strong, var(--accent));
+  color: var(--accent-contrast, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  box-shadow: 0 2px 8px rgba(196, 168, 154, 0.4);
+  transition:
+    background 0.12s,
+    box-shadow 0.12s;
+}
+
+.btnAccent:hover {
+  background: var(--accent-hover, color-mix(in srgb, var(--accent) 90%, #000));
+  box-shadow: 0 4px 14px rgba(196, 168, 154, 0.5);
+}
+
+.btnGhost {
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, var(--panel));
+  color: var(--color-text-secondary, var(--ink-3));
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(
+    --shadow-event,
+    0 1px 3px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)))
+  );
+  margin-right: auto;
+  transition:
+    background 0.14s,
+    color 0.14s;
+}
+
+.btnGhost:hover {
+  background: var(--accent-soft, var(--selected-bg));
+  color: var(--ink);
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  grid-column: 1 / -1;
+}
+
+/* Add Entry Button */
+.addEntry {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, var(--panel));
+  color: var(--color-text-secondary, var(--ink-2));
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(
+    --shadow-event,
+    0 1px 3px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)))
+  );
+  transition:
+    background 0.14s,
+    color 0.14s;
+}
+
+.addEntry svg {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+}
+
+.addEntry:hover {
+  background: var(--accent-soft, var(--selected-bg));
+  color: var(--accent-strong, var(--accent));
+}
+
+.btnDelete {
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, var(--panel));
+  color: var(--color-error-muted, #c47068);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: var(
+    --shadow-event,
+    0 1px 3px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)))
+  );
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.btnDelete:hover {
+  background: var(--color-error-muted, #c47068);
+  color: var(--color-bg-primary, #fff);
+  border-color: var(--color-error-muted, #c47068);
+}
+
+.btnDeleteConfirm {
+  background: var(--color-error-muted, #c47068);
+  color: var(--color-bg-primary, #fff);
+  border-color: var(--color-error-muted, #c47068);
+}
+
+/* Responsive: stack on mobile */
+@media (max-width: 600px) {
+  .panel {
+    grid-template-columns: 1fr;
+    padding: 24px 20px 28px;
+    gap: 16px 0;
+  }
+
+  .dateCol {
+    flex-direction: row;
+    align-items: baseline;
+    gap: var(--space-2);
+  }
+
+  .day {
+    font-size: 36px;
+  }
+}
+
+/* Mobile sheet. 768px, not this file's 600px card block, because that's
+   MOBILE_BREAKPOINT — the same gate useIsMobile applies to the swipe-to-
+   dismiss gesture, and the sheet look and the gesture have to agree. */
+@media (max-width: 768px) {
+  /* Sit on the bottom edge and run as tall as the viewport allows, so the
+     compose field ends up close to the keyboard rather than floating in the
+     middle of the screen. `dvh` (not `vh`) is what makes this track the
+     keyboard: the sheet's bottom stays just above it. */
+  .scrim {
+    align-items: flex-end;
+  }
+
+  .panel {
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - 32px);
+    padding-top: 8px;
+    padding-bottom: calc(20px + var(--safe-area-bottom, 0px));
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    /* The swipe-to-dismiss gesture drives `y` on this element; a keyframe on
+       the same transform would fight it (see useSheetSwipeDismiss). */
+    animation: none;
+    will-change: transform;
+  }
+
+  /* Swipe-to-dismiss grab affordance. Spans the grid so it centres on the
+     sheet rather than on the first column. */
+  .dragHandle {
+    display: block;
+    grid-column: 1 / -1;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 4px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-border-visible, rgba(0, 0, 0, 0.12));
+    /* Without this, Android/Chrome can decide partway through that the drag
+       was really a page scroll and cancel the pointer sequence. */
+    touch-action: none;
+  }
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .inputBody,
+  .urlInput {
+    font-size: 16px;
+  }
+}

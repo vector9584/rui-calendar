@@ -1,0 +1,478 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--modal-scrim, rgba(0, 0, 0, 0.5));
+  backdrop-filter: var(--modal-blur, blur(3px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.2s ease;
+}
+
+.modalContent {
+  background: var(--modal-bg, #ffffff);
+  border: 1px solid var(--modal-border, transparent);
+  box-shadow: var(--modal-shadow, 0 24px 80px rgba(0, 0, 0, 0.18), 0 6px 20px rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  width: 100%;
+  max-width: 400px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  animation: modalSlideUp 0.2s ease;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal.closing {
+  animation: modalFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes modalFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.modal.closing .modalContent {
+  animation: modalSlideDown 0.2s ease-in forwards;
+}
+
+@keyframes modalSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.modalTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text-primary, #202124);
+  margin: 0;
+}
+
+.modalClose {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--color-text-secondary, #5f6368);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.modalClose:hover {
+  background: var(--color-bg-hover, #f1f3f4);
+  color: var(--color-text-primary, #202124);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary, #202124);
+}
+
+.chevronLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary, #202124);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.chevronLabel:hover {
+  color: var(--accent-strong, var(--color-accent));
+}
+
+.chevronIcon {
+  color: var(--color-text-secondary, #5f6368);
+  flex-shrink: 0;
+  margin-top: -1px;
+  transition: transform 0.2s ease;
+}
+
+.chevronLabel:hover .chevronIcon {
+  color: var(--accent-strong, var(--color-accent));
+}
+
+.proxyInfoText {
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f6368);
+  line-height: 1.5;
+  margin-top: 4px;
+}
+
+.formHint {
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f6368);
+}
+
+.muteRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.muteRow .formLabel {
+  margin: 0;
+}
+
+.muteRow input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--accent-strong, var(--color-accent));
+}
+
+.formWarn {
+  margin-top: 6px;
+  padding: 10px 12px;
+  background: rgba(234, 67, 53, 0.06);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--color-text-primary, #202124);
+  line-height: 1.5;
+}
+
+.input {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border-visible, #dadce0);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  color: var(--color-text-primary, #202124);
+  background: var(--color-bg-tertiary, #f3f2f0);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent, #b07d4f);
+  box-shadow: 0 0 0 2px var(--color-accent-light, rgba(176, 125, 79, 0.2));
+}
+
+.successMessage {
+  color: var(--color-success, #34a853);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.errorMessage {
+  color: var(--color-error, #ea4335);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.modalFooter {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: 24px;
+}
+
+.button {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.buttonPrimary {
+  background: var(--color-accent);
+  color: var(--color-bg, #ffffff);
+  /* Reserve the width of the "Saving…" + spinner label so the button doesn't
+     jitter wider when the submit starts. */
+  min-width: 130px;
+}
+
+.buttonPrimary:hover {
+  background: var(--color-accent-hover);
+}
+
+.buttonPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Mid-save the button stays at full opacity — the spinner reads as "working",
+   where the :disabled fade would read as "broken". */
+.button[aria-busy='true'] {
+  opacity: 1;
+  cursor: progress;
+  pointer-events: none;
+}
+
+.buttonSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: buttonSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes buttonSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .buttonSpinner {
+    animation-duration: 3s;
+  }
+}
+
+.buttonSecondary {
+  background: var(--color-surface, #ffffff);
+  color: var(--accent-strong, var(--color-accent));
+  border: 1px solid var(--color-border-visible, #dadce0);
+}
+
+.buttonSecondary:hover {
+  background: var(--color-bg-hover, #f1f3f4);
+}
+
+.buttonSecondary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.colorGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.colorOption {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.colorOption:hover {
+  transform: scale(1.1);
+}
+
+.colorSelected {
+  border-color: var(--color-text-primary, #202124);
+  box-shadow: 0 0 0 2px var(--modal-bg, #ffffff);
+}
+
+@media (max-width: 768px) {
+  .modalContent {
+    margin: 16px;
+    max-width: calc(100% - 32px);
+    width: 100%;
+  }
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+}
+
+/* Offered under a failed connection attempt — see DiagnosticsPanel. */
+.diagnoseLink {
+  display: block;
+  margin: 0 0 12px;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.formLabelOptional {
+  color: var(--color-text-secondary, #5f6368);
+  font-weight: 400;
+}
+
+.credentialsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.inputInvalid,
+.inputInvalid:focus {
+  border-color: var(--color-error, #ea4335);
+}
+
+.inputInvalid:focus {
+  box-shadow: 0 0 0 2px var(--error-bg-strong, rgba(234, 67, 53, 0.16));
+}
+
+/* A failed connect: message, optional hint, then the next steps as links. */
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--error-bg, rgba(234, 67, 53, 0.1));
+  border: 1px solid var(--error-border, rgba(234, 67, 53, 0.3));
+}
+
+.errorBoxMessage {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-primary, #202124);
+  text-wrap: pretty;
+}
+
+.errorBoxHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-secondary, #5f6368);
+}
+
+.errorBoxActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.errorBoxActions .diagnoseLink {
+  margin: 0;
+  color: var(--accent-strong, var(--accent));
+}
+
+.errorBoxNudge {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-strong, var(--accent));
+  cursor: pointer;
+  text-align: left;
+}
+
+.errorBoxNudge:hover {
+  text-decoration: underline;
+}
+
+/* Live stage read-out while an account connects — see progressStore. */
+.progress {
+  margin-top: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.progressTrack {
+  position: relative;
+  height: 4px;
+  border-radius: var(--radius-full, 999px);
+  background: var(--color-bg-tertiary);
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: var(--color-primary, var(--color-accent));
+  transition: width 0.25s ease;
+}
+
+.progressIndeterminate {
+  position: absolute;
+  inset-block: 0;
+  width: 35%;
+  background: var(--color-primary, var(--color-accent));
+  animation: progressSweep 1.2s ease-in-out infinite;
+}
+
+.progressLabel {
+  font-size: var(--font-size-xs, 0.75rem);
+  color: var(--color-text-secondary);
+}
+
+@keyframes progressSweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progressIndeterminate {
+    animation-duration: 3s;
+  }
+}

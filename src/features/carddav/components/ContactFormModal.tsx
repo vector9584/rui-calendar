@@ -1,0 +1,281 @@
+import type { JSX } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import { createUuid } from '@/lib/uuid'
+import type { Contact } from '../types'
+import { Modal } from '@/components/common/Modal'
+import { ContactFormFields } from './ContactFormFields'
+import { deriveDisplayName } from '../adapter/vCardAdapter'
+import eventModalStyles from '@/features/calendar/components/EventModal.module.css'
+import styles from './ContactFormModal.module.css'
+
+interface ContactFormModalProps {
+  isOpen: boolean
+  onClose: () => void
+  contact: Contact | null
+  addressBookId: string
+  accountId: string
+  onSave: (contact: Contact) => void | Promise<void>
+  onDelete?: (contact: Contact) => void
+}
+
+const EMPTY_CONTACT: Partial<Contact> = {
+  familyName: '',
+  givenName: '',
+  additionalNames: '',
+  prefixes: '',
+  suffixes: '',
+  nickname: '',
+  displayName: '',
+  organization: '',
+  department: '',
+  title: '',
+  role: '',
+  emails: [],
+  phones: [],
+  addresses: [],
+  urls: [],
+  ims: [],
+  birthday: null,
+  anniversary: null,
+  gender: '',
+  note: '',
+  categories: [],
+  photo: null,
+  isGroup: false,
+  memberUids: [],
+  langs: [],
+  related: [],
+  xmlData: null,
+  opaqueLines: [],
+}
+
+export function ContactFormModal({
+  isOpen,
+  onClose,
+  contact,
+  addressBookId,
+  accountId,
+  onSave,
+  onDelete,
+}: ContactFormModalProps): JSX.Element {
+  const { t } = useTranslation(['contacts', 'common'])
+  const [formState, setFormState] = useState<Partial<Contact>>(EMPTY_CONTACT)
+  const [title, setTitle] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const isSavingRef = useRef(false)
+
+  // Initialize form state when modal opens or contact changes
+  useEffect(() => {
+    if (isOpen) {
+      // Clear the double-submit latch from the previous save
+      isSavingRef.current = false
+      setIsSaving(false)
+
+      if (contact) {
+        setFormState({ ...contact })
+        setTitle(contact.displayName || '')
+      } else {
+        setFormState({
+          ...EMPTY_CONTACT,
+          addressBookId,
+          accountId,
+        })
+        setTitle('')
+      }
+    }
+  }, [isOpen, contact, addressBookId, accountId])
+
+  const isEditMode = contact !== null
+
+  // Auto-populate given/family name from displayName for new contacts (on blur)
+  const handleTitleBlur = (): void => {
+    // Only auto-fill for new contacts when given/family are empty
+    if (!isEditMode && !formState.givenName && !formState.familyName) {
+      const parts = title.trim().split(/\s+/)
+      if (parts.length >= 2) {
+        setFormState((prev) => ({
+          ...prev,
+          givenName: parts[0],
+          familyName: parts.slice(1).join(' '),
+        }))
+      } else if (parts.length === 1 && parts[0]) {
+        setFormState((prev) => ({
+          ...prev,
+          givenName: parts[0],
+          familyName: '',
+        }))
+      }
+    }
+  }
+
+  const handleSave = async (): Promise<void> => {
+    // Guard against a double click creating two contacts: this mints a fresh uuid on every
+    // call, so two clicks used to produce two distinct contacts rather than one.
+    if (isSavingRef.current) return
+    isSavingRef.current = true
+    setIsSaving(true)
+
+    let saved = false
+    try {
+      saved = await saveContact()
+    } finally {
+      // Only release the guard when nothing was saved (a validation early-return). On the
+      // happy path the modal animates out over ~200ms and stays clickable the whole time,
+      // so releasing here would let the second half of a double click through. The guard
+      // is reset when the modal reopens.
+      if (!saved) {
+        isSavingRef.current = false
+        setIsSaving(false)
+      }
+    }
+  }
+
+  /** Returns true when the contact was handed to `onSave`. */
+  const saveContact = async (): Promise<boolean> => {
+    // Merge title into formState as displayName
+    const enteredName = title.trim() || formState.displayName || ''
+
+    // Validate: at least one of displayName, givenName, or familyName must be non-empty
+    if (!enteredName && !formState.givenName?.trim() && !formState.familyName?.trim()) {
+      // Could show a validation error here; for now, force givenName as fallback
+      setFormState((prev) => ({ ...prev, displayName: t('form.newContact') }))
+      setTitle(t('form.newContact'))
+      return false
+    }
+
+    const now = new Date().toISOString()
+
+    const completeContact: Contact = {
+      id: contact?.id ?? createUuid(),
+      addressBookId: contact?.addressBookId ?? addressBookId,
+      accountId: contact?.accountId ?? accountId,
+      url: contact?.url ?? '',
+      etag: contact?.etag,
+
+      familyName: formState.familyName ?? '',
+      givenName: formState.givenName ?? '',
+      additionalNames: formState.additionalNames ?? '',
+      prefixes: formState.prefixes ?? '',
+      suffixes: formState.suffixes ?? '',
+      nickname: formState.nickname ?? '',
+
+      // Never store an empty display name — FN is mandatory in vCard and strict servers
+      // reject a card without it (Radicale answers 400).
+      displayName: deriveDisplayName({ ...formState, displayName: enteredName }),
+
+      organization: formState.organization ?? '',
+      department: formState.department ?? '',
+      title: formState.title ?? '',
+      role: formState.role ?? '',
+
+      emails: formState.emails ?? [],
+      phones: formState.phones ?? [],
+      addresses: formState.addresses ?? [],
+      urls: formState.urls ?? [],
+      ims: formState.ims ?? [],
+
+      birthday: formState.birthday ?? null,
+      anniversary: formState.anniversary ?? null,
+      gender: formState.gender ?? '',
+
+      note: formState.note ?? '',
+      categories: formState.categories ?? [],
+
+      photo: formState.photo ?? null,
+
+      isGroup: formState.isGroup ?? false,
+      memberUids: formState.memberUids ?? [],
+
+      langs: formState.langs ?? [],
+      related: formState.related ?? [],
+      xmlData: formState.xmlData ?? null,
+
+      opaqueLines: formState.opaqueLines ?? [],
+
+      rawVCard: contact?.rawVCard,
+
+      createdAt: contact?.createdAt ?? now,
+      lastModified: now,
+      syncStatus: 'pending',
+    }
+
+    await onSave(completeContact)
+    onClose()
+    return true
+  }
+
+  const handleDelete = (): void => {
+    if (contact && onDelete) {
+      onDelete(contact)
+      onClose()
+    }
+  }
+
+  const handleCancel = (): void => {
+    onClose()
+  }
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      className={styles.card}
+      contentClassName={styles.content}
+    >
+      {/* Header */}
+      <div className={styles.header}>
+        <div className={styles.titleWrap}>
+          <input
+            type="text"
+            placeholder={
+              contact ? contact.displayName || t('form.newContact') : t('form.newContact')
+            }
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={handleTitleBlur}
+            className={eventModalStyles.modalTitle}
+            autoFocus
+          />
+        </div>
+        <button
+          type="button"
+          className={eventModalStyles.modalClose}
+          onClick={onClose}
+          aria-label={t('common:actions.close')}
+        >
+          ×
+        </button>
+      </div>
+
+      {/* Body */}
+      <div className={styles.body}>
+        <ContactFormFields value={formState} onChange={setFormState} />
+      </div>
+
+      {/* Footer */}
+      <div className={styles.footer}>
+        {isEditMode && onDelete && (
+          <button type="button" className={eventModalStyles.modalDelete} onClick={handleDelete}>
+            {t('common:actions.delete')}
+          </button>
+        )}
+        <div className={styles.footerActions}>
+          <button type="button" className={eventModalStyles.modalCancel} onClick={handleCancel}>
+            {t('common:actions.cancel')}
+          </button>
+          <button
+            type="button"
+            className={eventModalStyles.modalSave}
+            onClick={handleSave}
+            disabled={isSaving}
+            aria-busy={isSaving}
+          >
+            {isSaving && <span className={eventModalStyles.modalSaveSpinner} aria-hidden="true" />}
+            {t('common:actions.save')}
+          </button>
+        </div>
+      </div>
+    </Modal>
+  )
+}

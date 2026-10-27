@@ -1,0 +1,97 @@
+.banner {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 1000;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border-subtle);
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-card);
+  font-size: 12px;
+}
+
+.text {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.link {
+  color: var(--accent-strong, var(--color-accent));
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.dismiss {
+  background: var(--color-bg-hover);
+  border: none;
+  color: var(--color-text-primary);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 500;
+  transition: background-color 0.15s;
+  white-space: nowrap;
+}
+
+/* The mobile navigation pill is another fixed bottom surface. Keep the
+   notice above the pill rather than letting the two compete for the same
+   pixels. FloatingNavPill updates this variable when its expanded height
+   changes; the fallback covers the first paint before that measurement. */
+@media (max-width: 768px) {
+  .banner {
+    left: 16px;
+    right: 16px;
+    bottom: calc(var(--mobile-nav-height, 57px) + 32px + var(--safe-area-bottom, 0px));
+  }
+
+  .content {
+    width: 100%;
+    box-sizing: border-box;
+    align-items: center;
+  }
+
+  .text {
+    flex: 1 1 auto;
+    line-height: 1.4;
+  }
+
+  .dismiss {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 8px 10px;
+  }
+
+  body.text-input-focused .banner {
+    bottom: calc(16px + var(--safe-area-bottom, 0px));
+  }
+}
+
+.dismiss:hover {
+  background: color-mix(in srgb, var(--color-bg-hover) 70%, var(--color-text-primary));
+}

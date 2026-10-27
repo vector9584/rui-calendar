@@ -1,0 +1,529 @@
+/* Theme: Default Light */
+/* ── Named color-mix tokens (use these in CSS modules instead of inline color-mix) ── */
+/* Accent-based tokens */
+/* --hover-bg: 6% accent on transparent (hover states) */
+/* --selected-bg: 10% accent on transparent (selected states) */
+/* --focus-ring: 14% accent on transparent (focus rings) */
+/* --chip-bg: 12% accent on transparent (chips, badges) */
+/* --tag-bg: 5% accent on transparent (tags) */
+/* --tag-border: 30% accent on line (tag borders) */
+/* Ink-based tokens */
+/* --surface-bg: 4% ink on transparent (subtle surfaces) */
+/* --surface-bg-strong: 6% ink on transparent (stronger surface) */
+/* Error tokens */
+/* --error-bg: 8% error on transparent */
+/* --error-bg-strong: 14% error on transparent */
+/* --error-border: 22% error on transparent */
+
+:root,
+[data-theme='light'] {
+  /* Backgrounds */
+  --color-bg-primary: #faf8f3;
+  --color-bg-secondary: #ffffff;
+  --color-bg-secondary-rgb: 255, 255, 255;
+  --color-bg-tertiary: #f1ede5;
+  --color-bg-hover: #f4f1ea;
+  --color-bg-input: #ffffff;
+
+  /* Legacy aliases (design handoff tokens) */
+  --canvas: #faf8f3;
+  --panel: #ffffff;
+  --side: #f6f3ed;
+  --ink: #2c2823;
+  /* The grey ramp is tuned so every step clears WCAG AA (4.5:1) as body text on
+     --canvas, --panel and --side. #6f6a62 / #8a8378 were 5.06 / 3.53 — ink-3
+     failed everywhere, and the two were too close to darken ink-3 alone. */
+  --ink-2: #655f57;
+  --ink-3: #756d62;
+  /* Dimmed ink for de-emphasised-but-readable text (other-month day numbers,
+     mini-calendar days). This is the full-opacity replacement for the old
+     `color: var(--ink-3); opacity: 0.85` trick, which dropped ink-3 to 3.74:1
+     on white. Full opacity keeps the "muted" look while clearing WCAG AA:
+     4.93:1 on --panel, 4.73:1 on the other-month cell tint. */
+  --ink-3-dimmed: #786f64;
+  --line: rgba(44, 40, 33, 0.09);
+  --line-2: rgba(44, 40, 33, 0.05);
+  --accent: #b07d4f;
+  /* Same hue and saturation as --accent, lightness 0.50 → 0.40. --accent is
+     3.36:1 on --canvas: fine for rails, dots, borders and tints, but too light
+     to carry text. Use --accent-strong wherever the accent has to be *read*,
+     including as a fill behind --accent-contrast. */
+  --accent-strong: #8d643f;
+  --accent-contrast: #ffffff;
+  --accent-soft: #efe7db;
+  /* --accent-strong on an --accent-soft fill is 4.25:1 — just under AA at
+     14px — so text sitting on that surface (the settings active nav item)
+     uses this one step darker instead. 4.61:1 on --accent-soft. */
+  --accent-strong-on-soft: #865f3c;
+
+  /* Text */
+  --color-text-primary: #2c2823;
+  --color-text-secondary: #655f57;
+  --color-text-muted: #756d62;
+  --color-text: #2c2823;
+  --color-text-tertiary: #756d62;
+
+  /* Borders */
+  --color-border: #e8e3d9;
+  --color-border-light: #f2eee6;
+  --color-border-subtle: #ebe6dc;
+  --color-border-visible: #e8e3d9;
+
+  /* Accent / Primary — aligned with --accent (warm brown) */
+  --color-accent: #b07d4f;
+  --color-primary: #b07d4f;
+  /* A step darker than --accent-strong (#8d643f), so hover on a filled button
+     still reads as "pressed toward" rather than lighting up. */
+  --color-primary-hover: #785536;
+  --color-primary-light: rgba(176, 125, 79, 0.1);
+  --color-accent-hover: #785536;
+  --accent-hover: #785536;
+  --color-accent-light: #efe7db;
+
+  /* Status colors — darkened from the raw Google palette, which was tuned for
+     white and washes out on cream (#34a853 was 2.88:1, #ea4335 3.70:1). These
+     values clear AA as text *and* improve white-on-fill for solid buttons. */
+  --color-success: #277d3e;
+  --color-success-light: rgba(45, 125, 70, 0.1);
+  --color-danger-bg: rgba(234, 67, 53, 0.08);
+  /* Yellow is the exception: darkening it far enough to read (#8d6902) turns it
+     olive, so the fill keeps its brightness and text/icons use the -text pair. */
+  --color-warning: #fbbc04;
+  --color-warning-text: #8d6902;
+  --color-error: #c8351f;
+  --color-info: #8d643f;
+  /* "Now" line in day/week views. Google's raw #e53935 was 4.23:1 on white —
+     just under AA for the 10px time label — so the default is one step darker.
+     catppuccin-mocha overrides this with its own pink. */
+  --color-current-time: #d93025;
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+
+  /* Surfaces (modal tokens live in the "Modal / popover tokens" block below) */
+  --color-bg: #faf8f3;
+  --color-surface: #ffffff;
+
+  /* Focus */
+  --color-focus: #b07d4f;
+
+  /* Scrollbar */
+  --color-scrollbar: #d8d2c6;
+  --color-scrollbar-hover: #b0a99c;
+
+  /* Border radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Spacing scale */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Font families */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+
+  /* Font sizes */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.25rem;
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+
+  /* Font weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line heights */
+  --leading-tight: 1.2;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.6;
+
+  /* Transitions */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Shadows */
+  --shadow-event: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.07), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  --shadow-sidebar: 2px 0 14px rgba(0, 0, 0, 0.06);
+  --shadow-topbar: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-glass: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  /* Event card theming */
+  /* Shadows are always cast in black — never in --ink-raw, which is the *text*
+     colour and so inverts to cream in dark mode, turning every drop shadow into
+     a glow. --shadow-opacity scales them all from one place. */
+  --shadow-rgb: 0, 0, 0;
+  --shadow-opacity: 1;
+  --ink-raw: 0, 0, 0;
+  --hover-bg: color-mix(in srgb, var(--accent) 6%, transparent);
+  --selected-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 14%, transparent);
+  --chip-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --tag-bg: color-mix(in srgb, var(--accent) 5%, transparent);
+  --tag-border: color-mix(in srgb, var(--accent) 30%, var(--line));
+  --surface-bg: color-mix(in srgb, var(--ink) 4%, transparent);
+  --surface-bg-strong: color-mix(in srgb, var(--ink) 6%, transparent);
+  --error-bg: color-mix(in srgb, var(--color-error, #c2697f) 8%, transparent);
+  --error-bg-strong: color-mix(in srgb, var(--color-error, #c2697f) 14%, transparent);
+  --error-border: color-mix(in srgb, var(--color-error, #c2697f) 22%, transparent);
+  /* Event tint strength. Higher = easier to tell calendars apart at a glance,
+     but the tint eats into the contrast of the text sitting on it, so the two
+     move together: --event-ink-* are the card-local secondary inks that keep
+     time/location at AA on the *most saturated* calendar colour at this mix.
+     See docs/event-tint.md for the measured pairings. */
+  --event-bg-mix: 9%;
+  --event-bg-mix-hover: 12%;
+  --event-ink-2: #655f57;
+  --event-ink-3: #655f57;
+  /* "Muted" here means desaturated, not low-contrast — these are used as text
+     (overdue todos, destructive labels), so they still have to clear AA. */
+  --color-error-muted: #a9544b;
+  --color-success-muted: #4a7a4f;
+
+  /* Modal / popover tokens */
+  --modal-bg: var(--color-bg-secondary);
+  --popover-bg: var(--color-bg-secondary);
+  --modal-scrim: rgba(0, 0, 0, 0.5);
+  --modal-blur: blur(3px);
+  --modal-border: transparent;
+  --popover-border: var(--color-border);
+  --modal-shadow: 0 24px 80px rgba(0, 0, 0, 0.18), 0 6px 20px rgba(0, 0, 0, 0.1);
+
+  /* Mobile floating nav pill tokens */
+  --nav-canvas-track: #f0ebe1;
+  --nav-switcher-track: var(--side);
+  --ink-4: #c2bcae;
+  --toggle-off: #e3ddd0;
+  --shadow-pill: 0 16px 36px rgba(44, 40, 33, 0.2), 0 2px 10px rgba(44, 40, 33, 0.1);
+  --shadow-tile-active: 0 3px 8px color-mix(in srgb, var(--accent) 35%, transparent);
+
+  /* Layout */
+  --sidebar-width: 277px;
+  --sidebar-collapsed-width: 32px;
+  --header-height: 72px;
+}
+
+/* Theme: Default Dark */
+[data-theme='dark'] {
+  /* Backgrounds */
+  --color-bg-primary: #1a1816;
+  --color-bg-secondary: #242220;
+  --color-bg-secondary-rgb: 36, 34, 32;
+  --color-bg-tertiary: #2a2826;
+  --color-bg-hover: rgba(240, 236, 230, 0.06);
+  --color-bg-input: #2a2826;
+
+  /* Legacy aliases (design handoff tokens) */
+  --canvas: #1a1816;
+  --panel: #242220;
+  --side: #2a2826;
+  --ink: #f0ece6;
+  /* 4.76:1 on --side (the lightest dark surface) and 4.76:1 on the sidebar
+     badge chip fill (rgba(ink-raw, 0.07) over --side) — #a39d93 was 4.49:1
+     on the chip and just missed AA. Still a clear step below --ink-3. */
+  --ink-2: #a8a29a;
+  /* 4.66:1 on --side, the lightest dark surface; #6f6a62 was 2.74:1 and
+     failed WCAG AA everywhere. Still a clear step below --ink-2 (#a8a29a). */
+  --ink-3: #989086;
+  /* Dimmed ink for de-emphasised-but-readable text. 5.35:1 on --panel and
+     4.96:1 on --side — a hair lighter than --ink-3 so the "muted" step stays
+     visible, but comfortably clear of 4.5. */
+  --ink-3-dimmed: #9c958c;
+  --line: rgba(240, 236, 230, 0.09);
+  --line-2: rgba(240, 236, 230, 0.05);
+  --accent: #c9956a;
+  /* Dark mode's accent is already light enough to read on --canvas (6.74:1), so
+     --accent-strong is the accent itself. --accent-contrast has to flip to ink:
+     white on #c9956a is 2.63:1, near-black is 6.74:1. */
+  --accent-strong: #c9956a;
+  --accent-contrast: #1a1816;
+  --accent-soft: rgba(201, 149, 106, 0.18);
+  /* The dark --accent-soft is translucent, compositing to ~#42372d over
+     --panel. --accent-strong itself is only 4.40:1 there, so lighten one
+     step for this surface: 5.42:1. (The light theme darkens instead —
+     same token, mirrored direction.) */
+  --accent-strong-on-soft: #d9a87c;
+
+  /* Text */
+  --color-text-primary: #f0ece6;
+  --color-text-secondary: #a8a29a;
+  --color-text-muted: #989086;
+  --color-text: #f0ece6;
+  --color-text-tertiary: #989086;
+  /* The light default #d93025 was darkened for AA on white, which left it
+     at 3.32:1 on the dark --panel behind the 10px "now" label. Lighten it
+     for dark: 5.20:1 on --panel, 4.82:1 on --side. */
+  --color-current-time: #ef6a5e;
+
+  /* Borders */
+  --color-border: rgba(240, 236, 230, 0.09);
+  --color-border-light: rgba(240, 236, 230, 0.05);
+  --color-border-subtle: rgba(240, 236, 230, 0.08);
+  --color-border-visible: rgba(240, 236, 230, 0.09);
+
+  /* Accent */
+  --color-accent: #c9956a;
+  --color-primary: #c9956a;
+  --color-primary-hover: #d4a575;
+  --color-primary-light: rgba(201, 149, 106, 0.12);
+  --color-accent-hover: #d4a575;
+  --accent-hover: #d4a575;
+  --color-accent-light: rgba(201, 149, 106, 0.12);
+
+  /* Status */
+  --color-success: #6aaa85;
+  --color-success-light: rgba(106, 170, 133, 0.12);
+  --color-danger-bg: rgba(212, 135, 127, 0.1);
+  --color-warning: #d4a54f;
+  --color-warning-text: #d4a54f;
+  --color-error: #d4877f;
+  --color-info: #c9956a;
+
+  /* Overlay */
+  --color-overlay: rgba(0, 0, 0, 0.6);
+
+  /* Surfaces (modal tokens live in the "Modal / popover tokens" block below) */
+  --color-bg: #1a1816;
+  --color-surface: #242220;
+  --color-surface-raised: #2a2826;
+  --color-surface-glass: rgba(36, 34, 32, 0.8);
+
+  /* Scrollbar */
+  --color-scrollbar: #3a3836;
+  --color-scrollbar-hover: #4a4846;
+
+  /* Border radius — same as light */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Spacing scale — same as light */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Font families — same as light */
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+  --font-mono: 'SF Mono', 'Fira Code', 'Fira Mono', 'Roboto Mono', monospace;
+
+  /* Font sizes — same as light */
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.125rem;
+  --text-2xl: 1.25rem;
+  --text-3xl: 1.5rem;
+  --text-4xl: 1.875rem;
+
+  /* Font weights — same as light */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* Line heights — same as light */
+  --leading-tight: 1.2;
+  --leading-normal: 1.4;
+  --leading-relaxed: 1.6;
+
+  /* Transitions — same as light */
+  --transition-fast: 0.1s ease;
+  --transition-normal: 0.2s ease;
+  --transition-slow: 0.3s ease;
+
+  /* Shadows */
+  --shadow-event: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(0, 0, 0, 0.08);
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  /* Event card theming */
+  /* Dark surfaces don't read a drop shadow as depth — they read it as haze, and
+     the layering here is carried by borders and surface steps anyway. Set this
+     above 0 to bring them back; they'll be black, not cream. */
+  --shadow-rgb: 0, 0, 0;
+  --shadow-opacity: 0;
+  --ink-raw: 240, 236, 230;
+  --hover-bg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --selected-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 20%, transparent);
+  --chip-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --tag-bg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --tag-border: color-mix(in srgb, var(--accent) 45%, var(--line));
+  --surface-bg: color-mix(in srgb, var(--ink) 6%, transparent);
+  --surface-bg-strong: color-mix(in srgb, var(--ink) 8%, transparent);
+  --error-bg: color-mix(in srgb, var(--color-error, #d4877f) 10%, transparent);
+  --error-bg-strong: color-mix(in srgb, var(--color-error, #d4877f) 16%, transparent);
+  --error-border: color-mix(in srgb, var(--color-error, #d4877f) 30%, transparent);
+  --event-bg-mix: 18%;
+  --event-bg-mix-hover: 22%;
+  --event-ink-2: #b0aaa0;
+  --event-ink-3: #b0aaa0;
+  --color-error-muted: #d4877f;
+  --color-success-muted: #6aaa85;
+
+  /* Modal / popover tokens */
+  --modal-bg: #2d2a24;
+  --popover-bg: #383229;
+  --modal-scrim: rgba(0, 0, 0, 0.6);
+  --modal-blur: blur(4px);
+  --modal-border: transparent;
+  --modal-card-border: 1px solid rgba(255, 247, 235, 0.08);
+  --popover-border: rgba(255, 247, 235, 0.14);
+  --modal-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 60px rgba(0, 0, 0, 0.65);
+
+  /* Mobile floating nav pill tokens */
+  --nav-canvas-track: #312e2a;
+  --nav-switcher-track: var(--side);
+  --ink-4: #4a4744;
+  --toggle-off: #3a3733;
+  --shadow-pill: 0 16px 36px rgba(0, 0, 0, 0.45), 0 2px 10px rgba(0, 0, 0, 0.25);
+  --shadow-tile-active: 0 3px 8px color-mix(in srgb, var(--accent) 40%, transparent);
+
+  /* Layout — same as light */
+  --sidebar-width: 277px;
+  --sidebar-collapsed-width: 32px;
+  --header-height: 72px;
+}
+
+/* Global scrollbar — thumb hidden until hover */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+*:hover {
+  scrollbar-color: var(--color-scrollbar) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 3px;
+}
+
+*:hover::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-hover);
+}
+
+/* ── Modal card — double-bezel edge (default theme) ─────────── */
+[data-theme='light']:not([data-theme-id]) [data-component='modal-card'] {
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    0 0 0 4px rgba(255, 255, 255, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    var(--modal-shadow);
+}
+
+/* ── Event tint strength (default theme only) ────────────────
+   How much of a calendar's colour shows through its event cards. Raised in
+   response to issue #31: at "subtle" the cards read as cream first and colour
+   second, which makes calendars hard to tell apart at a glance.
+
+   The tint sits behind each event's time and location, so every step up costs
+   contrast there — which is why --event-ink-* moves with it. Each pairing is
+   measured to keep that text at WCAG AA (4.5:1) against the most saturated
+   colour in Google's default calendar palette (Tomato in light, Banana in dark)
+   at BOTH the resting and the hover mix — hover is the tighter of the two, and
+   is easy to forget. Worst case per level is noted alongside.
+
+   ThemeProvider only sets data-event-tint while a built-in theme is active, so
+   custom themes never match these rules and keep whatever they define. */
+
+/* subtle — the default, and the shipped look. 5.07 light / 5.13 dark */
+:root[data-event-tint='subtle'] {
+  --event-bg-mix: 9%;
+  --event-bg-mix-hover: 12%;
+  --event-ink-2: #655f57;
+  --event-ink-3: #655f57;
+}
+
+:root[data-theme='dark'][data-event-tint='subtle'] {
+  --event-bg-mix: 18%;
+  --event-bg-mix-hover: 22%;
+  --event-ink-2: #b0aaa0;
+  --event-ink-3: #b0aaa0;
+}
+
+/* balanced — same character, colour more present. 4.82 light / 5.10 dark */
+:root[data-event-tint='balanced'] {
+  --event-bg-mix: 15%;
+  --event-bg-mix-hover: 19%;
+  --event-ink-2: #5c564e;
+  --event-ink-3: #5c564e;
+}
+
+:root[data-theme='dark'][data-event-tint='balanced'] {
+  --event-bg-mix: 24%;
+  --event-bg-mix-hover: 29%;
+  --event-ink-2: #cac4ba;
+  --event-ink-3: #cac4ba;
+}
+
+/* vivid — colour is the first thing you see. 4.68 light / 4.51 dark */
+:root[data-event-tint='vivid'] {
+  --event-bg-mix: 22%;
+  --event-bg-mix-hover: 27%;
+  --event-ink-2: #544e46;
+  --event-ink-3: #544e46;
+}
+
+:root[data-theme='dark'][data-event-tint='vivid'] {
+  --event-bg-mix: 30%;
+  --event-bg-mix-hover: 36%;
+  --event-ink-2: #d1cbc1;
+  --event-ink-3: #d1cbc1;
+}

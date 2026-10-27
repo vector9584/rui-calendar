@@ -1,0 +1,548 @@
+/*
+ * ╔══════════════════════════════════════════════════════════════════╗
+ * ║  CALINO THEME TEMPLATE                                          ║
+ * ║                                                                  ║
+ * ║  Copy this file, rename it, and fill in your values.            ║
+ * ║  Drop the .css file into public/themes/ — it's auto-detected.   ║
+ * ║                                                                  ║
+ * ║  LINE 1 FORMAT (required):                                      ║
+ * ║    /* Theme: Your Theme Name | light * /     → light-only       ║
+ * ║    /* Theme: Your Theme Name | dark * /      → dark-only        ║
+ * ║                                                                  ║
+ * ║  TWO LEVELS OF CONTROL                                          ║
+ * ║  ─────────────────────                                          ║
+ * ║  1. CSS Variables (tokens) — colors, spacing, radius, etc.     ║
+ * ║     These are the easiest. Just set --canvas, --accent, etc.   ║
+ * ║                                                                  ║
+ * ║  2. Component Overrides — target specific UI elements.          ║
+ * ║     Use [data-theme-id="your-theme"] to scope your rules.       ║
+ * ║     This lets you add backdrop-filter, borders, gradients,      ║
+ * ║     or anything else that CSS variables can't express.          ║
+ * ╚══════════════════════════════════════════════════════════════════╝
+ */
+
+
+/* ================================================================
+   PART 1: CSS VARIABLES (tokens)
+   ================================================================ */
+
+/* ── Light Theme ──────────────────────────────────────────────── */
+:root,
+[data-theme='light'] {
+
+  /* Canvas & Surfaces */
+  --canvas: #faf8f3;           /* canonical — page background */
+  --panel: #ffffff;             /* canonical — cards, modals */
+  --side: #f6f3ed;             /* sidebar */
+
+  --color-bg: var(--canvas);   /* legacy alias — ignore */
+  --color-bg-primary: var(--canvas);   /* legacy alias — ignore */
+  --color-bg-secondary: var(--panel);  /* legacy alias — ignore */
+  --color-bg-tertiary: #f3f0ea;
+  --color-bg-hover: rgba(0, 0, 0, 0.04);
+  --color-bg-input: var(--canvas);
+
+  --color-surface: var(--panel);
+  --color-surface-raised: var(--panel);
+  --color-surface-glass: rgba(255, 255, 255, 0.8);
+
+  /* Text */
+  --ink: #2c2823;              /* canonical — primary text */
+  --ink-2: #6f6a62;
+  --ink-3: #a39d93;
+
+  --color-text-primary: var(--ink);     /* legacy alias — ignore */
+  --color-text-secondary: var(--ink-2); /* legacy alias — ignore */
+  --color-text-muted: var(--ink-3);     /* legacy alias — ignore */
+  --color-text-tertiary: var(--ink-3);
+
+  /* Borders */
+  --line: rgba(0, 0, 0, 0.09);     /* canonical — primary border */
+  --line-2: rgba(0, 0, 0, 0.05);  /* canonical — subtle border */
+
+  --color-border: var(--line);          /* legacy alias — ignore */
+  --color-border-light: var(--line-2);  /* legacy alias — ignore */
+  --color-border-subtle: var(--line-2); /* legacy alias — ignore */
+  --color-border-visible: var(--line);  /* legacy alias — ignore */
+  --color-border-glass: var(--line);    /* legacy alias — ignore */
+
+  /* Accent */
+  --accent: #b07d4f;              /* canonical — fills, rails, dots, borders */
+  /* Optional. The accent as *text*, and as a fill behind --accent-contrast.
+     Set this if --accent is too light to read on --canvas (aim for 4.5:1).
+     Falls back to --accent when omitted. */
+  --accent-strong: #8d643f;
+  /* Text/icon colour on an --accent-strong fill (the "today" pill, primary
+     buttons). Use whichever of white/ink contrasts better with your accent. */
+  --accent-contrast: #ffffff;
+  --accent-soft: rgba(176, 125, 79, 0.12); /* canonical — chip/badge fills */
+
+  --color-accent: var(--accent);        /* legacy alias — ignore */
+  --color-accent-hover: #9a6c42;       /* legacy alias — ignore */
+  --color-accent-light: var(--accent-soft); /* legacy alias — ignore */
+  --color-primary: var(--accent);       /* legacy alias — ignore */
+  --color-primary-hover: #9a6c42;       /* legacy alias — ignore */
+  --color-primary-light: var(--accent-soft); /* legacy alias — ignore */
+
+  /* Status */
+  --color-success: #5d9a78;
+  --color-success-light: rgba(93, 154, 120, 0.12);
+  --color-warning: #bf944e;
+  /* Optional. Used where the warning colour carries text or an icon rather
+     than a fill; yellows usually need to be much darker there. */
+  --color-warning-text: #8d6902;
+  --color-error: #c2697f;
+  --color-error-muted: #c47068;
+  --color-danger: #c2697f;
+  --color-danger-bg: rgba(194, 105, 127, 0.08);
+  --color-info: #5b7fb5;
+
+  /* Event Cards */
+  --ink-raw: 44, 40, 33;
+  --event-bg-mix: 9%;
+  --event-bg-mix-hover: 12%;
+
+  /* ── Named color-mix tokens ── */
+  /* Accent-based tokens */
+  --hover-bg: color-mix(in srgb, var(--accent) 6%, transparent);
+  --selected-bg: color-mix(in srgb, var(--accent) 10%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 14%, transparent);
+  --chip-bg: color-mix(in srgb, var(--accent) 12%, transparent);
+  --tag-bg: color-mix(in srgb, var(--accent) 5%, transparent);
+  --tag-border: color-mix(in srgb, var(--accent) 30%, var(--line));
+  /* Ink-based tokens */
+  --surface-bg: color-mix(in srgb, var(--ink) 4%, transparent);
+  --surface-bg-strong: color-mix(in srgb, var(--ink) 6%, transparent);
+  /* Error tokens */
+  --error-bg: color-mix(in srgb, var(--color-error, #c2697f) 8%, transparent);
+  --error-bg-strong: color-mix(in srgb, var(--color-error, #c2697f) 14%, transparent);
+  --error-border: color-mix(in srgb, var(--color-error, #c2697f) 22%, transparent);
+
+  /* Overlay & Focus */
+  --color-overlay: rgba(0, 0, 0, 0.4);
+  --color-focus: var(--accent);
+
+  /* Scrollbar */
+  --color-scrollbar: #d5d0c8;
+  --color-scrollbar-hover: #a39d93;
+
+  /* Shadows */
+  --shadow-event: 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.04), 0 6px 16px rgba(0, 0, 0, 0.03);
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+
+  /* Modal / Popover */
+  --modal-bg: var(--panel);
+  --popover-bg: var(--panel);
+  --modal-scrim: rgba(0, 0, 0, 0.4);
+  --modal-blur: blur(3px);
+  --modal-border: rgba(0, 0, 0, 0.06);
+  --popover-border: rgba(0, 0, 0, 0.08);
+  --modal-shadow: 0 24px 80px rgba(0, 0, 0, 0.18), 0 6px 20px rgba(0, 0, 0, 0.10);
+
+  /* Typography */
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: thin;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Layout */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+
+  /* Event Pill */
+  --event-border-radius: 8px;
+  --event-gap: 4px;
+
+  /* Sidebar Today Button */
+  --today-btn-radius: 10px;
+  --today-btn-weight: 500;
+
+  /* Multi-day Event Shape */
+  --multi-day-clip: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  /* Calendar Grid */
+  --day-cell-radius: 0;
+  --day-cell-hover-bg: rgba(var(--ink-raw), 0.02);
+  --day-cell-today-bg: var(--selected-bg);
+  --day-cell-other-month-bg: rgba(var(--ink-raw), 0.02);
+
+  /* View Switcher */
+  --view-switcher-bg: rgba(var(--ink-raw), 0.045);
+  --view-switcher-radius: 12px;
+  --view-switcher-indicator-bg: var(--panel);
+  --view-switcher-indicator-shadow: 0 1px 2px rgba(var(--ink-raw), 0.08), 0 0 0 1px var(--line);
+  --view-switcher-indicator-radius: 9px;
+}
+
+/* ── Dark Theme ───────────────────────────────────────────────── */
+[data-theme='dark'] {
+
+  /* Canvas & Surfaces */
+  --canvas: #1a1816;            /* canonical — page background */
+  --panel: #242220;              /* canonical — cards, modals */
+  --side: #1e1c1a;              /* sidebar */
+
+  --color-bg: var(--canvas);    /* legacy alias — ignore */
+  --color-bg-primary: var(--canvas);   /* legacy alias — ignore */
+  --color-bg-secondary: var(--panel); /* legacy alias — ignore */
+  --color-bg-tertiary: #2a2826;
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-input: #2a2826;
+
+  --color-surface: var(--panel);
+  --color-surface-raised: #2a2826;
+  --color-surface-glass: rgba(36, 34, 32, 0.8);
+
+  /* Text */
+  --ink: #f0ece6;              /* canonical — primary text */
+  --ink-2: #a39d93;
+  --ink-3: #6f6a62;
+
+  --color-text-primary: var(--ink);     /* legacy alias — ignore */
+  --color-text-secondary: var(--ink-2); /* legacy alias — ignore */
+  --color-text-muted: var(--ink-3);     /* legacy alias — ignore */
+  --color-text-tertiary: var(--ink-3);
+
+  /* Borders */
+  --line: rgba(240, 236, 230, 0.09);    /* canonical — primary border */
+  --line-2: rgba(240, 236, 230, 0.05); /* canonical — subtle border */
+
+  --color-border: var(--line);          /* legacy alias — ignore */
+  --color-border-light: var(--line-2);   /* legacy alias — ignore */
+  --color-border-subtle: var(--line-2);  /* legacy alias — ignore */
+  --color-border-visible: var(--line);   /* legacy alias — ignore */
+  --color-border-glass: var(--line);     /* legacy alias — ignore */
+
+  /* Accent */
+  --accent: #c9956a;             /* canonical — fills, rails, dots, borders */
+  --accent-strong: #c9956a;      /* light enough to read as-is on dark canvas */
+  --accent-contrast: #1a1816;    /* ink, not white — see the light block above */
+  --accent-soft: rgba(201, 149, 106, 0.12); /* canonical — chip/badge fills */
+
+  --color-accent: var(--accent);        /* legacy alias — ignore */
+  --color-accent-hover: #d4a575;       /* legacy alias — ignore */
+  --color-accent-light: var(--accent-soft); /* legacy alias — ignore */
+  --color-primary: var(--accent);        /* legacy alias — ignore */
+  --color-primary-hover: #d4a575;       /* legacy alias — ignore */
+  --color-primary-light: var(--accent-soft); /* legacy alias — ignore */
+
+  /* Status */
+  --color-success: #6aaa85;
+  --color-success-light: rgba(106, 170, 133, 0.12);
+  --color-warning: #d4a54f;
+  --color-error: #d4877f;
+  --color-error-muted: #d4877f;
+  --color-danger: #d4877f;
+  --color-danger-bg: rgba(212, 135, 127, 0.12);
+  --color-info: #7b9fd4;
+
+  /* Event Cards */
+  --ink-raw: 240, 236, 230;
+  --event-bg-mix: 18%;
+  --event-bg-mix-hover: 22%;
+
+  /* ── Named color-mix tokens ── */
+  /* Accent-based tokens */
+  --hover-bg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --selected-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --focus-ring: color-mix(in srgb, var(--accent) 20%, transparent);
+  --chip-bg: color-mix(in srgb, var(--accent) 14%, transparent);
+  --tag-bg: color-mix(in srgb, var(--accent) 8%, transparent);
+  --tag-border: color-mix(in srgb, var(--accent) 45%, var(--line));
+  /* Ink-based tokens */
+  --surface-bg: color-mix(in srgb, var(--ink) 6%, transparent);
+  --surface-bg-strong: color-mix(in srgb, var(--ink) 8%, transparent);
+  /* Error tokens */
+  --error-bg: color-mix(in srgb, var(--color-error, #d4877f) 10%, transparent);
+  --error-bg-strong: color-mix(in srgb, var(--color-error, #d4877f) 16%, transparent);
+  --error-border: color-mix(in srgb, var(--color-error, #d4877f) 30%, transparent);
+
+  /* Overlay & Focus */
+  --color-overlay: rgba(0, 0, 0, 0.6);
+  --color-focus: var(--accent);
+
+  /* Scrollbar */
+  --color-scrollbar: #3a3836;
+  --color-scrollbar-hover: #4a4846;
+
+  /* Shadows */
+  --shadow-event: 0 1px 2px rgba(0, 0, 0, 0.12);
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.12), 0 6px 16px rgba(0, 0, 0, 0.08);
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.2);
+
+  /* Modal / Popover */
+  --modal-bg: #2d2a24;
+  --popover-bg: #383229;
+  --modal-scrim: rgba(0, 0, 0, 0.6);
+  --modal-blur: blur(4px);
+  --modal-border: rgba(255, 247, 235, 0.10);
+  --popover-border: rgba(255, 247, 235, 0.14);
+  --modal-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), 0 20px 60px rgba(0, 0, 0, 0.65);
+
+  /* Typography */
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'SF Mono', 'JetBrains Mono', ui-monospace, Menlo, monospace;
+
+  /* Scrollbar */
+  --scrollbar-width: thin;
+
+  /* Spacing */
+  --space-0: 0;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radius */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-full: 9999px;
+
+  /* Layout */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+
+  /* Event Pill */
+  --event-border-radius: 8px;
+  --event-gap: 4px;
+
+  /* Sidebar Today Button */
+  --today-btn-radius: 10px;
+  --today-btn-weight: 500;
+
+  /* Multi-day Event Shape */
+  --multi-day-clip: polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%);
+  /* Calendar Grid */
+  --day-cell-radius: 0;
+  --day-cell-hover-bg: rgba(var(--ink-raw), 0.04);
+  --day-cell-today-bg: var(--selected-bg);
+  --day-cell-other-month-bg: rgba(var(--ink-raw), 0.04);
+
+  /* View Switcher */
+  --view-switcher-bg: rgba(var(--ink-raw), 0.06);
+  --view-switcher-radius: 12px;
+  --view-switcher-indicator-bg: var(--panel);
+  --view-switcher-indicator-shadow: 0 1px 2px rgba(var(--ink-raw), 0.12), 0 0 0 1px var(--line);
+  --view-switcher-indicator-radius: 9px;
+}
+
+
+/* ================================================================
+   PART 2: COMPONENT OVERRIDES (optional)
+
+   Scope all rules under [data-theme-id="your-theme-name"].
+   The theme name = your CSS filename without the .css extension.
+   Example: public/themes/nord.css → [data-theme-id="nord"]
+
+   Available data-component selectors:
+   ────────────────────────────────────
+   [data-component="sidebar"]        — sidebar panel
+   [data-component="header"]         — top bar / calendar header
+   [data-component="view-switcher"]  — month/week/day/agenda tabs
+   [data-component="today-button"]   — the "Today" button in header
+   [data-component="calendar-grid"]  — main calendar grid
+   [data-component="event-card"]     — event pill in month/week/day
+   [data-component="modal-backdrop"] — modal overlay / scrim (all modals)
+   [data-component="modal-card"]     — modal content card (all modals)
+   [data-component="modal-band"]     — event modal accent strip (top)
+   [data-component="modal-body"]     — event modal scrollable body
+   [data-component="modal-footer"]   — event modal action buttons
+   [data-component="command-palette"]— power bar / command palette
+   [data-component="tasks-section"]  — sidebar tasks panel
+   [data-component="day-tasks"]      — tasks row in month view cell
+   [data-component="sidebar-today-button"] — Today btn in sidebar mini-cal
+   [data-today]                       — today's date cell in grid
+   [data-other-month]                 — day cell outside current month
+   [data-weekend]                     — Saturday / Sunday cell
+   [data-drop-target]                 — drag-over state on day cell
+   [data-multi-day]                   — multi-day spanning event pill
+
+   These are plain HTML attributes on the elements.
+   They persist regardless of CSS Module hashing.
+
+   CSS injection order:
+   ────────────────────
+   1. Built-in theme CSS (always present)
+   2. Your theme CSS (appended after)
+   Your rules win on equal specificity because they come later.
+   Use [data-theme-id="x"] for extra specificity if needed.
+   ================================================================ */
+
+/*
+ * ── Example: Frosted glass sidebar ────────────────────────────
+ *
+ * [data-theme-id="mytheme"][data-theme='dark'] [data-component="sidebar"] {
+ *   background: rgba(30, 30, 35, 0.7);
+ *   backdrop-filter: blur(12px) saturate(1.4);
+ *   border-right: 1px solid rgba(255, 255, 255, 0.06);
+ * }
+ *
+ * ── Example: Double-bezel modal ───────────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="modal-backdrop"] {
+ *   backdrop-filter: blur(6px);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="modal-card"] {
+ *   border: 1px solid rgba(255, 255, 255, 0.1);
+ *   box-shadow:
+ *     0 0 0 1px rgba(0, 0, 0, 0.1),
+ *     0 24px 80px rgba(0, 0, 0, 0.25);
+ * }
+ *
+ * ── Example: Event modal specific tweaks ──────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="modal-band"] {
+ *   height: 4px;
+ *   background: linear-gradient(90deg, var(--accent), transparent);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="modal-body"] {
+ *   padding: 0 24px;
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="modal-footer"] {
+ *   border-top: 1px solid var(--line);
+ *   background: var(--panel);
+ * }
+ *
+ * ── Example: Event chip border accent ─────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="event-card"] {
+ *   border-left: 3px solid var(--color-accent);
+ * }
+ *
+ * ── Example: Header with subtle gradient ──────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="header"] {
+ *   background: linear-gradient(
+ *     to bottom,
+ *     var(--panel),
+ *     color-mix(in srgb, var(--panel) 95%, transparent)
+ *   );
+ *   border-bottom: 1px solid var(--line);
+ * }
+ *
+ * ── Example: Calendar grid cells ───────────────────────────
+ *
+ * Day cells use data attributes (not hashed classes):
+ *   [data-today]            -- today cell
+ *   [data-other-month]      -- days outside current month
+ *   [data-weekend]          -- Saturday / Sunday
+ *   [data-drop-target]      -- drag-over state
+ *
+ * [data-theme-id="mytheme"] [data-component="calendar-grid"] > div {
+ *   border-radius: var(--day-cell-radius);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="calendar-grid"] [data-other-month] {
+ *   background: var(--day-cell-other-month-bg);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="calendar-grid"] [data-weekend] {
+ *   opacity: 0.85;
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="calendar-grid"] [data-drop-target] {
+ *   background: var(--accent-soft);
+ *   outline: 2px dashed var(--accent);
+ * }
+ *
+ *
+ * ── Example: Today cell glow ──────────────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-today] {
+ *   box-shadow: inset 0 0 0 2px var(--accent),
+ *               0 0 12px color-mix(in srgb, var(--accent) 20%, transparent);
+ * }
+ *
+ * ── Example: View switcher pills ──────────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="view-switcher"] {
+ *   background: var(--color-bg-tertiary);
+ *   border-radius: var(--radius-md);
+ *   padding: 3px;
+ *   gap: 2px;
+ * }
+ *
+ * ── Example: Tasks section in sidebar ─────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="tasks-section"] {
+ *   border-top: 1px solid var(--line-2);
+ *   padding-top: 12px;
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="sidebar-today-button"] {
+ *   background: var(--accent);
+ *   color: #fff;
+ *   border-radius: var(--radius-pill);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-multi-day] {
+ *   border-radius: var(--event-border-radius);
+ *   opacity: 0.9;
+ * }
+ * }
+ *
+ * ── Example: Command palette ──────────────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="command-palette"] {
+ *   background: rgba(0, 0, 0, 0.4);
+ *   backdrop-filter: blur(8px);
+ * }
+ *
+ * [data-theme-id="mytheme"] [data-component="command-palette"] .modal {
+ *   background: var(--panel);
+ *   border-radius: var(--radius-lg);
+ *   box-shadow: var(--shadow-elevated);
+ * }
+ *
+ * ── Example: Today button ─────────────────────────────────────
+ *
+ * [data-theme-id="mytheme"] [data-component="today-button"] {
+ *   background: var(--accent);
+ *   color: white;
+ *   border-radius: var(--radius-pill);
+ * }
+ */

@@ -1,0 +1,676 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+}
+
+.popup {
+  position: fixed;
+  z-index: 1000;
+  width: 300px;
+  background: var(--popover-glass, var(--popover-bg, #fff));
+  backdrop-filter: blur(12px) saturate(1.4);
+  -webkit-backdrop-filter: blur(12px) saturate(1.4);
+  border-radius: var(--radius-md);
+  box-shadow: var(--modal-shadow, 0 8px 32px rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.05));
+  overflow: hidden;
+}
+
+/* The popup is animated with opacity/scale/y on open and close. Re-compositing
+   a blurred backdrop on every frame of that is very expensive on mid-tier
+   mobile GPUs, so drop the blur below the mobile breakpoint and fall back to
+   an opaque panel background — the popup still has to stay legible over the
+   calendar content behind it. */
+@media (max-width: 768px) {
+  .popup {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: var(--popover-bg, var(--panel, #fff));
+  }
+
+  /* Bottom sheet: a 300px card anchored to the tap point spends most of its
+     life half off-screen on a phone, and its 13px rows and 24px close button
+     are below the comfortable touch floor. Pin it to the bottom edge full
+     width instead, where the thumb already is. */
+  .popup[data-sheet] {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: 100%;
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--radius-lg, 16px) var(--radius-lg, 16px) 0 0;
+    border-bottom: none;
+    box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.18);
+    /* Promote once rather than re-rasterising the sheet on every frame of the
+       slide-up and the swipe that follows. */
+    will-change: transform;
+  }
+
+  /* The sheet sits over the calendar it came from; dim it so the sheet reads
+     as the foreground layer rather than a card floating in the grid. */
+  .backdrop[data-sheet] {
+    background: rgba(0, 0, 0, 0.32);
+  }
+
+  /* Floated over the header rather than stacked above it, so it doesn't push
+     the header's background down off the sheet's top edge. */
+  .dragHandle {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-border-visible, rgba(0, 0, 0, 0.14));
+    /* Without this, Android/Chrome can decide partway through that the drag is
+       really a page scroll and cancel the pointer sequence. */
+    touch-action: none;
+  }
+
+  /* Wins over .header[data-has-background]'s own padding, so the tinted and
+     untinted headers keep the same handle clearance. */
+  .popup[data-sheet] .header {
+    position: relative;
+    padding: 22px 18px 16px;
+    touch-action: none;
+  }
+
+  .popup[data-sheet] .title,
+  .popup[data-sheet] .titleInput {
+    font-size: 17px;
+  }
+
+  /* 44px is the minimum comfortable touch target; 16px is what stops mobile
+     browsers zooming the page when an input takes focus. */
+  .popup[data-sheet] .closeBtn {
+    width: 44px;
+    height: 44px;
+    margin: -10px -10px -10px 0;
+  }
+
+  .popup[data-sheet] .content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    /* Contain the overscroll bounce instead of letting it chain up to the
+       WebView's pull-to-refresh, which would cancel the swipe gesture. */
+    overscroll-behavior-y: contain;
+    padding: 12px 18px;
+    gap: 4px;
+  }
+
+  .popup[data-sheet] .field {
+    min-height: 44px;
+    gap: 12px;
+    font-size: 15px;
+    padding: 4px;
+  }
+
+  .popup[data-sheet] .taskCompletion,
+  .popup[data-sheet] .previewSubtaskRow {
+    min-height: 44px;
+  }
+
+  .popup[data-sheet] .taskCompletion input,
+  .popup[data-sheet] .previewSubtaskRow input {
+    width: 20px;
+    height: 20px;
+    flex: 0 0 auto;
+  }
+
+  .popup[data-sheet] .previewSubtaskTitle {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-height: 36px;
+  }
+
+  .popup[data-sheet] .icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .popup[data-sheet] .inlineInput,
+  .popup[data-sheet] .descriptionInput,
+  .popup[data-sheet] .descriptionText,
+  .popup[data-sheet] .addDescription {
+    font-size: 16px;
+  }
+
+  .popup[data-sheet] .inlineInput {
+    min-height: 36px;
+  }
+
+  .popup[data-sheet] .inlineTimeInputs .inlineInput {
+    width: 86px;
+  }
+
+  .popup[data-sheet] .footer {
+    padding: 12px 18px calc(12px + var(--safe-area-bottom, 0px));
+  }
+
+  .popup[data-sheet] .openBtn {
+    min-height: 48px;
+    font-size: 15px;
+  }
+
+  .popup[data-sheet] .deleteBtn,
+  .popup[data-sheet] .exportBtn,
+  .popup[data-sheet] .saveBtn {
+    width: 48px;
+    height: 48px;
+  }
+
+  /* Hover styling is meaningless on touch and leaves rows looking stuck in a
+     pressed state after a tap — trade it for a real press state. */
+  .popup[data-sheet] .field:hover,
+  .popup[data-sheet] .descriptionText:hover,
+  .popup[data-sheet] .addDescription:hover,
+  .popup[data-sheet] .title:hover,
+  .popup[data-sheet] .closeBtn:hover {
+    background: transparent;
+  }
+
+  .popup[data-sheet] .field:active,
+  .popup[data-sheet] .descriptionText:active,
+  .popup[data-sheet] .addDescription:active,
+  .popup[data-sheet] .title:active {
+    background: var(--color-border-subtle, #e8eaed);
+  }
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--popover-border, #e8eaed);
+  background: transparent;
+}
+
+/* When a keyword scene is present, give the header a bit more height so the art
+   reads as a small hero strip, and tint it with the event color. */
+.header[data-has-background] {
+  position: relative;
+  overflow: hidden;
+  padding-top: 22px;
+  padding-bottom: 22px;
+  background: color-mix(in srgb, var(--event-color, var(--accent)) 8%, transparent);
+}
+
+.keywordBackground {
+  position: absolute;
+  right: 46px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: auto;
+  height: 46px;
+  color: var(--event-color, var(--accent));
+  opacity: 0.2;
+  stroke-width: 1.5;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.header[data-has-background] .titleRow,
+.header[data-has-background] .closeBtn {
+  position: relative;
+  z-index: 1;
+}
+
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.colorDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary, #202124);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  flex: 1;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast);
+}
+
+.title:hover {
+  background: var(--color-border-subtle, #e8eaed);
+}
+
+.titleInput {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary, #202124);
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: transparent;
+  outline: none;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  min-width: 0;
+}
+
+.closeBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary, #5f6368);
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+
+.closeBtn:hover {
+  background: var(--color-border-subtle, #e8eaed);
+}
+
+.content {
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.taskCompletion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-text-primary, #202124);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.taskCompletion input,
+.previewSubtaskRow input {
+  accent-color: var(--accent);
+}
+
+.taskRelationship {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-secondary, #5f6368);
+  font-size: 12px;
+}
+
+.previewSubtasks {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 2px 0 2px 24px;
+}
+
+.previewSubtasksLabel {
+  color: var(--color-text-secondary, #5f6368);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.previewSubtaskRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.previewSubtaskTitle {
+  min-width: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary, #202124);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.previewSubtaskTitle:hover {
+  text-decoration: underline;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-text-primary, #202124);
+  cursor: pointer;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast);
+}
+
+.field:hover {
+  background: var(--color-border-subtle, #e8eaed);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--color-text-secondary, #5f6368);
+}
+
+.recurringIcon {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 2px;
+  color: var(--color-text-secondary, #5f6368);
+  opacity: 0.7;
+  display: flex;
+  align-items: center;
+  cursor: default;
+}
+
+.recurringIcon::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  background: var(--color-text, #202124);
+  color: var(--color-bg, #fff);
+  font-size: 11px;
+  white-space: nowrap;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
+  z-index: 10;
+}
+
+.recurringIcon:hover::after {
+  opacity: 1;
+}
+
+.location {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.locationMapLink {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-2, #6b6b6b);
+  text-decoration: none;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out);
+}
+
+.locationMapLink:hover {
+  opacity: 1;
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  background-color: var(--accent-soft, #efe7db);
+}
+
+.inlineInput {
+  font-size: 13px;
+  color: var(--color-text-primary, #202124);
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: transparent;
+  outline: none;
+  padding: 2px 0;
+  min-width: 80px;
+}
+
+.inlineTimeInputs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.inlineTimeInputs .inlineInput {
+  width: 70px;
+}
+
+.description {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-subtle, #e8eaed);
+}
+
+.descriptionLabel {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #5f6368);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.descriptionText {
+  font-size: 13px;
+  color: var(--color-text-primary, #202124);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 2px 4px;
+  margin: -2px -4px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast);
+}
+
+.descriptionText:hover {
+  background: var(--color-border-subtle, #e8eaed);
+}
+
+.descriptionInput {
+  width: 100%;
+  font-size: 13px;
+  color: var(--color-text-primary, #202124);
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: transparent;
+  outline: none;
+  padding: 4px 0;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+
+.addDescription {
+  font-size: 13px;
+  color: var(--color-text-secondary, #5f6368);
+  cursor: pointer;
+  padding: var(--space-1);
+  margin: -4px;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--dur-fast);
+}
+
+.addDescription:hover {
+  background: var(--color-border-subtle, #e8eaed);
+  color: var(--color-text-primary, #202124);
+}
+
+.footer {
+  padding: 12px 16px;
+  border-top: 1px solid var(--popover-border, #e8eaed);
+  background: var(--popover-bg, #fafafa);
+  display: flex;
+  gap: 10px;
+}
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--color-error, #dc3545);
+  background: none;
+  border: 1px solid var(--color-border-subtle, #e8eaed);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+
+.deleteBtn:hover {
+  background: var(--color-error, #dc3545);
+  color: #fff;
+}
+
+/* Same footprint as delete, but neutral — exporting is not destructive. */
+.exportBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: var(--color-text-secondary, #5f6368);
+  background: none;
+  border: 1px solid var(--color-border-subtle, #e8eaed);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+
+.exportBtn:hover {
+  background: var(--color-bg-hover);
+}
+
+.saveBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  /* Green rather than accent: this is the confirm action, and it sits next to
+     the destructive red delete button — the pair should read as yes/no. */
+  color: #fff;
+  background: var(--color-success);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+  flex-shrink: 0;
+}
+
+.saveBtn:hover {
+  background: color-mix(in srgb, var(--color-success) 85%, #000);
+}
+
+.openBtn {
+  flex: 1;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--accent-contrast, #fff);
+  background: var(--accent-strong, var(--color-accent));
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color var(--dur-fast);
+}
+
+.openBtn:hover {
+  background: var(--color-accent-hover);
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .titleInput,
+  .field,
+  .inlineInput,
+  .descriptionInput,
+  .popup[data-sheet] .field {
+    font-size: 16px;
+  }
+}
+
+/* Zone of an event anchored outside the device zone — same treatment as the
+   grid card's badge (EventCard.module.css .tzBadge). */
+.tzBadge {
+  margin-left: 6px;
+  padding: 0 4px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--ink-2);
+  background: rgba(128, 128, 128, 0.18);
+  white-space: nowrap;
+}
+
+/* The light-gray chip sits *lighter* than the popover in dark mode, which eats
+   the contrast of --ink-2 on it (4.45:1 on the default dark theme). Flip the
+   chip to a dark scrim in dark mode so the light ink reads at AA+ (6.2:1). */
+[data-theme='dark'] .tzBadge {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* The description is markdown, clamped to four lines above. Paragraphs sit
+   close, since the preview is small. */
+.descriptionText p {
+  margin: 0;
+}
+
+.descriptionText p + p {
+  margin-top: 4px;
+}
+
+/* Links look as they do in the journal and wrap anywhere, so a long address
+   does not widen the preview. Clicking one opens it; clicking the text around
+   it still starts editing. */
+.descriptionText a {
+  color: var(--accent-strong, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  overflow-wrap: anywhere;
+}
+
+.descriptionText a:hover {
+  color: var(--color-accent-hover, var(--accent));
+}

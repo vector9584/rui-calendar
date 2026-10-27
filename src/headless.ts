@@ -1,0 +1,227 @@
+/**
+ * Background sync entry point — the page `HeadlessSyncWorker` loads.
+ *
+ * This exists so the calendar mirror can be refreshed while Calino is closed.
+ * The mirror makes Android's calendar provider own reminder alarms, which is
+ * reliable in a way `LocalNotifications` is not, but the provider can only
+ * alarm events it has been given: without a background refresh an event created
+ * on another device never reaches it, and never alerts. This is the other half
+ * of that feature.
+ *
+ * It is deliberately not the app. No React, no stores, no UI — it reads the
+ * state the app persisted, does one CalDAV pass, writes the provider, and says
+ * it is done. See `HeadlessSyncWorker` for why there is no Capacitor here.
+ *
+ * ## Read-only with respect to app state
+ *
+ * Nothing here writes `localStorage`. The foreground app keeps its own
+ * in-memory zustand copy and rehydrates only at startup, so a background write
+ * would race it — either clobbering a change the user just made or being
+ * silently overwritten by the app's next save. The provider is the only thing
+ * this page mutates, and the app reconciles the mirror from its own state when
+ * it next opens, so the two converge.
+ */
+
+import type { Calendar, CalendarEvent } from '@/types'
+import type { CalDAVCalendar } from '@/features/caldav/types'
+import { getHeadlessBridge } from '@/lib/headlessBridge'
+import { getAllAccounts, getAllCalendars } from '@/features/caldav/sync/accountStorage'
+import { getAllCredentials } from '@/features/caldav/client/credentials'
+import { unwrapFetchEvents } from '@/features/caldav/client/CalDAVClient'
+import { createCalendarBackend } from '@/features/caldav/client/createBackend'
+import { parseICALDataAsyncWithStatus } from '@/features/caldav/adapter/iCalendarAdapter'
+import { buildMirrorPayload, MIRROR_PAST_DAYS, MIRROR_FUTURE_DAYS } from '@/lib/calendarMirror'
+import { hrefKey } from '@/lib/hrefKey'
+import { initHeadlessI18n } from '@/lib/i18nHeadless'
+import { CALDAV_FETCH_CONCURRENCY, mapWithConcurrency } from '@/lib/mapWithConcurrency'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+
+/** Mirrors the app's `zustand/persist` key. Read, never written. */
+function readPersisted<T>(key: string): Partial<T> {
+  try {
+    const raw = localStorage.getItem(key)
+    if (!raw) return {}
+    return ((JSON.parse(raw) as { state?: Partial<T> }).state ?? {}) as Partial<T>
+  } catch {
+    return {}
+  }
+}
+
+interface HeadlessResult {
+  accounts: number
+  calendars: number
+  events: number
+}
+
+/**
+ * Fetches every CalDAV calendar the app has marked visible and writes the
+ * result to the mirror.
+ *
+ * One account failing does not fail the pass: the others still refresh, and the
+ * partial reconcile leaves the failed account's existing rows in place rather
+ * than deleting events it merely could not reach.
+ */
+export async function runHeadlessSync(): Promise<HeadlessResult> {
+  const bridge = getHeadlessBridge()
+  if (!bridge) throw new Error('runHeadlessSync called outside the headless WebView')
+  const i18n = await initHeadlessI18n()
+  const t = (key: string, options?: Record<string, unknown>): string =>
+    i18n.t(`errors:${key}`, options)
+
+  // Visibility and colour live only in the app's store, so it is the authority
+  // on what gets mirrored — the same source the foreground pass uses.
+  const storeCalendars = readPersisted<{ calendars: Calendar[] }>('calino-storage').calendars ?? []
+  const cachedEvents = readPersisted<{ events: CalendarEvent[] }>('calino-storage').events ?? []
+  const visibleById = new Map(storeCalendars.filter((c) => c.isVisible).map((c) => [c.id, c]))
+  const now = Date.now()
+  const rangeStart = new Date(now - MIRROR_PAST_DAYS * DAY_MS).toISOString()
+  const rangeEnd = new Date(now + MIRROR_FUTURE_DAYS * DAY_MS).toISOString()
+
+  const events: CalendarEvent[] = []
+  const fetched: Calendar[] = []
+  let accountsSynced = 0
+  const credentialsById = new Map(
+    (await getAllCredentials()).map((credentials) => [credentials.id, credentials])
+  )
+  const calendarsByAccountId = new Map<string, CalDAVCalendar[]>()
+
+  for (const calendar of getAllCalendars()) {
+    if (!calendar.accountId) continue
+    const accountCalendars = calendarsByAccountId.get(calendar.accountId)
+    if (accountCalendars) accountCalendars.push(calendar)
+    else calendarsByAccountId.set(calendar.accountId, [calendar])
+  }
+
+  for (const account of getAllAccounts()) {
+    const targets = (calendarsByAccountId.get(account.id) ?? []).filter((calendar) =>
+      visibleById.has(calendar.id)
+    )
+    if (targets.length === 0) continue
+
+    try {
+      const credentials = credentialsById.get(account.credentialId)
+      if (!credentials) {
+        bridge.log(t('headless.accountCredentialsMissing', { account: account.name }))
+        continue
+      }
+      const client = await createCalendarBackend(
+        account.serverUrl,
+        credentials,
+        account.proxyUrl,
+        account.protocol
+      )
+
+      const calendarResults = await mapWithConcurrency(
+        targets,
+        CALDAV_FETCH_CONCURRENCY,
+        async (calendar) => {
+          try {
+            const fetched = unwrapFetchEvents(
+              await client.fetchEvents(calendar.url, rangeStart, rangeEnd)
+            )
+            return {
+              calendar,
+              resources: fetched.objects,
+              hadComponentFailures: fetched.hadComponentFailures,
+            }
+          } catch (error) {
+            bridge.log(
+              t('headless.calendarFailed', { calendar: calendar.name, error: String(error) })
+            )
+            return undefined
+          }
+        }
+      )
+
+      // mapWithConcurrency preserves target order, so network timing cannot
+      // change the mirror payload's ordering. Parse sequentially: ical.js's
+      // timezone registry is process-global, so source VTIMEZONE definitions
+      // from separate calendars must not interleave.
+      for (const result of calendarResults) {
+        if (!result) continue
+        if (result.hadComponentFailures) {
+          // A partial listing is not authoritative. Omitting this calendar
+          // from the payload makes native reconciliation leave its existing
+          // provider rows alone until every component query succeeds.
+          bridge.log(
+            t('headless.calendarFailed', {
+              calendar: result.calendar.name,
+              error: 'component query failed; mirror left unchanged',
+            })
+          )
+          continue
+        }
+        const calendarEvents: CalendarEvent[] = []
+        const unreadableHrefs = new Set<string>()
+        for (const resource of result.resources) {
+          const parsed = await parseICALDataAsyncWithStatus(resource.data, result.calendar.id)
+          if (parsed.hadParseFailures) unreadableHrefs.add(hrefKey(resource.url))
+          calendarEvents.push(...parsed.events)
+        }
+        if (unreadableHrefs.size > 0) {
+          // Unreadable is a property of one resource, not of the calendar. The
+          // reconcile deletes provider rows missing from the payload, so carry
+          // over what the app last cached for those resources and let the rest
+          // of the calendar refresh (#228).
+          bridge.log(
+            t('headless.calendarFailed', {
+              calendar: result.calendar.name,
+              error: `${unreadableHrefs.size} resource(s) failed to parse; kept as last cached`,
+            })
+          )
+          calendarEvents.push(
+            ...cachedEvents.filter(
+              (event) =>
+                event.calendarId === result.calendar.id &&
+                event.resourceHref !== undefined &&
+                unreadableHrefs.has(hrefKey(event.resourceHref))
+            )
+          )
+        }
+        events.push(...calendarEvents)
+        fetched.push(visibleById.get(result.calendar.id)!)
+      }
+      accountsSynced++
+    } catch (error) {
+      bridge.log(t('headless.accountFailed', { account: account.name, error: String(error) }))
+    }
+  }
+
+  if (fetched.length === 0) {
+    // Writing an empty payload here would be indistinguishable from "the user
+    // deleted everything" — and with nothing fetched we have no evidence of
+    // that. Leave the mirror as the app last left it.
+    bridge.log(t('headless.noCalendarsFetched'))
+    return { accounts: accountsSynced, calendars: 0, events: 0 }
+  }
+
+  const payload = buildMirrorPayload(events, fetched)
+  const result = JSON.parse(bridge.mirrorSync(JSON.stringify(payload))) as { error?: string }
+  if (result.error) throw new Error(result.error)
+
+  bridge.log(
+    t('headless.syncDone', {
+      events: payload.events.length,
+      calendars: payload.calendars.length,
+      accounts: accountsSynced,
+    })
+  )
+
+  return {
+    accounts: accountsSynced,
+    calendars: payload.calendars.length,
+    events: payload.events.length,
+  }
+}
+
+const bridge = getHeadlessBridge()
+if (bridge) {
+  runHeadlessSync()
+    .then(() => {
+      bridge.finish('')
+    })
+    .catch((error: unknown) => {
+      bridge.finish(error instanceof Error ? error.message : String(error))
+    })
+}

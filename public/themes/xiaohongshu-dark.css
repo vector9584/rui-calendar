@@ -1,0 +1,108 @@
+/* Theme: Xiaohongshu | dark */
+
+[data-theme='dark'] {
+  /* ── Canvas & Surfaces ─────────────────────────────────────────── */
+  --canvas: #1a1a1e;
+  --panel: #222226;
+  --side: #222226;
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--panel);
+  --color-bg-tertiary: #2a2a2e;
+  --color-bg-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-input: #2a2a2e;
+  --color-surface: var(--panel);
+  --color-surface-raised: #2a2a2e;
+  --color-surface-glass: rgba(34, 34, 38, 0.85);
+
+  /* ── Foreground ───────────────────────────────────────────────────
+   *  Four translucent white tiers. Pure #FFF is never used. */
+  --ink: rgba(255, 255, 255, 0.88);
+  --ink-2: rgba(255, 255, 255, 0.62);
+  --ink-3: rgba(255, 255, 255, 0.40);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: rgba(255, 255, 255, 0.25);
+
+  /* ── Borders ───────────────────────────────────────────────────── */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.05);
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  /* ── Accent ─────────────────────────────────────────────────────── */
+  --accent: #ff4060;
+  --accent-soft: rgba(255, 64, 96, 0.12);
+  --color-accent: var(--accent);
+  --color-accent-hover: #ff5572;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: var(--accent);
+  --color-primary-hover: #ff5572;
+  --color-primary-light: var(--accent-soft);
+
+  /* ── Semantic ───────────────────────────────────────────────────── */
+  --color-success: #2dd856;
+  --color-success-light: rgba(45, 216, 86, 0.12);
+  --color-warning: #ff9a2e;
+  --color-error: #ff4060;
+  --color-error-muted: #ff4060;
+  --color-danger: #ff4060;
+  --color-danger-bg: rgba(255, 64, 96, 0.12);
+  --color-info: #5da4f7;
+
+  /* ── Functional ─────────────────────────────────────────────────── */
+  --ink-raw: 255, 255, 255;
+  --event-bg-mix: 15%;
+  --event-bg-mix-hover: 19%;
+
+  /* ── Overlay & Focus ───────────────────────────────────────────── */
+  --color-overlay: rgba(0, 0, 0, 0.65);
+  --color-focus: var(--accent);
+  --color-scrollbar: #3a3a3e;
+  --color-scrollbar-hover: #4a4a4e;
+
+  /* ── Elevation ──────────────────────────────────────────────────── */
+  --shadow-event: none;
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-card: none;
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: none;
+
+  /* ── Modal / Popover ────────────────────────────────────────────── */
+  --modal-bg: var(--panel);
+  --popover-bg: #2a2a2e;
+  --modal-scrim: rgba(0, 0, 0, 0.65);
+  --modal-blur: blur(4px);
+  --modal-border: rgba(255, 255, 255, 0.08);
+  --popover-border: rgba(255, 255, 255, 0.10);
+  --modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --font-serif: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* ── Spacing (8pt grid) ────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* ── Border Radius ─────────────────────────────────────────────── */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* ── Layout ─────────────────────────────────────────────────────── */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+  --event-border-radius: 8px;
+  --event-gap: 4px;
+}

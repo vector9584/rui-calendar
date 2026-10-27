@@ -1,0 +1,48 @@
+.errorFallback {
+  padding: 2rem;
+  text-align: center;
+  background: var(--color-bg, #faf9f7);
+  color: var(--color-text, #202124);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.title {
+  color: var(--color-text, #202124);
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.message {
+  color: var(--color-text-muted, #5f6368);
+  margin: 0;
+  max-width: 480px;
+  line-height: 1.5;
+}
+
+.retry {
+  margin-top: 0.5rem;
+  padding: var(--space-2, 8px) var(--space-4, 16px);
+  background: var(--accent-strong, var(--color-accent, #4285f4));
+  color: var(--accent-contrast, white);
+  border: none;
+  border-radius: var(--radius-md, 6px);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+}
+
+.retry:hover {
+  background: var(--color-accent-hover, #1a73e8);
+}
+
+.retry:focus-visible {
+  outline: 2px solid var(--color-accent, #4285f4);
+  outline-offset: 2px;
+}

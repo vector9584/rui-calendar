@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "accounts": [
+    {
+      "name": "Personal",
+      "url": { "ciphertext": "ENCRYPTED_URL", "iv": "IV_BASE64URL", "salt": "SALT_BASE64URL" },
+      "username": { "ciphertext": "ENCRYPTED_USERNAME", "iv": "IV_BASE64URL", "salt": "SALT_BASE64URL" },
+      "password": { "ciphertext": "ENCRYPTED_PASSWORD", "iv": "IV_BASE64URL", "salt": "SALT_BASE64URL" }
+    }
+  ],
+  "webcalSubscriptions": [
+    {
+      "name": "Holidays",
+      "url": { "ciphertext": "ENCRYPTED_URL", "iv": "IV_BASE64URL", "salt": "SALT_BASE64URL" },
+      "refreshIntervalMinutes": 1440
+    }
+  ]
+}

@@ -1,0 +1,1475 @@
+import { categoryStyleProps } from '@/lib/categoryStylePresentation'
+import { useCategoryEventStyle } from '@/hooks/useCategoryEventStyle'
+import { CategoryEventTitle } from '@/components/common/CategoryEventStyle'
+import type { JSX } from 'react'
+import { useMemo, useState, useRef, useEffect } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useVirtualizer, type Virtualizer } from '@tanstack/react-virtual'
+import { createPortal } from 'react-dom'
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, startOfDay } from 'date-fns'
+import {
+  DndContext,
+  DragOverlay,
+  MouseSensor,
+  TouchSensor,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  rectIntersection,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import { useCalendarStore } from '@/store/calendarStore'
+import { useSettingsStore } from '@/store/settingsStore'
+import { useContextMenuStore } from '@/store/contextMenuStore'
+import { useCalDAV } from '@/features/caldav/hooks/useCalDAV'
+import { deleteEventWithUndo } from '@/lib/deleteWithUndo'
+import type { CalendarEvent } from '@/types'
+import { ContextMenu } from '@/components/common/ContextMenu'
+import { EmptyState } from '@/components/common/EmptyState'
+import { getEventColor } from '@/lib/eventColor'
+import {
+  formatEventTime,
+  pad2,
+  toEventInstant,
+  toZoneWallClock,
+  formatDisplayDate,
+} from '@/lib/datetime'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
+import { safeCalDAVUpdate } from '@/lib/caldavHelpers'
+import { extractOriginalEventId, hasDueTime } from '@/lib/events'
+import { compareTaskSortOrder } from '@/lib/taskSortOrder'
+import { LocationLink } from './LocationLink'
+import { useDateChangeMotion } from '@/hooks/useDateChangeMotion'
+import { useTaskContextMenuItems } from '../hooks/useTaskContextMenuItems'
+import {
+  isReorderable,
+  liveRect,
+  liveRowCollision,
+  planDropReorder,
+  planStep,
+  reorderZone,
+  useDragPointer,
+  useTaskReorder,
+  type ReorderCommit,
+} from '../hooks/useTaskReorder'
+import {
+  filterTasksByCollapsedAncestors,
+  getTaskChildrenMap,
+  getTaskDescendantIds,
+} from '@/lib/taskTree'
+import { useTaskCollapse } from '../hooks/useTaskCollapse'
+import { TaskCollapseToggle } from './TaskCollapseToggle'
+import { DayEventsPopup } from './DayEventsPopup'
+import styles from './AgendaView.module.css'
+import { eventLastDay } from '../lib/multiDayFragments'
+
+interface EventWithDate {
+  event: CalendarEvent
+  date: Date
+}
+
+interface OrphanContext {
+  ancestors: CalendarEvent[]
+  position: 'only' | 'first' | 'middle' | 'last'
+}
+
+function getMissingTaskAncestors(
+  task: CalendarEvent,
+  visibleTaskIds: Set<string>,
+  taskById: Map<string, CalendarEvent>
+): CalendarEvent[] {
+  if (!task.parentTaskId || visibleTaskIds.has(task.parentTaskId)) return []
+  const ancestors: CalendarEvent[] = []
+  const visited = new Set<string>([task.id])
+  let parentId: string | undefined = task.parentTaskId
+  while (parentId && !visited.has(parentId)) {
+    visited.add(parentId)
+    const parent = taskById.get(parentId)
+    if (!parent || parent.type !== 'task') break
+    ancestors.unshift(parent)
+    parentId = parent.parentTaskId
+  }
+  return ancestors
+}
+
+function buildOrphanContexts(
+  items: EventWithDate[],
+  allEvents: CalendarEvent[]
+): Map<string, OrphanContext> {
+  const visibleTaskIds = new Set(
+    items.filter(({ event }) => event.type === 'task').map(({ event }) => event.id)
+  )
+  const taskById = new Map(
+    allEvents.filter((event) => event.type === 'task').map((event) => [event.id, event])
+  )
+  const contexts = new Map<string, OrphanContext>()
+  const groups = new Map<string, Array<{ task: CalendarEvent; ancestors: CalendarEvent[] }>>()
+  for (const { event } of items) {
+    if (event.type !== 'task') continue
+    const ancestors = getMissingTaskAncestors(event, visibleTaskIds, taskById)
+    if (ancestors.length === 0) continue
+    const key = ancestors.map((ancestor) => ancestor.id).join('/')
+    const siblings = groups.get(key) ?? []
+    siblings.push({ task: event, ancestors })
+    groups.set(key, siblings)
+  }
+  for (const siblings of groups.values()) {
+    siblings.forEach(({ task, ancestors }, index) => {
+      contexts.set(task.id, {
+        ancestors,
+        position:
+          siblings.length === 1
+            ? 'only'
+            : index === 0
+              ? 'first'
+              : index === siblings.length - 1
+                ? 'last'
+                : 'middle',
+      })
+    })
+  }
+  return contexts
+}
+
+/**
+ * Put each subtask directly under its parent, the way the tasks page lists
+ * them. The day's sort is by start time, which knows nothing about the tree,
+ * so a subtask that happened to be created first came out above its parent —
+ * indented under whatever row sat above it. A task whose parent is due on a
+ * different day has nothing here to sit under and keeps its sorted place.
+ */
+function nestSubtasksUnderParents(items: EventWithDate[]): EventWithDate[] {
+  const taskIds = new Set<string>()
+  for (const item of items) if (item.event.type === 'task') taskIds.add(item.event.id)
+  const parentOf = (item: EventWithDate): string | undefined => {
+    const parentId = item.event.type === 'task' ? item.event.parentTaskId : undefined
+    return parentId && taskIds.has(parentId) ? parentId : undefined
+  }
+
+  const childrenByParent = new Map<string, EventWithDate[]>()
+  for (const item of items) {
+    const parentId = parentOf(item)
+    if (!parentId) continue
+    const siblings = childrenByParent.get(parentId) ?? []
+    siblings.push(item)
+    childrenByParent.set(parentId, siblings)
+  }
+  if (childrenByParent.size === 0) return items
+
+  const ordered: EventWithDate[] = []
+  const placed = new Set<string>()
+  const place = (item: EventWithDate): void => {
+    if (placed.has(item.event.id)) return
+    placed.add(item.event.id)
+    ordered.push(item)
+    for (const child of childrenByParent.get(item.event.id) ?? []) place(child)
+  }
+  for (const item of items) if (!parentOf(item)) place(item)
+  // Malformed data can make a cycle with no root on this day; nothing is
+  // allowed to disappear because of it.
+  for (const item of items) place(item)
+  return ordered
+}
+
+interface DayGroup {
+  type: 'day' | 'skip'
+  days: Date[]
+  hasEvents: boolean
+}
+
+function AgendaDropZone({
+  dateKey,
+  className,
+  style,
+  children,
+}: {
+  dateKey: string
+  className?: string
+  style?: React.CSSProperties
+  children?: React.ReactNode
+}): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: dateKey })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${className ?? ''} ${isOver ? styles.agendaDropOver : ''}`}
+      data-date={dateKey}
+      data-component="agenda-day-drop-zone"
+      style={style}
+    >
+      {children}
+    </div>
+  )
+}
+
+function AgendaInsertDropZone({
+  dateKey,
+  position,
+}: {
+  dateKey: string
+  position: number
+}): JSX.Element {
+  const { setNodeRef, isOver } = useDroppable({ id: `agenda-between:${dateKey}:${position}` })
+
+  return (
+    <div
+      ref={setNodeRef}
+      className={`${styles.agendaInsertDropZone} ${isOver ? styles.agendaInsertDropOver : ''}`}
+      data-component="agenda-insert-drop-zone"
+      data-drop-position={position}
+      data-drop-state={isOver ? 'insert' : undefined}
+      aria-hidden="true"
+    />
+  )
+}
+
+/** Why a drop on the middle of a task row cannot make a subtask. */
+type NestBlock = 'repeatingParent' | 'repeatingTask' | 'cycle'
+
+/**
+ * What a drag over one task row would do. One state drives both the line and
+ * the "make subtask" highlight, so the row cannot show one for a frame while
+ * the other catches up.
+ */
+type AgendaDropState =
+  | { targetId: string; zone: 'before' | 'after' | 'nest' }
+  | { targetId: string; zone: 'blocked'; reason: NestBlock }
+
+const NEST_BLOCK_LABEL: Record<NestBlock, string> = {
+  repeatingParent: 'surface.agendaCannotSubtaskRepeatingParent',
+  repeatingTask: 'surface.agendaCannotSubtaskRepeatingTask',
+  cycle: 'surface.agendaCannotSubtaskCycle',
+}
+
+function isRepeating(event: CalendarEvent): boolean {
+  return Boolean(
+    event.recurrence ||
+      event.rruleString ||
+      event.recurrenceId ||
+      event.occurrenceMasterId ||
+      extractOriginalEventId(event.id)
+  )
+}
+
+function AgendaDraggableItem({
+  event,
+  className,
+  disabled,
+  dataComponent,
+  accentColor,
+  indentDepth = 0,
+  dropTargetId,
+  dropState = null,
+  children,
+  onClick,
+  onKeyDown,
+  onContextMenu,
+  disableKeyboardAttributes = false,
+}: {
+  event: CalendarEvent
+  className: string
+  /** What a drag hovering this row would do; null when nothing is hovering it. */
+  dropState?: AgendaDropState | null
+  disabled: boolean
+  dataComponent?: string
+  accentColor?: string
+  indentDepth?: number
+  dropTargetId?: string
+  children: React.ReactNode
+  onClick: (event: React.MouseEvent) => void
+  onKeyDown: (event: React.KeyboardEvent) => void
+  onContextMenu: (event: React.MouseEvent) => void
+  disableKeyboardAttributes?: boolean
+}): JSX.Element {
+  const appearance = useCategoryEventStyle(event)
+  const presentation = categoryStyleProps(appearance)
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: event.id,
+    disabled,
+  })
+  const { setNodeRef: setDropNodeRef } = useDroppable({
+    id: dropTargetId ?? `agenda-item-${event.id}`,
+    disabled: !dropTargetId,
+  })
+
+  const style = {
+    ...(accentColor ? { '--event-color': accentColor } : {}),
+    ...presentation.style,
+    // No drag transform: the DragOverlay carries the card. An offset left on
+    // the row at drop would slide it from there into its new slot, through the
+    // row's transform transition.
+    ...(indentDepth > 0 ? { marginLeft: `${12 + indentDepth * 18}px` } : {}),
+  } as React.CSSProperties
+  const setNodeRefs = (node: HTMLDivElement | null): void => {
+    setNodeRef(node)
+    setDropNodeRef(node)
+  }
+  const zone = dropTargetId ? dropState?.zone : undefined
+  const insert = zone === 'before' || zone === 'after' ? zone : null
+  const makeSubtask = zone === 'nest'
+  const blocked = dropState?.zone === 'blocked' ? dropState.reason : null
+
+  return (
+    <div
+      ref={setNodeRefs}
+      style={style}
+      className={`${className} ${isDragging ? styles.agendaDragging : ''} ${makeSubtask ? styles.agendaTaskDropOver : ''} ${blocked ? styles.agendaTaskDropBlocked : ''} ${insert === 'before' ? styles.agendaTaskInsertBefore : ''} ${insert === 'after' ? styles.agendaTaskInsertAfter : ''}`}
+      data-component={dataComponent}
+      data-category-texture={presentation['data-category-texture']}
+      data-drop-id={dropTargetId}
+      data-drop-state={
+        makeSubtask
+          ? 'make-subtask'
+          : blocked
+            ? 'cannot-make-subtask'
+            : insert
+              ? `insert-${insert}`
+              : undefined
+      }
+      {...(disableKeyboardAttributes ? {} : attributes)}
+      {...listeners}
+      onClick={onClick}
+      onKeyDown={onKeyDown}
+      onContextMenu={onContextMenu}
+    >
+      {children}
+    </div>
+  )
+}
+
+function MonthScrollRestorer({
+  currentDate,
+  dayGroups,
+  virtualizer,
+  scrolledMonthRef,
+}: {
+  currentDate: string
+  dayGroups: DayGroup[]
+  virtualizer: Virtualizer<HTMLDivElement, Element>
+  scrolledMonthRef: React.MutableRefObject<string | null>
+}) {
+  useEffect(() => {
+    const today = startOfDay(new Date())
+    const viewDate = parseISO(currentDate)
+    const monthStart = startOfMonth(viewDate)
+    const monthEnd = endOfMonth(viewDate)
+    const viewMonthKey = format(monthStart, 'yyyy-MM')
+
+    if (scrolledMonthRef.current !== viewMonthKey) {
+      if (today >= monthStart && today <= monthEnd) {
+        const todayKey = format(today, 'yyyy-MM-dd')
+        const index = dayGroups.findIndex(
+          (g) => g.type === 'day' && format(g.days[0], 'yyyy-MM-dd') === todayKey
+        )
+        if (index !== -1) {
+          // Delaying by one frame ensures the DOM has updated its scrollHeight
+          // for the new month, avoiding scroll clamping by the browser.
+          requestAnimationFrame(() => {
+            virtualizer.scrollToIndex(index, { align: 'start', behavior: 'auto' })
+            scrolledMonthRef.current = viewMonthKey
+          })
+        }
+      } else {
+        requestAnimationFrame(() => {
+          virtualizer.scrollToIndex(0, { align: 'start', behavior: 'auto' })
+          scrolledMonthRef.current = viewMonthKey
+        })
+      }
+    }
+  }, [currentDate, dayGroups, virtualizer, scrolledMonthRef])
+
+  return null
+}
+
+export function AgendaView({ embedded = false }: { embedded?: boolean } = {}): JSX.Element {
+  const { t } = useTranslation(['calendar', 'common'])
+  const containerClass = `${styles.container} ${embedded ? styles.embedded : ''}`
+  const currentDate = useCalendarStore((state) => state.currentDate)
+  const calendars = useCalendarStore((state) => state.calendars)
+  const categories = useCalendarStore((state) => state.categories)
+  const getEventsForDateRange = useCalendarStore((state) => state.getEventsForDateRange)
+  const openModal = useCalendarStore((state) => state.openModal)
+  const openPreview = useCalendarStore((state) => state.openPreview)
+  const previewEventId = useCalendarStore((state) => state.previewEventId)
+  const closePreview = useCalendarStore((state) => state.closePreview)
+  const events = useCalendarStore((state) => state.events)
+  const taskCollapse = useTaskCollapse(events)
+  const timeFormat = useSettingsStore((state) => state.timeFormat)
+  const deleteEvent = useCalendarStore((state) => state.deleteEvent)
+  const updateEvent = useCalendarStore((state) => state.updateEvent)
+  // Shared with the tasks list and the sidebar so ticking a task off behaves
+  // the same wherever it is done — including the recurring-occurrence path.
+  const { toggleComplete } = useTaskContextMenuItems(null)
+  const addEvent = useCalendarStore((state) => state.addEvent)
+  const {
+    deleteEvent: deleteCalDAVEvent,
+    createEvent: createCalDAVEvent,
+    updateEvent: caldavUpdateEvent,
+  } = useCalDAV()
+  const closeMenu = useContextMenuStore((state) => state.closeMenu)
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; day: Date } | null>(null)
+  const [eventContextMenu, setEventContextMenu] = useState<{
+    x: number
+    y: number
+    event: CalendarEvent
+  } | null>(null)
+  const [subtaskPopup, setSubtaskPopup] = useState<{
+    parent: CalendarEvent
+    subtasks: CalendarEvent[]
+    position: { x: number; y: number }
+  } | null>(null)
+
+  const fadePastDaysInAgenda = useSettingsStore((state) => state.fadePastDaysInAgenda)
+  const useCategoryColors = useSettingsStore((state) => state.useCategoryColors)
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+  )
+
+  const [activeDragEvent, setActiveDragEvent] = useState<CalendarEvent | null>(null)
+  // A drag over a task row's top or bottom edge reorders within the day (see
+  // TodoView); null whenever that edge drop would not be a valid reorder.
+  const [dropIntent, setDropIntent] = useState<AgendaDropState | null>(null)
+  const { commit: commitReorder, moveStep } = useTaskReorder()
+  const dragPointer = useDragPointer(activeDragEvent !== null)
+  // A task row under (or right next to) the pointer wins, measured live; the
+  // day and between-day zones keep dnd-kit's default overlap test.
+  const agendaCollision = useMemo(
+    () =>
+      liveRowCollision(
+        (id) => (String(id).startsWith('agenda-task:') ? String(id).slice('agenda-task:'.length) : null),
+        dragPointer,
+        rectIntersection
+      ),
+    [dragPointer]
+  )
+
+  const taskDepthById = useMemo(() => {
+    const eventById = new Map(events.map((event) => [event.id, event]))
+    const depths = new Map<string, number>()
+
+    for (const event of events) {
+      if (event.type !== 'task') continue
+      let depth = 0
+      let parentId = event.parentTaskId
+      const visited = new Set<string>()
+      while (parentId && !visited.has(parentId)) {
+        visited.add(parentId)
+        const parent = eventById.get(parentId)
+        if (!parent || parent.type !== 'task') break
+        depth += 1
+        parentId = parent.parentTaskId
+      }
+      depths.set(event.id, depth)
+    }
+
+    return depths
+  }, [events])
+
+  const getEventBarColor = (event: CalendarEvent): string =>
+    getEventColor(event, { categories, calendars, useCategoryColors })
+
+  const date = parseISO(currentDate)
+  const monthKey = currentDate.slice(0, 7)
+  const monthChangeMotion = useDateChangeMotion(monthKey)
+
+  const isCurrentMonthView = useMemo(() => {
+    const today = startOfDay(new Date())
+    const monthStart = startOfMonth(date)
+    const monthEnd = endOfMonth(date)
+    return today >= monthStart && today <= monthEnd
+  }, [date])
+
+  const handleEventClick = (e: React.MouseEvent, event: CalendarEvent): void => {
+    if (e.button === 2) return
+    e.stopPropagation()
+    if (previewEventId === event.id) {
+      closePreview()
+      openModal(undefined, undefined, event.id, event.type === 'task' ? 'task' : 'event')
+      return
+    }
+    openPreview(event.id, { x: e.clientX, y: e.clientY })
+  }
+
+  const handleContextMenu = (e: React.MouseEvent, day: Date): void => {
+    e.preventDefault()
+    setContextMenu({ x: e.clientX, y: e.clientY, day })
+  }
+
+  const handleEventContextMenu = (e: React.MouseEvent, event: CalendarEvent): void => {
+    e.preventDefault()
+    e.stopPropagation()
+    setEventContextMenu({ x: e.clientX, y: e.clientY, event })
+  }
+
+  /** A row as the agenda lists it, generated occurrences included. */
+  const findListed = (id: string): CalendarEvent | undefined => {
+    for (const items of eventsByDate.values()) {
+      const hit = items.find(({ event }) => event.id === id)
+      if (hit) return hit.event
+    }
+    return undefined
+  }
+
+  const handleDragStart = (dragEvent: DragStartEvent): void => {
+    const id = String(dragEvent.active.id)
+    // A repeating task's row is a generated occurrence, which is not in the
+    // store; it can still be dragged to reorder its day.
+    const dragged = events.find((event) => event.id === id) ?? findListed(id)
+    setActiveDragEvent(dragged ?? null)
+    setDropIntent(null)
+  }
+
+  /**
+   * What a drop on the middle of `targetId` does: make a subtask, refuse with
+   * a reason the row can show, or nothing (dropping on itself or its parent).
+   */
+  const nestState = (dragged: CalendarEvent, targetId: string): AgendaDropState | null => {
+    const target = findListed(targetId)
+    if (!target || target.type !== 'task' || dragged.type !== 'task') return null
+    if (target.id === dragged.id || dragged.parentTaskId === target.id) return null
+    if (isRepeating(target)) return { targetId, zone: 'blocked', reason: 'repeatingParent' }
+    if (isRepeating(dragged)) return { targetId, zone: 'blocked', reason: 'repeatingTask' }
+    const childrenByParent = getTaskChildrenMap(events)
+    const pending = [dragged.id]
+    const descendants = new Set<string>()
+    while (pending.length > 0) {
+      for (const child of childrenByParent.get(pending.pop()!) ?? []) {
+        if (descendants.has(child.id)) continue
+        descendants.add(child.id)
+        pending.push(child.id)
+      }
+    }
+    if (descendants.has(target.id)) return { targetId, zone: 'blocked', reason: 'cycle' }
+    return { targetId, zone: 'nest' }
+  }
+
+  /** What an edge drop on `targetId` would write, judged against its day as listed. */
+  const planAgendaReorder = (
+    dragged: CalendarEvent,
+    targetId: string,
+    zone: 'before' | 'after'
+  ): ReorderCommit | null => {
+    for (const items of eventsByDate.values()) {
+      if (!items.some(({ event }) => event.id === targetId)) continue
+      const rows = items.flatMap(({ event }) => (event.type === 'task' ? [event] : []))
+      return planDropReorder(rows, dragged, targetId, zone, events)
+    }
+    return null
+  }
+
+  const handleDragMove = ({ over }: DragMoveEvent): void => {
+    const overId = over ? String(over.id) : ''
+    const dragged = activeDragEvent
+    let next: AgendaDropState | null = null
+    if (over && dragged && overId.startsWith('agenda-task:')) {
+      const targetId = overId.slice('agenda-task:'.length)
+      const zone = reorderZone(
+        dragPointer.current?.y ?? null,
+        liveRect(`[data-drop-id="${CSS.escape(overId)}"]`, over.rect)
+      )
+      next =
+        zone && planAgendaReorder(dragged, targetId, zone)
+          ? { targetId, zone }
+          : nestState(dragged, targetId)
+    }
+    setDropIntent((current) =>
+      current?.targetId === next?.targetId && current?.zone === next?.zone ? current : next
+    )
+  }
+
+  const handleDragEnd = async ({ over }: DragEndEvent): Promise<void> => {
+    const originalEvent = activeDragEvent
+    const intent = dropIntent
+    setActiveDragEvent(null)
+    setDropIntent(null)
+    if (!originalEvent || !over) return
+
+    // The line the person saw is what they meant, whatever dnd-kit reports
+    // as the release target a pixel later.
+    if (intent && (intent.zone === 'before' || intent.zone === 'after')) {
+      const plan = planAgendaReorder(originalEvent, intent.targetId, intent.zone)
+      if (plan) await commitReorder(plan)
+      return
+    }
+    // A refused nest stays refused, even if the pointer left the row on release.
+    if (intent?.zone === 'blocked') return
+
+    const overId = String(over.id)
+    if (overId.startsWith('agenda-task:')) {
+      if (originalEvent.type !== 'task') return
+      const targetId = overId.slice('agenda-task:'.length)
+      if (targetId === originalEvent.id || originalEvent.parentTaskId === targetId) return
+      if (originalEvent.recurrence || originalEvent.rruleString) return
+      if (extractOriginalEventId(originalEvent.id)) return
+      if (calendars.find((calendar) => calendar.id === originalEvent.calendarId)?.readOnly) return
+
+      const childrenByParent = getTaskChildrenMap(events)
+      const descendants = new Set<string>()
+      const pending = [originalEvent.id]
+      while (pending.length > 0) {
+        const parentId = pending.pop()!
+        for (const child of childrenByParent.get(parentId) ?? []) {
+          if (descendants.has(child.id)) continue
+          descendants.add(child.id)
+          pending.push(child.id)
+        }
+      }
+      if (descendants.has(targetId)) return
+
+      const targetEvent = events.find((event) => event.id === targetId)
+      if (!targetEvent || targetEvent.type !== 'task') return
+      const updates: Partial<CalendarEvent> = { parentTaskId: targetId }
+      updateEvent(originalEvent.id, updates)
+      await safeCalDAVUpdate(
+        caldavUpdateEvent,
+        originalEvent.calendarId,
+        { ...originalEvent, ...updates },
+        updates,
+        i18n.t('errors:ui.dragSync.hierarchy')
+      )
+      return
+    }
+
+    const dayStr = overId.startsWith('agenda-between:') ? overId.split(':')[1] : overId
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dayStr)) return
+    if (originalEvent.recurrence || originalEvent.rruleString) return
+    if (extractOriginalEventId(originalEvent.id)) return
+    if (calendars.find((calendar) => calendar.id === originalEvent.calendarId)?.readOnly) return
+
+    const sourceDate = format(
+      toEventInstant(
+        originalEvent.type === 'task'
+          ? originalEvent.dueDate || originalEvent.start
+          : originalEvent.start,
+        originalEvent.timezone
+      ),
+      'yyyy-MM-dd'
+    )
+    const isTask = originalEvent.type === 'task'
+    const shouldPromoteTask = isTask && Boolean(originalEvent.parentTaskId)
+    if (sourceDate === dayStr && !shouldPromoteTask) return
+
+    const originalStart = toEventInstant(originalEvent.start, originalEvent.timezone)
+    const originalEnd = toEventInstant(originalEvent.end, originalEvent.timezone)
+    const durationMs = originalEnd.getTime() - originalStart.getTime()
+    const newStart = originalEvent.isAllDay
+      ? parseISO(`${dayStr}T00:00:00`)
+      : parseISO(
+          `${dayStr}T${pad2(originalStart.getHours())}:${pad2(originalStart.getMinutes())}:00`
+        )
+    const newEnd = new Date(newStart.getTime() + durationMs)
+    let newDueDate = dayStr
+    if (isTask && originalEvent.dueDate) {
+      const originalDueDate = toEventInstant(originalEvent.dueDate, originalEvent.timezone)
+      const hasTime =
+        originalEvent.dueDate.includes('T') &&
+        !originalEvent.dueDate.endsWith('T00:00:00') &&
+        !originalEvent.dueDate.endsWith('T00:00')
+      if (hasTime) {
+        const dueTime = `${pad2(originalDueDate.getHours())}:${pad2(originalDueDate.getMinutes())}:00`
+        newDueDate = originalEvent.timezone
+          ? toZoneWallClock(new Date(`${dayStr}T${dueTime}`).toISOString(), originalEvent.timezone)
+          : `${dayStr}T${dueTime}`
+      }
+    }
+
+    const updates: Partial<CalendarEvent> = {
+      start: newStart.toISOString(),
+      end: newEnd.toISOString(),
+      ...(isTask ? { dueDate: newDueDate, parentTaskId: undefined } : {}),
+    }
+
+    updateEvent(originalEvent.id, updates)
+    await safeCalDAVUpdate(
+      caldavUpdateEvent,
+      originalEvent.calendarId,
+      { ...originalEvent, ...updates },
+      updates,
+      i18n.t('errors:ui.dragSync.item')
+    )
+  }
+
+  const { eventsByDate, dayGroups } = useMemo(() => {
+    const monthStart = startOfMonth(date)
+    const monthEnd = endOfMonth(date)
+    const daysList = eachDayOfInterval({ start: monthStart, end: monthEnd })
+    const events = getEventsForDateRange(
+      format(monthStart, 'yyyy-MM-dd'),
+      format(monthEnd, 'yyyy-MM-dd')
+    )
+
+    const eventMap = new Map<string, EventWithDate[]>()
+    events.forEach((event) => {
+      if (event.type === 'journal') return
+      // When embedded, skip all tasks (shown in DayView header)
+      if (embedded && event.type === 'task') return
+      // Undated tasks have a technical start value from their VTODO import;
+      // only tasks with an explicit due date belong on the agenda.
+      if (event.type === 'task' && !event.dueDate) return
+      const eventDate = format(toEventInstant(event.start, event.timezone), 'yyyy-MM-dd')
+      // R4.6: push onto a stable array instead of spreading into a new
+      // one. The previous `eventMap.set(k, [...existing, item])` was
+      // O(k.length) per event, so for a day with N events it was O(N²)
+      // total just to build the map. With push it's O(N).
+      let arr = eventMap.get(eventDate)
+      if (!arr) {
+        arr = []
+        eventMap.set(eventDate, arr)
+      }
+      arr.push({ event, date: toEventInstant(event.start, event.timezone) })
+
+      if (!event.isAllDay) {
+        const eventEndDate = format(eventLastDay(event), 'yyyy-MM-dd')
+        if (eventEndDate !== eventDate) {
+          let endArr = eventMap.get(eventEndDate)
+          if (!endArr) {
+            endArr = []
+            eventMap.set(eventEndDate, endArr)
+          }
+          endArr.push({ event, date: toEventInstant(event.end, event.timezone) })
+        }
+      }
+    })
+
+    // R4.7: sort each day's events once here rather than in the render body.
+    // The render used to do `[...dayEvents].sort(...)` for every day-group on
+    // every render; the order only depends on the data, so it belongs in the
+    // memo. Semantics are unchanged: all-day events first, then by start time,
+    // then tasks in their manual order.
+    eventMap.forEach((arr) => {
+      arr.sort((a, b) => {
+        if (a.event.isAllDay && !b.event.isAllDay) return -1
+        if (!a.event.isAllDay && b.event.isAllDay) return 1
+        return (
+          toEventInstant(a.event.start, a.event.timezone).getTime() -
+            toEventInstant(b.event.start, b.event.timezone).getTime() ||
+          compareTaskSortOrder(a.event, b.event)
+        )
+      })
+    })
+
+    eventMap.forEach((arr, dateKey) => {
+      const tasks = arr.filter(({ event }) => event.type === 'task').map(({ event }) => event)
+      if (tasks.length === 0) return
+      const visibleTaskIds = new Set(
+        filterTasksByCollapsedAncestors(tasks, events, taskCollapse.collapsedTaskIds).map(
+          (task) => task.id
+        )
+      )
+      eventMap.set(
+        dateKey,
+        nestSubtasksUnderParents(
+          arr.filter(({ event }) => event.type !== 'task' || visibleTaskIds.has(event.id))
+        )
+      )
+    })
+
+    const todayKey = format(new Date(), 'yyyy-MM-dd')
+
+    const groups: DayGroup[] = []
+    let i = 0
+    while (i < daysList.length) {
+      const day = daysList[i]
+      const dateKey = format(day, 'yyyy-MM-dd')
+      const dayEvents = eventMap.get(dateKey) || []
+      const hasEvents = dayEvents.length > 0
+      const isToday = dateKey === todayKey
+
+      if (hasEvents || isToday) {
+        groups.push({ type: 'day', days: [day], hasEvents })
+        i++
+      } else {
+        const run: Date[] = [day]
+        let j = i + 1
+        while (j < daysList.length) {
+          const nextDay = daysList[j]
+          const nextKey = format(nextDay, 'yyyy-MM-dd')
+          if ((eventMap.get(nextKey)?.length ?? 0) > 0) break
+          if (nextKey === todayKey) break
+          run.push(nextDay)
+          j++
+        }
+        if (run.length === 1) {
+          groups.push({ type: 'day', days: run, hasEvents: false })
+        } else {
+          groups.push({ type: 'skip', days: run, hasEvents: false })
+        }
+        i = j
+      }
+    }
+
+    return { eventsByDate: eventMap, dayGroups: groups }
+  }, [date, events, getEventsForDateRange, embedded, taskCollapse.collapsedTaskIds])
+
+  const orphanContextsByDate = useMemo(() => {
+    const result = new Map<string, Map<string, OrphanContext>>()
+    for (const [dateKey, dayEvents] of eventsByDate) {
+      result.set(dateKey, buildOrphanContexts(dayEvents, events))
+    }
+    return result
+  }, [eventsByDate, events])
+
+  const handleCreateEvent = (day: Date): void => {
+    openModal(format(day, 'yyyy-MM-dd'))
+  }
+
+  const handleCreateTask = (day: Date): void => {
+    openModal(format(day, 'yyyy-MM-dd'), undefined, undefined, 'task')
+  }
+
+  const [isScrolled, setIsScrolled] = useState(false)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const scrolledMonthRef = useRef<string | null>(null)
+
+  const handleScroll = (): void => {
+    if (containerRef.current) {
+      setIsScrolled(containerRef.current.scrollTop > 0)
+    }
+  }
+
+  // R3.11 — top-level empty state when the entire month has no events
+  // (or all events have been filtered out by category/calendar). Render
+  // a single EmptyState instead of N day headers, each saying "no events".
+  const allGroupsEmpty = dayGroups.every((g) => !g.hasEvents)
+
+  // R4.7: windowed rows. A month with many events used to mount every
+  // day-group at once; now only the visible slice is in the DOM. Row heights
+  // vary wildly (a 12-event day vs. a one-line skip row), so heights come from
+  // `measureElement` rather than being computed — same pattern as JournalView.
+  // `embedded` is virtualized too: the split view still scrolls in this same
+  // container (`.container` keeps `overflow: auto` with a bounded height in
+  // both modes), only its chrome/padding differs.
+  const virtualizer = useVirtualizer({
+    count: allGroupsEmpty ? 0 : dayGroups.length,
+    getScrollElement: () => containerRef.current,
+    // Dynamic estimation prevents scroll stuttering when scrolling backwards
+    // from a jumped-to index (like Today), as the virtualizer doesn't have
+    // to aggressively adjust scroll offsets for unmeasured rows.
+    estimateSize: (index) => {
+      const group = dayGroups[index]
+      if (group.type === 'skip') return 32
+      if (!group.hasEvents) return 46
+
+      const dateKey = format(group.days[0], 'yyyy-MM-dd')
+      const sortedEvents = eventsByDate.get(dateKey) || []
+
+      let h = 46
+      for (let i = 0; i < sortedEvents.length; i++) {
+        const hasLocation = !!sortedEvents[i].event.location
+        h += hasLocation ? 62 : 44
+      }
+      return h
+    },
+    overscan: 4,
+  })
+
+  useEffect(() => {
+    const onJumpToToday = () => {
+      const today = startOfDay(new Date())
+      const todayKey = format(today, 'yyyy-MM-dd')
+      const index = dayGroups.findIndex(
+        (g) => g.type === 'day' && format(g.days[0], 'yyyy-MM-dd') === todayKey
+      )
+      if (index !== -1) {
+        virtualizer.scrollToIndex(index, { align: 'start', behavior: 'auto' })
+        scrolledMonthRef.current = format(startOfMonth(today), 'yyyy-MM')
+      }
+    }
+    window.addEventListener('calino:jumpToToday', onJumpToToday)
+    return () => window.removeEventListener('calino:jumpToToday', onJumpToToday)
+  }, [dayGroups, virtualizer])
+
+  const renderSkipRow = (group: DayGroup): JSX.Element => {
+    const first = group.days[0]
+    const last = group.days[group.days.length - 1]
+    const freeDays = group.days.length - 1
+    const label = `${formatDisplayDate(first, 'EEE MMM d')} – ${formatDisplayDate(last, 'EEE MMM d')} · ${freeDays} day${freeDays === 1 ? '' : 's'} free`
+
+    return (
+      <div className={styles.agendaSkip} key={`skip-${format(first, 'yyyy-MM-dd')}`}>
+        <div className={styles.agendaSkipVisual}>
+          <div className={styles.agendaSkipLine} />
+          <span className={styles.agendaSkipLabel} data-component="agenda-free-range">
+            {label}
+          </span>
+          <div className={styles.agendaSkipLine} />
+        </div>
+        {group.days.map((day, index) => (
+          <AgendaDropZone
+            key={format(day, 'yyyy-MM-dd')}
+            dateKey={format(day, 'yyyy-MM-dd')}
+            className={styles.agendaSkipDropZone}
+            style={{
+              left: `${(index / group.days.length) * 100}%`,
+              width: `${100 / group.days.length}%`,
+            }}
+          />
+        ))}
+      </div>
+    )
+  }
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={agendaCollision}
+      onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => {
+        setActiveDragEvent(null)
+        setDropIntent(null)
+      }}
+    >
+      <div
+        ref={containerRef}
+        className={`${containerClass} ${isScrolled ? styles.containerShadow : ''}`}
+        onScroll={handleScroll}
+      >
+        {/* Keyed by month, not by `currentDate`: in the month+agenda split a day
+          tap also sets the date, and re-running the transition on every tap
+          would be noise. */}
+        <AnimatePresence mode="wait">
+          <motion.div key={monthKey} className={styles.monthPane} {...monthChangeMotion}>
+            <MonthScrollRestorer
+              currentDate={currentDate}
+              dayGroups={dayGroups}
+              virtualizer={virtualizer}
+              scrolledMonthRef={scrolledMonthRef}
+            />
+            {allGroupsEmpty ? (
+              <EmptyState
+                title={t('views.agenda.emptyTitle')}
+                description={t('views.agenda.emptyDescription')}
+                action={
+                  <button
+                    className={styles.agendaAdd}
+                    onClick={() => handleCreateEvent(new Date())}
+                    data-component="agenda-empty-add"
+                  >
+                    + {t('views.week.createEvent')}
+                  </button>
+                }
+              />
+            ) : (
+              /* flexShrink: 0 — .monthPane is a flex column, and this spacer's height
+                 is the virtual list's total size, not something to compress. */
+              <div
+                style={{
+                  position: 'relative',
+                  flexShrink: 0,
+                  height: `${virtualizer.getTotalSize()}px`,
+                }}
+              >
+                {virtualizer.getVirtualItems().map((virtualRow) => {
+                  const group = dayGroups[virtualRow.index]
+                  const firstKey = format(group.days[0], 'yyyy-MM-dd')
+
+                  const row = ((): JSX.Element => {
+                    if (group.type === 'skip') {
+                      return renderSkipRow(group)
+                    }
+
+                    const day = group.days[0]
+                    const dateKey = firstKey
+                    const sortedEvents = eventsByDate.get(dateKey) || []
+                    const isEmpty = !group.hasEvents
+                    const isToday = dateKey === format(new Date(), 'yyyy-MM-dd')
+
+                    return (
+                      <div key={dateKey} onContextMenu={(e) => handleContextMenu(e, day)}>
+                        <div
+                          className={`${styles.agendaDayHeader} ${isEmpty ? styles.isEmpty : ''} ${isToday ? styles.isToday : ''}`}
+                        >
+                          <div className={styles.agendaDayLabel}>
+                            <span className={styles.agendaDow}>
+                              {formatDisplayDate(day, 'EEEE')}
+                            </span>
+                            <span className={styles.agendaDate}>
+                              {formatDisplayDate(day, 'PP')}
+                            </span>
+                          </div>
+                          {!isEmpty && (
+                            <button
+                              className={styles.agendaAdd}
+                              onClick={() => handleCreateEvent(day)}
+                            >
+                              + {t('common:actions.add')}
+                            </button>
+                          )}
+                        </div>
+
+                        {!isEmpty && (
+                          <>
+                            <AgendaInsertDropZone dateKey={dateKey} position={0} />
+                            <AnimatePresence initial={false}>
+                              {sortedEvents.map(({ event }, index) => {
+                                if (event.type === 'task') {
+                                  const orphanContext = orphanContextsByDate
+                                    .get(dateKey)
+                                    ?.get(event.id)
+                                  const showAncestorLabels =
+                                    orphanContext?.position === 'only' ||
+                                    orphanContext?.position === 'first'
+                                  const hasLocalSubtasks = events.some(
+                                    (candidate) =>
+                                      candidate.type === 'task' &&
+                                      candidate.parentTaskId === event.id &&
+                                      candidate.dueDate != null &&
+                                      format(
+                                        toEventInstant(candidate.start, candidate.timezone),
+                                        'yyyy-MM-dd'
+                                      ) === dateKey
+                                  )
+                                  return (
+                                    <motion.div
+                                      key={event.id}
+                                      className={`${styles.agendaAnimatedItem} ${
+                                        orphanContext ? styles.agendaOrphanGroup : ''
+                                      }`}
+                                      style={
+                                        orphanContext
+                                          ? ({
+                                              '--orphan-context-height': `${orphanContext.ancestors.length * 27}px`,
+                                            } as React.CSSProperties)
+                                          : undefined
+                                      }
+                                      data-orphan-position={orphanContext?.position}
+                                      // Exit only: the row fades out when a task is completed or deleted.
+                                      // Deliberately no `initial`/`animate`/`layout` — the month pane is
+                                      // keyed by month, so an enter or layout animation re-ran for every
+                                      // row on a page change, stacking a fly-in on the pane's own transition.
+                                      exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                      transition={{ duration: 0.14, ease: 'easeOut' }}
+                                    >
+                                      {orphanContext && (
+                                        <div
+                                          className={`${styles.taskParentContext} ${
+                                            showAncestorLabels
+                                              ? ''
+                                              : styles.taskParentContextContinuation
+                                          }`}
+                                          data-component="task-parent-context"
+                                          aria-label={t('ui.subtasks.parentContext', {
+                                            count: orphanContext.ancestors.length,
+                                            titles: orphanContext.ancestors
+                                              .map((ancestor) => ancestor.title)
+                                              .join(', '),
+                                          })}
+                                        >
+                                          {showAncestorLabels &&
+                                            orphanContext.ancestors.map((ancestor, depth) => (
+                                              <div
+                                                key={ancestor.id}
+                                                className={styles.taskParentContextLabel}
+                                                style={{ marginLeft: depth * 18 }}
+                                              >
+                                                {ancestor.title}
+                                              </div>
+                                            ))}
+                                        </div>
+                                      )}
+                                      <AgendaDraggableItem
+                                        event={event}
+                                        className={`${styles.agendaTask} ${
+                                          event.completed ? styles.agendaTaskCompleted : ''
+                                        }`}
+                                        dataComponent="agenda-task"
+                                        accentColor={getEventBarColor(event)}
+                                        indentDepth={taskDepthById.get(event.id) ?? 0}
+                                        dropTargetId={`agenda-task:${event.id}`}
+                                        dropState={
+                                          dropIntent?.targetId === event.id ? dropIntent : null
+                                        }
+                                        // Repeating tasks drag too, to reorder their day;
+                                        // the drop handler keeps them off other days and
+                                        // out of other tasks.
+                                        disabled={
+                                          calendars.find(
+                                            (calendar) => calendar.id === event.calendarId
+                                          )?.readOnly === true
+                                        }
+                                        onClick={(e) => handleEventClick(e, event)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault()
+                                            handleEventClick(
+                                              e as unknown as React.MouseEvent,
+                                              event
+                                            )
+                                          }
+                                        }}
+                                        onContextMenu={(e) => handleEventContextMenu(e, event)}
+                                        disableKeyboardAttributes
+                                      >
+                                        <div
+                                          className={styles.agendaTaskBar}
+                                          style={{ background: getEventBarColor(event) }}
+                                        />
+                                        <div
+                                          className={styles.agendaTaskBody}
+                                          data-task-depth={taskDepthById.get(event.id) ?? 0}
+                                        >
+                                          <div className={styles.agendaTaskMain}>
+                                            <span className={styles.agendaTaskTime}>
+                                              {/* Off dueDate/isAllDay, as the month pill
+                                                  and the form are: `start` is rewritten
+                                                  as a UTC instant by a drag, so a string
+                                                  check on it only held in UTC. */}
+                                              {hasDueTime(event) && event.dueDate
+                                                ? formatEventTime(
+                                                    event.dueDate,
+                                                    event.timezone,
+                                                    timeFormat
+                                                  )
+                                                : t('surface.agendaDue')}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              className={styles.agendaTaskIcon}
+                                              role="checkbox"
+                                              aria-checked={!!event.completed}
+                                              aria-label={t(
+                                                event.completed
+                                                  ? 'modals.eventPreview.markIncomplete'
+                                                  : 'modals.eventPreview.markComplete',
+                                                { title: event.title }
+                                              )}
+                                              onPointerDown={(e) => e.stopPropagation()}
+                                              onClick={(e) => {
+                                                // The whole card opens the task; the
+                                                // check has to claim its own click.
+                                                e.stopPropagation()
+                                                void toggleComplete(event)
+                                              }}
+                                            >
+                                              <svg
+                                                viewBox="0 0 14 14"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                aria-hidden="true"
+                                              >
+                                                <path d="M3 7.5l2.5 2.5L11 4" />
+                                              </svg>
+                                            </button>
+                                            <button
+                                              type="button"
+                                              className={styles.agendaTaskTitle}
+                                              onClick={(e) => {
+                                                e.stopPropagation()
+                                                handleEventClick(
+                                                  e as unknown as React.MouseEvent,
+                                                  event
+                                                )
+                                              }}
+                                            >
+                                              <CategoryEventTitle event={event} />
+                                            </button>
+                                            {taskCollapse.hasSubtasks(event.id) &&
+                                              hasLocalSubtasks && (
+                                                <TaskCollapseToggle
+                                                  taskTitle={event.title}
+                                                  collapsed={taskCollapse.isCollapsed(event.id)}
+                                                  hiddenCount={taskCollapse.descendantCount(
+                                                    event.id
+                                                  )}
+                                                  onToggle={() => taskCollapse.toggleTask(event.id)}
+                                                  className={styles.agendaTaskCollapseToggle}
+                                                />
+                                              )}
+                                            {taskCollapse.hasSubtasks(event.id) &&
+                                              !hasLocalSubtasks && (
+                                                <button
+                                                  type="button"
+                                                  className={styles.agendaTaskSubtaskPopupButton}
+                                                  data-component="task-subtasks-popup-trigger"
+                                                  aria-label={t('ui.subtasks.show', {
+                                                    title: event.title,
+                                                  })}
+                                                  onPointerDown={(clickEvent) =>
+                                                    clickEvent.stopPropagation()
+                                                  }
+                                                  onClick={(clickEvent) => {
+                                                    clickEvent.stopPropagation()
+                                                    const rect =
+                                                      clickEvent.currentTarget.getBoundingClientRect()
+                                                    const descendantIds = new Set(
+                                                      getTaskDescendantIds(events, event.id)
+                                                    )
+                                                    setSubtaskPopup({
+                                                      parent: event,
+                                                      subtasks: events.filter((candidate) =>
+                                                        descendantIds.has(candidate.id)
+                                                      ),
+                                                      position: {
+                                                        x: rect.left,
+                                                        y: rect.bottom + 4,
+                                                      },
+                                                    })
+                                                  }}
+                                                >
+                                                  +{taskCollapse.descendantCount(event.id)}
+                                                </button>
+                                              )}
+                                          </div>
+                                          {event.location && (
+                                            <div className={styles.agendaEventSub}>
+                                              {event.location}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </AgendaDraggableItem>
+                                      <AgendaInsertDropZone
+                                        dateKey={dateKey}
+                                        position={index + 1}
+                                      />
+                                    </motion.div>
+                                  )
+                                }
+
+                                return (
+                                  <motion.div
+                                    key={event.id}
+                                    className={styles.agendaAnimatedItem}
+                                    // Exit only: the row fades out when a task is completed or deleted.
+                                    // Deliberately no `initial`/`animate`/`layout` — the month pane is
+                                    // keyed by month, so an enter or layout animation re-ran for every
+                                    // row on a page change, stacking a fly-in on the pane's own transition.
+                                    exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+                                    transition={{ duration: 0.14, ease: 'easeOut' }}
+                                  >
+                                    <AgendaDraggableItem
+                                      event={event}
+                                      className={styles.agendaEvent}
+                                      dataComponent="agenda-event"
+                                      accentColor={getEventBarColor(event)}
+                                      disabled={
+                                        !!event.recurrence ||
+                                        !!event.rruleString ||
+                                        !!extractOriginalEventId(event.id) ||
+                                        calendars.find(
+                                          (calendar) => calendar.id === event.calendarId
+                                        )?.readOnly === true
+                                      }
+                                      onClick={(e) => handleEventClick(e, event)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                          e.preventDefault()
+                                          handleEventClick(e as unknown as React.MouseEvent, event)
+                                        }
+                                      }}
+                                      onContextMenu={(e) => handleEventContextMenu(e, event)}
+                                    >
+                                      <div
+                                        className={styles.agendaEventBar}
+                                        style={{ background: getEventBarColor(event) }}
+                                      />
+                                      <div className={styles.agendaEventBody}>
+                                        <div className={styles.agendaEventMain}>
+                                          <span className={styles.agendaEventTime}>
+                                            {event.isAllDay
+                                              ? t('surface.agendaAllDay')
+                                              : formatEventTime(
+                                                  event.start,
+                                                  event.timezone,
+                                                  timeFormat
+                                                )}
+                                          </span>
+                                          <span className={styles.agendaEventTitle}>
+                                            <CategoryEventTitle event={event} />
+                                          </span>
+                                        </div>
+                                        {event.location && (
+                                          <div className={styles.agendaEventSub}>
+                                            <LocationLink
+                                              location={event.location}
+                                              className={styles.agendaLocationLink}
+                                            />
+                                          </div>
+                                        )}
+                                      </div>
+                                    </AgendaDraggableItem>
+                                    <AgendaInsertDropZone dateKey={dateKey} position={index + 1} />
+                                  </motion.div>
+                                )
+                              })}
+                            </AnimatePresence>
+                            <div className={styles.agendaDivider} />
+                          </>
+                        )}
+
+                        {isEmpty && <div className={styles.agendaDivider} />}
+                      </div>
+                    )
+                  })()
+
+                  const isPast = (() => {
+                    if (fadePastDaysInAgenda === 'never') return false
+                    const isDayPast = group.days[group.days.length - 1] < startOfDay(new Date())
+                    if (!isDayPast) return false
+                    if (fadePastDaysInAgenda === 'all') return true
+                    return isCurrentMonthView
+                  })()
+
+                  return (
+                    <div
+                      key={group.type === 'skip' ? `skip-${firstKey}` : firstKey}
+                      ref={virtualizer.measureElement}
+                      data-index={virtualRow.index}
+                      className={isPast ? styles.isPast : ''}
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      {group.type === 'skip' ? (
+                        row
+                      ) : (
+                        <AgendaDropZone dateKey={firstKey} className={styles.agendaDayDropZone}>
+                          {row}
+                        </AgendaDropZone>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+        {contextMenu && (
+          <ContextMenu
+            x={contextMenu.x}
+            y={contextMenu.y}
+            menuId="agenda-context"
+            onClose={() => setContextMenu(null)}
+            items={[
+              {
+                label: t('views.week.createEvent'),
+                onClick: () => {
+                  handleCreateEvent(contextMenu.day)
+                  setContextMenu(null)
+                },
+              },
+              {
+                label: t('views.week.createTask'),
+                onClick: () => {
+                  handleCreateTask(contextMenu.day)
+                  setContextMenu(null)
+                },
+              },
+            ]}
+          />
+        )}
+        {eventContextMenu &&
+          createPortal(
+            <ContextMenu
+              x={eventContextMenu.x}
+              y={eventContextMenu.y}
+              menuId={`agenda-event-${eventContextMenu.event.id}`}
+              onClose={() => {
+                closeMenu()
+                setEventContextMenu(null)
+              }}
+              items={[
+                {
+                  label: t('common:actions.edit'),
+                  onClick: () => {
+                    openModal(
+                      undefined,
+                      undefined,
+                      eventContextMenu.event.id,
+                      eventContextMenu.event.type === 'task' ? 'task' : 'event'
+                    )
+                    setEventContextMenu(null)
+                  },
+                },
+                // Move up / Move down within the day, as in every task menu.
+                ...(isReorderable(eventContextMenu.event)
+                  ? (
+                      [
+                        [-1, 'moveUp', 'task-menu-move-up'],
+                        [1, 'moveDown', 'task-menu-move-down'],
+                      ] as const
+                    ).flatMap(([direction, key, dataComponent]) =>
+                      planStep(eventContextMenu.event, direction)
+                        ? [
+                            {
+                              label: t(`ui.task.${key}`),
+                              dataComponent,
+                              onClick: () => {
+                                void moveStep(eventContextMenu.event, direction)
+                                closeMenu()
+                                setEventContextMenu(null)
+                              },
+                            },
+                          ]
+                        : []
+                    )
+                  : []),
+                {
+                  label: t('common:actions.delete'),
+                  onClick: () => {
+                    deleteEventWithUndo({
+                      event: eventContextMenu.event,
+                      deleteEvent,
+                      addEvent,
+                      createCalDAVEvent,
+                      deleteCalDAVEvent,
+                      onAfterDelete: () => setEventContextMenu(null),
+                    })
+                  },
+                  danger: true,
+                },
+              ]}
+            />,
+            document.body
+          )}
+      </div>
+      {subtaskPopup && (
+        <DayEventsPopup
+          date={new Date()}
+          events={subtaskPopup.subtasks}
+          position={subtaskPopup.position}
+          title={subtaskPopup.parent.title}
+          countLabel={t('ui.subtasks.count', { count: subtaskPopup.subtasks.length })}
+          ariaLabel={t('ui.subtasks.for', { title: subtaskPopup.parent.title })}
+          onClose={() => setSubtaskPopup(null)}
+          onEventClick={(event) => {
+            setSubtaskPopup(null)
+            openModal(undefined, undefined, event.id, 'task')
+          }}
+        />
+      )}
+      <DragOverlay dropAnimation={null}>
+        {activeDragEvent ? (
+          <div className={styles.agendaDragOverlay} data-component="agenda-drag-overlay">
+            <span>{activeDragEvent.title}</span>
+            {/* What letting go here does, carried with the card rather than
+                pinned to the row underneath. */}
+            {dropIntent?.zone === 'nest' && (
+              <span className={styles.agendaTaskDropHint}>{t('surface.agendaMakeSubtask')}</span>
+            )}
+            {dropIntent?.zone === 'blocked' && (
+              <span className={`${styles.agendaTaskDropHint} ${styles.agendaTaskDropHintBlocked}`}>
+                {t(NEST_BLOCK_LABEL[dropIntent.reason])}
+              </span>
+            )}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
+  )
+}

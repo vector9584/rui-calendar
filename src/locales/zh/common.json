@@ -1,0 +1,70 @@
+{
+  "actions": {
+    "today": "今天",
+    "previous": "上一个",
+    "next": "下一个",
+    "close": "关闭",
+    "cancel": "取消",
+    "remove": "移除",
+    "add": "添加",
+    "edit": "编辑",
+    "delete": "删除",
+    "undo": "撤销",
+    "view": "查看",
+    "done": "完成",
+    "save": "保存"
+  },
+  "ui": {
+    "errorBoundary": {
+      "title": "出错了",
+      "unexpected": "发生了一个意外错误",
+      "retry": "重试"
+    },
+    "cookie": {
+      "notice": "我们使用本地存储来保存你的数据，不使用追踪 Cookie。",
+      "privacy": "隐私",
+      "dismiss": "知道了"
+    },
+    "skipToCalendar": "跳到日历",
+    "agendaPanel": {
+      "resize": "调整日程面板大小",
+      "close": "关闭日程面板",
+      "title": "日程"
+    },
+    "update": {
+      "apiError": "GitHub API 错误：{{status}}",
+      "failedWith": "检查更新失败：{{message}}",
+      "failed": "检查更新失败"
+    },
+    "shortcuts": {
+      "title": "键盘快捷键",
+      "navigation": "导航",
+      "create": "创建",
+      "general": "通用",
+      "today": "跳到今天",
+      "prevView": "上一个视图",
+      "nextView": "下一个视图",
+      "newEvent": "新建事件",
+      "newTask": "新建任务",
+      "palette": "打开命令面板",
+      "showHelp": "显示此帮助",
+      "closePanel": "关闭弹窗 / 面板",
+      "disabledHint": "在输入框输入或弹窗打开时，快捷键会被禁用。"
+    },
+    "onboarding": {
+      "title": "从你的日历开始",
+      "connectLine": "连接 iCloud、Nextcloud、Fastmail 或任意 CalDAV 服务器。",
+      "dataStays": "你的数据只保存在浏览器中。",
+      "how": "如何？",
+      "howText": "Calino 没有自己的后端，它直接与你的 CalDAV 服务器通信，并在本地保存一份副本。你可以通过「设置」中的导出/导入功能备份或迁移数据。",
+      "connectAccount": "连接 CalDAV 账户",
+      "loading": "加载中…",
+      "explore": "用示例数据体验 Calino",
+      "skip": "暂时跳过",
+      "demoFailed": "加载演示数据失败",
+      "nativeFootnote": "Calino 可以在事件开始前提醒你。继续操作将请求通知权限。",
+      "alsoOnAndroid": "也支持 <apk>Android</apk>，带相机导入和提醒功能。"
+    },
+    "privacy": "隐私"
+  }
+}

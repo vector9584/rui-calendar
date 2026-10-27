@@ -1,0 +1,717 @@
+.container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding-top: 80px;
+  background: var(--modal-scrim, rgba(var(--ink-raw), 0.18));
+  backdrop-filter: var(--modal-blur, blur(2px));
+  -webkit-backdrop-filter: var(--modal-scrim, blur(2px));
+  z-index: 1000;
+  animation: cmdkSpawn var(--dur-fast) ease-out;
+}
+
+.container.closing {
+  animation: cmdkDespawn var(--dur-fast) ease-in forwards;
+}
+
+@keyframes cmdkSpawn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes cmdkDespawn {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.modal {
+  position: relative;
+  width: 580px;
+  max-width: calc(100% - 32px);
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--popover-bg, var(--panel, #fff));
+  border: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.09)));
+  border-radius: var(--radius-lg);
+  box-shadow:
+    var(
+      --modal-shadow,
+      0 8px 32px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.14 * var(--shadow-opacity, 1)))
+    ),
+    0 2px 6px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+  overflow: hidden;
+  height: fit-content;
+  animation: cmdkModalSpawn var(--dur-fast) ease-out;
+}
+
+.container.closing .modal {
+  animation: cmdkModalDespawn var(--dur-fast) ease-in forwards;
+}
+
+@keyframes cmdkModalSpawn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cmdkModalDespawn {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+.command {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.inputWrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 14px 18px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--popover-border, var(--line-2, rgba(var(--ink-raw), 0.05)));
+}
+
+.filterToggle {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 0;
+  border-radius: 7px;
+  color: var(--ink-3, #a39d93);
+  background: transparent;
+  cursor: pointer;
+}
+
+.filterToggle:hover,
+.filterToggle:focus-visible {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  background: var(--accent-soft, #efe7db);
+}
+
+.filterToggle svg {
+  width: 17px;
+  height: 17px;
+  transform-origin: center;
+  transition: transform 180ms ease;
+}
+
+.filterToggle[data-open='true'] svg {
+  transform: rotate(-90deg);
+}
+
+.inputIcon {
+  width: 16px;
+  height: 16px;
+  color: var(--ink-3, #a39d93);
+  flex-shrink: 0;
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  font-size: 15px;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: var(--ink, #2c2823);
+  font-family: inherit;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+}
+
+.input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.input::placeholder {
+  color: var(--ink-3, #a39d93);
+}
+
+.inputContainer {
+  flex: 1;
+  position: relative;
+}
+
+.placeholder {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 15px;
+  color: var(--ink-3, #a39d93);
+  pointer-events: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cursor {
+  display: inline-block;
+  width: 1px;
+  height: 1em;
+  background: var(--ink-3, #a39d93);
+  margin-left: 1px;
+  vertical-align: text-bottom;
+  animation: blink 0.8s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.escBadge {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.09)));
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  background: var(--canvas, #faf8f3);
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.results {
+  overflow-y: auto;
+  max-height: 320px;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+@keyframes filterFormReveal {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.filterForm {
+  padding: 16px 18px 14px;
+  border-bottom: 1px solid var(--popover-border, var(--line-2, rgba(var(--ink-raw), 0.05)));
+  background: color-mix(in srgb, var(--canvas, #faf8f3) 35%, var(--popover-bg, var(--panel, #fff)));
+  animation: filterFormReveal 180ms ease-out both;
+}
+
+.filterHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: 14px;
+}
+
+.filterTitle {
+  margin: 0;
+  color: var(--ink, #2c2823);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.filterHelp {
+  margin: 4px 0 0;
+  color: var(--ink-3, #a39d93);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.resetButton {
+  flex: 0 0 auto;
+  border: 0;
+  padding: 3px 0;
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.resetButton:hover,
+.resetButton:focus-visible {
+  text-decoration: underline;
+}
+
+.filterField {
+  min-width: 0;
+}
+
+.filterLabel {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--ink-2, #6f6a62);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tokenInput,
+.filterTextInput {
+  min-height: 34px;
+  box-sizing: border-box;
+  border: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.12)));
+  border-radius: 7px;
+  background: var(--popover-bg, var(--panel, #fff));
+  color: var(--ink, #2c2823);
+  font: inherit;
+  font-size: 13px;
+}
+
+.tokenInput {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 4px 7px;
+}
+
+.tokenInput:focus-within,
+.filterTextInput:focus {
+  border-color: var(--accent, #b07d4f);
+  outline: 2px solid color-mix(in srgb, var(--accent, #b07d4f) 20%, transparent);
+  outline-offset: 0;
+}
+
+.tokenInputField {
+  flex: 1 1 100px;
+  min-width: 80px;
+  height: 24px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}
+
+.tokenInputField::placeholder,
+.filterTextInput::placeholder {
+  color: var(--ink-3, #a39d93);
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 5px 3px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent, #b07d4f) 28%, var(--popover-border, #ddd));
+  border-radius: 999px;
+  background: var(--accent-soft, #efe7db);
+  color: var(--ink-2, #6f6a62);
+  font-size: 12px;
+}
+
+.filterChip span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filterChipRemove {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: inherit;
+  background: transparent;
+  font-size: 15px;
+  line-height: 22px;
+  cursor: pointer;
+}
+
+.filterChipRemove:hover,
+.filterChipRemove:focus-visible {
+  color: var(--ink, #2c2823);
+  background: rgba(var(--ink-raw), 0.1);
+}
+
+.filterGrid,
+.filterDates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-top: 12px;
+}
+
+.filterTextInput {
+  width: 100%;
+  padding: 7px 9px;
+}
+
+.filterDates {
+  margin-top: 10px;
+}
+
+.invalidInput {
+  border-color: var(--danger, #b65c5c);
+}
+
+.filterError {
+  margin: 8px 0 0;
+  color: var(--danger, #b65c5c);
+  font-size: 11px;
+}
+
+.filterSummary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-bottom: 1px solid var(--popover-border, var(--line-2, rgba(var(--ink-raw), 0.05)));
+  color: var(--ink-3, #a39d93);
+  font-size: 12px;
+}
+
+.filterSummaryCount {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  font-weight: 600;
+}
+
+.highlight {
+  padding: 0 1px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent, #b07d4f) 24%, transparent);
+  color: inherit;
+}
+
+.eventMeta {
+  display: flex;
+  gap: 7px;
+  min-width: 0;
+  margin-top: 2px;
+  color: var(--ink-3, #a39d93);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.calendarBadge {
+  flex: 0 0 auto;
+  max-width: 130px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--calendar-color, #4285f4) 13%, transparent);
+  color: var(--ink-2, #6f6a62);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filterToggle svg,
+  .filterForm {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 520px) {
+  .filterGrid,
+  .filterDates {
+    grid-template-columns: 1fr;
+  }
+}
+
+.results:empty {
+  display: none;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* cmdk applies the `hidden` attribute to empty groups when filtering.
+ * The browser default `[hidden] { display: none }` loses to our `display: flex`
+ * above, so restore it explicitly. */
+.group[hidden] {
+  display: none;
+}
+
+.groupLabel {
+  padding: 10px 18px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+}
+
+/* cmdk applies [cmdk-group-heading] to the heading; style it the same as .groupLabel */
+.group [cmdk-group-heading] {
+  padding: 10px 18px 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+}
+
+.separator {
+  height: 1px;
+  background: var(--popover-border, var(--line-2, rgba(var(--ink-raw), 0.05)));
+  margin: 4px 0;
+}
+
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--ink-3, #a39d93);
+  font-size: 14px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 9px 18px;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.1s;
+  border-radius: 0;
+  min-width: 0;
+  color: inherit;
+}
+
+.item:hover {
+  background: rgba(var(--ink-raw), 0.04);
+}
+
+.item:active {
+  transform: scale(0.98);
+  transition-duration: 0.05s;
+}
+
+.item[aria-selected='true'] {
+  background: var(--accent-soft, #efe7db);
+}
+
+.item[aria-selected='true']::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 5px;
+  bottom: 5px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--accent, #b07d4f);
+}
+
+.item .icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--ink-3, #a39d93);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.item[aria-selected='true'] .icon {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+.item:hover:not([aria-selected='true']) .icon {
+  color: var(--ink-2, #6f6a62);
+}
+
+.item .body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.item .title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item .desc {
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item .eventColor {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Marks a result as one occurrence of a series. Sits inside .title, which
+   ellipsizes — the glyph is small enough to survive a long title. */
+.item .recurringBadge {
+  margin-left: 5px;
+  font-size: 11px;
+  color: var(--ink-3, #a39d93);
+}
+
+.item .confidence {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  font-weight: 500;
+}
+
+/* cmdk renders a built-in <kbd> for the `shortcut` prop. Style it. */
+.item kbd {
+  height: 22px;
+  min-width: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.09)));
+  border-radius: 5px;
+  border-bottom-width: 2px;
+  background: var(--canvas, #faf8f3);
+  color: var(--ink-3, #a39d93);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.item[aria-selected='true'] kbd {
+  border-color: var(--tag-border);
+  background: color-mix(in srgb, var(--accent, #b07d4f) 6%, var(--popover-bg, var(--panel, #fff)));
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+.footer {
+  border-top: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.09)));
+  background: var(--canvas, #faf8f3);
+  padding: 9px 18px;
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  /* The ↑↓/↵/Esc hints assume a keyboard-driven desktop user — on mobile
+     there's no keyboard to hint at, and the footer just eats screen space. */
+  .footer {
+    display: none;
+  }
+}
+
+.hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+}
+
+.hintKbd {
+  height: 20px;
+  min-width: 20px;
+  padding: 0 5px;
+  border: 1px solid var(--popover-border, var(--line, rgba(var(--ink-raw), 0.09)));
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--canvas, #faf8f3);
+  color: var(--ink-3, #a39d93);
+  font-size: 10px;
+  font-family: inherit;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .filterToggle {
+    width: 44px;
+    height: 44px;
+  }
+
+  .resetButton {
+    min-height: 44px;
+    padding: 8px 0;
+  }
+
+  .tokenInput,
+  .filterTextInput {
+    min-height: 44px;
+  }
+
+  .tokenInputField {
+    height: 32px;
+  }
+
+  .filterChipRemove {
+    width: 44px;
+    height: 44px;
+    line-height: 42px;
+  }
+
+  .input,
+  .tokenInputField,
+  .filterTextInput {
+    font-size: 16px;
+  }
+}

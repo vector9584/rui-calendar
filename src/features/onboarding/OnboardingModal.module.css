@@ -1,0 +1,258 @@
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--modal-scrim, rgba(0, 0, 0, 0.5));
+  backdrop-filter: var(--modal-blur, blur(3px));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: onboardingFadeIn 0.2s ease;
+}
+
+.modalContent {
+  background: var(--modal-bg, #ffffff);
+  border: 1px solid var(--modal-border, transparent);
+  box-shadow: var(--modal-shadow, 0 24px 80px rgba(0, 0, 0, 0.18), 0 6px 20px rgba(0, 0, 0, 0.1));
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  width: 100%;
+  max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+  animation: onboardingSlideUp 0.2s ease;
+}
+
+@keyframes onboardingFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes onboardingSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal.closing {
+  animation: onboardingFadeOut 0.2s ease-in forwards;
+}
+
+@keyframes onboardingFadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.modal.closing .modalContent {
+  animation: onboardingSlideDown 0.2s ease-in forwards;
+}
+
+@keyframes onboardingSlideDown {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-text-primary, #202124);
+  margin: 0 0 12px 0;
+}
+
+/* Two deliberate lines at the 440px width; keep it from spilling into a third. */
+.description {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5f6368);
+  margin: 0 0 24px 0;
+}
+
+.howButton {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  color: var(--accent-strong, var(--accent, #1a73e8));
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.howText {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary, #5f6368);
+  margin: -12px 0 24px;
+  text-wrap: pretty;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.addButton {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: none;
+  background: var(--accent-strong, var(--color-accent, #1a73e8));
+  color: var(--accent-contrast, #ffffff);
+}
+
+.addButton:hover {
+  background: var(--color-accent-hover, #1557b0);
+}
+
+.skipButton {
+  padding: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 14px;
+  color: var(--color-text-secondary, #5f6368);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.skipButton:hover {
+  color: var(--color-text-primary, #202124);
+}
+.footerButtons {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.footnote {
+  margin: 20px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-visible, #dadce0);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--color-text-muted, #80868b);
+}
+
+.footnote a {
+  color: var(--accent-strong, var(--accent, #1a73e8));
+}
+
+.demoButton {
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-primary, #202124);
+  border: 1px solid var(--color-border-visible, #dadce0);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2, 8px);
+}
+
+.demoButton:hover:not(:disabled) {
+  background: var(--color-bg-hover, #f1f3f4);
+}
+
+.demoButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.demoButtonSpinner {
+  animation: onboardingSpin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes onboardingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .demoButtonSpinner {
+    animation-duration: 2s;
+  }
+}
+
+.errorMessage {
+  color: var(--color-error, #ea4335);
+  font-size: 14px;
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  .modalContent {
+    margin: 16px;
+    max-width: calc(100% - 32px);
+    width: 100%;
+  }
+}
+
+.connectForm {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0 0 12px 0;
+  text-align: left;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-primary, #202124);
+}
+
+.formInput {
+  padding: 10px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--color-border-visible, #dadce0);
+  background: var(--color-surface, #ffffff);
+  color: var(--color-text-primary, #202124);
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.formInput:focus {
+  outline: none;
+  border-color: var(--accent-strong, var(--accent, #1a73e8));
+}

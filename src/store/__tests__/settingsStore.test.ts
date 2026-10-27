@@ -1,0 +1,391 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { createLocalStorageMock } from '@/test/storageMock'
+import { useSettingsStore } from '../settingsStore'
+
+describe('settingsStore', () => {
+  const storage = createLocalStorageMock()
+  beforeEach(() => {
+    storage.install()
+    localStorage.clear()
+    useSettingsStore.getState().resetSettings()
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    storage.reset()
+  })
+
+  it('has default settings', () => {
+    const settings = useSettingsStore.getState()
+
+    expect(settings.timezone).toBeDefined()
+    expect(settings.dateFormat).toBe('dd/MM/yyyy')
+    expect(settings.timeFormat).toBe('24h')
+    expect(settings.firstDayOfWeek).toBe(1)
+    expect(settings.defaultDuration).toBe(60)
+    expect(settings.defaultView).toBe('month')
+    expect(settings.showWeekNumbers).toBe(true)
+    expect(settings.eventDensity).toBe('comfortable')
+    expect(settings.defaultReminderMinutes).toBe(15)
+    expect(settings.defaultEventColor).toBe('#4285F4')
+    expect(settings.enableDesktopNotifications).toBe(true)
+    expect(settings.enableSoundAlerts).toBe(false)
+    expect(settings.conflictResolution).toBe('server-wins')
+    expect(settings.taskCollapseOverrides).toEqual({})
+    expect(settings.showTaskCalendarLabels).toBe(true)
+    expect(settings.showSidebarTaskCalendarLabels).toBe(true)
+  })
+
+  it('updates settings with updateSettings', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({
+      timeFormat: '24h',
+      firstDayOfWeek: 1,
+      defaultView: 'week',
+    })
+
+    const settings = useSettingsStore.getState()
+    expect(settings.timeFormat).toBe('24h')
+    expect(settings.firstDayOfWeek).toBe(1)
+    expect(settings.defaultView).toBe('week')
+  })
+
+  it('normalizes malformed adjustable profiles at the store boundary', () => {
+    useSettingsStore.getState().updateSettings({
+      adjustableTheme: {
+        light: {
+          accent: '#123456',
+          cornerRadius: 99,
+          density: 1,
+        },
+      } as never,
+    })
+
+    const profile = useSettingsStore.getState().adjustableTheme.light
+    expect(profile.accent).toBe('#123456')
+    expect(profile.cornerRadius).toBe(24)
+    expect(profile.density).toBe(80)
+    expect(profile.panel).toBe('#fffdfa')
+    expect(useSettingsStore.getState().adjustableTheme.dark.accent).toBe('#87a7ff')
+  })
+
+  it('updateSettings only changes provided fields', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ timeFormat: '24h' })
+
+    const settings = useSettingsStore.getState()
+    expect(settings.timeFormat).toBe('24h')
+    expect(settings.dateFormat).toBe('dd/MM/yyyy')
+    expect(settings.firstDayOfWeek).toBe(1)
+  })
+
+  it('stores task collapse overrides as settings', () => {
+    useSettingsStore.getState().updateSettings({
+      taskCollapseOverrides: { parent: true, expandedParent: false },
+    })
+
+    expect(useSettingsStore.getState().taskCollapseOverrides).toEqual({
+      parent: true,
+      expandedParent: false,
+    })
+  })
+
+  it('persists independent task calendar label preferences', async () => {
+    useSettingsStore.getState().updateSettings({
+      showTaskCalendarLabels: false,
+      showSidebarTaskCalendarLabels: true,
+    })
+    expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(false)
+    const saved = localStorage.getItem('calino-settings')!
+    expect(JSON.parse(saved).state.showTaskCalendarLabels).toBe(false)
+    expect(JSON.parse(saved).state.showSidebarTaskCalendarLabels).toBe(true)
+
+    useSettingsStore.getState().resetSettings()
+    localStorage.setItem('calino-settings', saved)
+    await useSettingsStore.persist.rehydrate()
+    expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(false)
+    expect(useSettingsStore.getState().showSidebarTaskCalendarLabels).toBe(true)
+    useSettingsStore.getState().updateSettings({ showSidebarTaskCalendarLabels: false })
+    useSettingsStore.getState().updateSettings({ showTaskCalendarLabels: true })
+    const independent = localStorage.getItem('calino-settings')!
+    useSettingsStore.getState().resetSettings()
+    localStorage.setItem('calino-settings', independent)
+    await useSettingsStore.persist.rehydrate()
+    expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(true)
+    expect(useSettingsStore.getState().showSidebarTaskCalendarLabels).toBe(false)
+  })
+
+  it.each([1, 4])(
+    'defaults missing calendar labels in saved settings version %i',
+    async (version) => {
+      localStorage.setItem(
+        'calino-settings',
+        JSON.stringify({ state: { themeMode: 'dark', defaultView: 'agenda' }, version })
+      )
+      await useSettingsStore.persist.rehydrate()
+      expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(true)
+      expect(useSettingsStore.getState().showSidebarTaskCalendarLabels).toBe(true)
+      expect(useSettingsStore.getState().themeMode).toBe('dark')
+      expect(useSettingsStore.getState().defaultView).toBe('agenda')
+    }
+  )
+
+  it.each([
+    [1, true],
+    [1, false],
+    [4, true],
+    [4, false],
+  ] as const)(
+    'seeds both labels from the shared setting at version %i with value %s',
+    async (version, value) => {
+      localStorage.setItem(
+        'calino-settings',
+        JSON.stringify({ state: { showTaskCalendarLabels: value, themeMode: 'dark' }, version })
+      )
+      await useSettingsStore.persist.rehydrate()
+      expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(value)
+      expect(useSettingsStore.getState().showSidebarTaskCalendarLabels).toBe(value)
+      expect(useSettingsStore.getState().themeMode).toBe('dark')
+    }
+  )
+
+  it('resetSettings restores both enabled task calendar label defaults', () => {
+    useSettingsStore.getState().updateSettings({
+      showTaskCalendarLabels: false,
+      showSidebarTaskCalendarLabels: false,
+    })
+    useSettingsStore.getState().resetSettings()
+    expect(useSettingsStore.getState().showTaskCalendarLabels).toBe(true)
+    expect(useSettingsStore.getState().showSidebarTaskCalendarLabels).toBe(true)
+  })
+
+  it('resetSettings restores default values', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({
+      timeFormat: '24h',
+      firstDayOfWeek: 1,
+      defaultView: 'agenda',
+      showWeekNumbers: true,
+    })
+
+    store.resetSettings()
+
+    const settings = useSettingsStore.getState()
+    expect(settings.timeFormat).toBe('24h')
+    expect(settings.firstDayOfWeek).toBe(1)
+    expect(settings.defaultView).toBe('month')
+    expect(settings.showWeekNumbers).toBe(true)
+  })
+
+  it('handles all date format options', () => {
+    const store = useSettingsStore.getState()
+
+    const formats = ['MM/dd/yyyy', 'dd/MM/yyyy', 'yyyy-MM-dd'] as const
+    formats.forEach((format) => {
+      store.updateSettings({ dateFormat: format })
+      expect(useSettingsStore.getState().dateFormat).toBe(format)
+    })
+  })
+
+  it('handles all time format options', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ timeFormat: '24h' })
+    expect(useSettingsStore.getState().timeFormat).toBe('24h')
+
+    store.updateSettings({ timeFormat: '12h' })
+    expect(useSettingsStore.getState().timeFormat).toBe('12h')
+  })
+
+  it('handles all first day of week options', () => {
+    const store = useSettingsStore.getState()
+
+    for (let day = 0; day <= 6; day++) {
+      store.updateSettings({ firstDayOfWeek: day as 0 | 1 | 2 | 3 | 4 | 5 | 6 })
+      expect(useSettingsStore.getState().firstDayOfWeek).toBe(day)
+    }
+  })
+
+  it('handles all view options', () => {
+    const store = useSettingsStore.getState()
+
+    const views = ['month', 'week', 'day', 'agenda'] as const
+    views.forEach((view) => {
+      store.updateSettings({ defaultView: view })
+      expect(useSettingsStore.getState().defaultView).toBe(view)
+    })
+  })
+
+  it('handles all event density options', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ eventDensity: 'compact' })
+    expect(useSettingsStore.getState().eventDensity).toBe('compact')
+
+    store.updateSettings({ eventDensity: 'comfortable' })
+    expect(useSettingsStore.getState().eventDensity).toBe('comfortable')
+  })
+
+  it('handles all conflict resolution options', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ conflictResolution: 'local-wins' })
+    expect(useSettingsStore.getState().conflictResolution).toBe('local-wins')
+
+    store.updateSettings({ conflictResolution: 'server-wins' })
+    expect(useSettingsStore.getState().conflictResolution).toBe('server-wins')
+
+    store.updateSettings({ conflictResolution: 'ask' })
+    expect(useSettingsStore.getState().conflictResolution).toBe('ask')
+  })
+
+  it('handles boolean toggle options', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ enableDesktopNotifications: false })
+    expect(useSettingsStore.getState().enableDesktopNotifications).toBe(false)
+
+    store.updateSettings({ enableDesktopNotifications: true })
+    expect(useSettingsStore.getState().enableDesktopNotifications).toBe(true)
+
+    store.updateSettings({ enableSoundAlerts: true })
+    expect(useSettingsStore.getState().enableSoundAlerts).toBe(true)
+
+    store.updateSettings({ showWeekNumbers: true })
+    expect(useSettingsStore.getState().showWeekNumbers).toBe(true)
+  })
+
+  it('handles numeric duration options', () => {
+    const store = useSettingsStore.getState()
+
+    const durations = [15, 30, 60, 90, 120] as const
+    durations.forEach((duration) => {
+      store.updateSettings({ defaultDuration: duration })
+      expect(useSettingsStore.getState().defaultDuration).toBe(duration)
+    })
+  })
+
+  it('handles reminder options', () => {
+    const store = useSettingsStore.getState()
+
+    const reminders = [0, 5, 15, 30, 60, 1440] as const
+    reminders.forEach((reminder) => {
+      store.updateSettings({ defaultReminderMinutes: reminder })
+      expect(useSettingsStore.getState().defaultReminderMinutes).toBe(reminder)
+    })
+  })
+
+  it('has default theme settings', () => {
+    const settings = useSettingsStore.getState()
+
+    expect(settings.themeMode).toBe('auto')
+    expect(settings.lightTheme).toBe('built-in')
+    expect(settings.darkTheme).toBe('built-in')
+  })
+
+  it('updates theme settings', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ themeMode: 'dark' })
+    expect(useSettingsStore.getState().themeMode).toBe('dark')
+
+    store.updateSettings({ themeMode: 'light' })
+    expect(useSettingsStore.getState().themeMode).toBe('light')
+
+    store.updateSettings({ themeMode: 'auto' })
+    expect(useSettingsStore.getState().themeMode).toBe('auto')
+  })
+
+  it('updates light and dark theme selections', () => {
+    const store = useSettingsStore.getState()
+
+    store.updateSettings({ lightTheme: 'warm-light' })
+    expect(useSettingsStore.getState().lightTheme).toBe('warm-light')
+
+    store.updateSettings({ darkTheme: 'oled-dark' })
+    expect(useSettingsStore.getState().darkTheme).toBe('oled-dark')
+  })
+
+  it('handles all theme mode options', () => {
+    const store = useSettingsStore.getState()
+
+    const modes = ['light', 'dark', 'auto'] as const
+    modes.forEach((mode) => {
+      store.updateSettings({ themeMode: mode })
+      expect(useSettingsStore.getState().themeMode).toBe(mode)
+    })
+  })
+
+  describe('migrate()', () => {
+    // R1.2: The previous migrate() discarded all persisted state on a version
+    // bump. These tests pin the new behavior: persisted fields survive, missing
+    // fields fall back to defaults.
+
+    const getMigrate = () =>
+      useSettingsStore.persist.getOptions().migrate as (state: unknown) => Record<string, unknown>
+
+    it('preserves persisted user fields on version bump', () => {
+      const persisted = {
+        themeMode: 'dark',
+        timezone: 'America/New_York',
+        defaultView: 'agenda' as const,
+        defaultDuration: 90 as const,
+      }
+      const result = getMigrate()(persisted)
+      expect(result.themeMode).toBe('dark')
+      expect(result.timezone).toBe('America/New_York')
+      expect(result.defaultView).toBe('agenda')
+      expect(result.defaultDuration).toBe(90)
+    })
+
+    it('falls back to defaults for fields not present in persisted state', () => {
+      const result = getMigrate()({ themeMode: 'dark' })
+      // Persisted field survives
+      expect(result.themeMode).toBe('dark')
+      // Missing fields get the defaults
+      expect(result.dateFormat).toBe('dd/MM/yyyy')
+      expect(result.timeFormat).toBe('24h')
+      expect(result.firstDayOfWeek).toBe(1)
+      expect(result.defaultDuration).toBe(60)
+      expect(result.defaultView).toBe('month')
+    })
+
+    it('fills missing adjustable theme profile fields during migration', () => {
+      const result = getMigrate()({
+        adjustableTheme: { dark: { accent: '#ff4060' } },
+      }) as { adjustableTheme: { light: Record<string, unknown>; dark: Record<string, unknown> } }
+
+      expect(result.adjustableTheme.dark.accent).toBe('#ff4060')
+      expect(result.adjustableTheme.dark.cornerRadius).toBe(10)
+      expect(result.adjustableTheme.light.accent).toBe('#9a6b43')
+    })
+
+    it('rejects invalid colors and clamps migrated numeric values', () => {
+      const result = getMigrate()({
+        adjustableTheme: {
+          light: { accent: 'red', shadowStrength: 1000 },
+        },
+      }) as { adjustableTheme: { light: Record<string, unknown> } }
+
+      expect(result.adjustableTheme.light.accent).toBe('#9a6b43')
+      expect(result.adjustableTheme.light.shadowStrength).toBe(100)
+    })
+
+    it('handles undefined persisted state gracefully', () => {
+      const result = getMigrate()(undefined)
+      // All defaults
+      expect(result.dateFormat).toBe('dd/MM/yyyy')
+      expect(result.timeFormat).toBe('24h')
+      expect(result.themeMode).toBe('auto')
+    })
+
+    it('handles empty persisted state gracefully', () => {
+      const result = getMigrate()({})
+      expect(result.dateFormat).toBe('dd/MM/yyyy')
+      expect(result.themeMode).toBe('auto')
+    })
+  })
+})

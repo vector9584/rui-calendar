@@ -1,0 +1,74 @@
+# Dependabot configuration for Calino
+# Keeps dependencies, GitHub Actions, and Docker base images up to date.
+# https://docs.github.com/en/code-security/dependabot
+
+version: 2
+updates:
+  # ── npm dependencies (package.json + pnpm-lock.yaml) ─────────────
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Berlin"
+    # Don't open more than 5 PRs at once so reviewers can keep up
+    open-pull-requests-limit: 5
+    # Patch + minor updates go straight to a PR; major updates are
+    # grouped together once a month so they're easier to review.
+    groups:
+      patch-and-minor:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      major-updates:
+        patterns:
+          - "*"
+        update-types:
+          - "major"
+    # Skip updates that have known issues
+    ignore:
+      - dependency-name: "react"
+        # React 19 is the current major; ignore 20.x until we've validated it
+        versions: ["20.x"]
+      - dependency-name: "typescript"
+        # typescript-eslint does not support TS 7.0 yet (lint fails); revisit
+        # once it does.
+        versions: ["7.x"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "automated"
+
+  # ── GitHub Actions versions ─────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "ci"
+    labels:
+      - "dependencies"
+      - "ci"
+      - "automated"
+
+  # ── Dockerfile base images ──────────────────────────────────────
+  # Tracks base image updates (e.g. node:22-alpine, caddy:2-alpine).
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "docker"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "automated"

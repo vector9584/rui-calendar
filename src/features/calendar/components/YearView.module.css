@@ -1,0 +1,251 @@
+/* ============================================================================
+   YearView — 12 mini-month calendars
+   ============================================================================ */
+
+.container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-4);
+  margin: 0 var(--grid-margin, 16px) 24px 0;
+  /* Query container: `.grid` sizes itself off this box's height (cqh), so the
+     year fills a tall window instead of stopping at a fixed 850px. */
+  container-type: size;
+}
+
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  /* Lets content run behind the floating nav pill until scrolled to the
+     end, instead of always reserving a visible gap (see App.css .main). */
+  .container {
+    padding-bottom: calc(84px + var(--safe-area-bottom));
+
+    /* Desktop's asymmetric right-only margin (to clear a scrollbar) reads as
+       the whole grid hugging the left edge on a phone screen — reset to a
+       symmetric margin so the month boxes sit centered, matching /agenda's
+       subtle top line rather than a lopsided gutter. */
+    margin: 0 5px;
+    border-top: 1px solid var(--line-2, rgba(var(--ink-raw), 0.05));
+  }
+}
+
+/* The mini-months are fluid (see .dayGrid), so the grid's width is what
+   decides how big a year gets. Two things bound it: the container's width, as
+   for any block, and a width worked back from the container's *height*, so
+   that `--year-rows` rows of cards fit without scrolling. Below a floor — a
+   card about the size this view has always drawn — the grid stops shrinking
+   and the container scrolls instead, as it did before. */
+.grid {
+  --year-cols: 4;
+  --year-rows: 3;
+  --year-gap: 14px;
+  --year-card-min: 224px;
+  /* The card height that stacks `--year-rows` of them in the container. */
+  --year-card-h: calc((100cqh - (var(--year-rows) - 1) * var(--year-gap)) / var(--year-rows));
+  /* The card width that yields that height. A card is 80–93px of chrome —
+     header, weekday row, cell gaps and padding, more as the type grows with the
+     card — plus six rows of square cells, each a seventh of what's left after
+     the 28px padding and 12px of column gaps. 102px of chrome errs towards a
+     little room at the bottom rather than a scrollbar for a few px. */
+  --year-card-w: calc(40px + (var(--year-card-h) - 102px) * 7 / 6);
+  display: grid;
+  grid-template-columns: repeat(var(--year-cols), 1fr);
+  gap: var(--year-gap);
+  margin: 0 auto;
+  max-width: max(
+    calc(var(--year-cols) * var(--year-card-min) + (var(--year-cols) - 1) * var(--year-gap)),
+    calc(var(--year-cols) * var(--year-card-w) + (var(--year-cols) - 1) * var(--year-gap))
+  );
+}
+
+/* The week-number column is 0.6 of a cell wide, so the same height comes
+   from a wider card: 7.6 tracks and one more gap. */
+.gridWithWeekNum {
+  --year-card-w: calc(42px + (var(--year-card-h) - 102px) * 7.6 / 6);
+}
+
+@media (max-width: 1100px) {
+  .grid {
+    --year-cols: 3;
+    --year-rows: 4;
+  }
+}
+
+@media (max-width: 768px) {
+  .grid {
+    --year-cols: 2;
+    --year-rows: 6;
+  }
+}
+
+@media (max-width: 500px) {
+  .grid {
+    --year-cols: 1;
+    --year-rows: 12;
+    /* One column always scrolls; nothing to fit to. */
+    max-width: none;
+  }
+
+  /* A phone-width card is wider than a month wants to be: cells the full
+     width made each month a screen tall. Keep the card, cap the month. */
+  .weekdayRow,
+  .dayGrid {
+    max-width: 240px;
+    margin-inline: auto;
+  }
+}
+
+.month {
+  background: var(--panel, rgba(var(--ink-raw), 0.03));
+  border: 1px solid var(--line, #e5e0d8);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition:
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+  /* Type inside the card scales with the card (cqw below). */
+  container-type: inline-size;
+}
+
+.month:hover {
+  border-color: var(--accent, #b07d4f);
+  box-shadow:
+    0 0 0 1px var(--accent, #b07d4f),
+    var(--shadow-card);
+}
+
+.monthHeader {
+  align-self: stretch;
+  background: none;
+  border: none;
+  padding: 0 0 8px;
+  text-align: center;
+  font-size: clamp(14px, 4.5cqw, 20px);
+  font-weight: 600;
+  color: var(--ink, #2c2823);
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.monthHeader:hover {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+/* Seven equal tracks the full width of the card: the cells are squares
+   (aspect-ratio) so the month grows with the card rather than sitting in a
+   fixed 224px box in the middle of it. */
+.weekdayRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0 2px;
+  width: 100%;
+  margin: 0 0 2px;
+}
+
+.weekdayInitial {
+  text-align: center;
+  font-size: clamp(10px, 3.2cqw, 14px);
+  color: var(--ink-muted, var(--ink-3, #9c9384));
+  line-height: 1.5;
+}
+
+.dayGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  width: 100%;
+}
+
+/* Leading ISO week-number column (when "Show week numbers" is enabled) */
+.weekdayRow.withWeekNum,
+.dayGrid.withWeekNum {
+  grid-template-columns: 0.6fr repeat(7, 1fr);
+}
+
+.weekNum {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-size: clamp(9.5px, 3cqw, 13px);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-muted, var(--ink-3, #9c9384));
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm, 4px);
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.weekNum:hover {
+  background: var(--panel-hover, var(--hover-bg, rgba(0, 0, 0, 0.05)));
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+.day,
+.emptyDay {
+  width: 100%;
+  aspect-ratio: 1;
+  margin: 0;
+}
+
+.day {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(11px, 3.6cqw, 16px);
+  padding: 0;
+  color: var(--ink, #2c2823);
+  background: none;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition:
+    background 0.12s ease,
+    transform 0.12s ease;
+}
+
+.day:hover {
+  background: var(--panel-hover, var(--hover-bg, rgba(0, 0, 0, 0.05)));
+  transform: scale(1.12);
+}
+
+.day:active {
+  transform: scale(0.95);
+}
+
+.today {
+  background: var(--accent-strong, var(--accent, #b07d4f));
+  color: var(--accent-contrast, #fff);
+  font-weight: 600;
+}
+
+.today:hover {
+  background: var(--accent-strong, var(--accent, #b07d4f));
+  transform: scale(1.12);
+}
+
+.eventDot {
+  position: absolute;
+  bottom: clamp(2px, 0.8cqw, 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: clamp(3px, 1cqw, 5px);
+  height: clamp(3px, 1cqw, 5px);
+  border-radius: 50%;
+  background: var(--accent, #b07d4f);
+}
+
+.today .eventDot {
+  background: var(--accent-contrast, #fff);
+}

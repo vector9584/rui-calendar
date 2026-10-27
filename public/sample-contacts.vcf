@@ -1,0 +1,72 @@
+BEGIN:VCARD
+VERSION:3.0
+UID:sample-alice-001
+FN:Alice Johnson
+N:Johnson;Alice;;;
+EMAIL;TYPE=HOME:alice.johnson@gmail.com
+EMAIL;TYPE=WORK:alice@techstart.io
+TEL;TYPE=CELL:+1-555-0202
+TEL;TYPE=WORK:+1-555-0203
+ORG:TechStart Inc;Product
+TITLE:Product Manager
+ADR;TYPE=HOME:;;123 Oak Lane;San Francisco;CA;94102;USA
+BDAY:19880315
+NOTE:Met at React Conf 2025.
+CATEGORIES:friend,colleague
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+UID:sample-bob-001
+FN:Bob Martinez
+N:Martinez;Bob;;;
+EMAIL;TYPE=HOME:bob.martinez@protonmail.com
+TEL;TYPE=CELL:+44-20-7946-0958
+ORG:Global Design Co
+TITLE:UX Designer
+ADR;TYPE=WORK:;;45 King's Road;London;;SW3 4ND;UK
+URL;TYPE=HOME:https://bobmartinez.design
+NOTE:Prefers email over phone.
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+UID:sample-priya-001
+FN:Priya Sharma
+N:Sharma;Priya;;;
+EMAIL;TYPE=WORK:priya.sharma@datacorp.in
+EMAIL;TYPE=HOME:priya@personal.me
+TEL;TYPE=CELL:+91-98765-43210
+ORG:DataCorp Solutions;AI Research
+TITLE:Data Scientist
+ADR;TYPE=HOME:;;78 MG Road;Bangalore;Karnataka;560001;India
+BDAY:19920722
+CATEGORIES:colleague
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+UID:sample-carlos-001
+FN:Carlos Rivera
+N:Rivera;Carlos;;;
+EMAIL;TYPE=WORK:carlos.rivera@designstudio.co
+TEL;TYPE=CELL:+1-555-0303
+ORG:Creative Studios
+TITLE:Creative Director
+ADR;TYPE=HOME:;;89 Design Blvd;Austin;TX;73301;USA
+URL;TYPE=HOME:https://carlosrivera.design
+CATEGORIES:friend
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+UID:sample-emma-001
+FN:Emma Wilson
+N:Wilson;Emma;;;
+EMAIL;TYPE=HOME:emma.wilson@outlook.com
+EMAIL;TYPE=WORK:emma@lawfirm.com
+TEL;TYPE=CELL:+1-555-0404
+TEL;TYPE=WORK:+1-555-0505
+ORG:Wilson & Associates;Legal
+TITLE:Attorney
+ADR;TYPE=WORK:;;200 Legal Ave;New York;NY;10001;USA
+BDAY:19850910
+NOTE:Handles contract reviews.
+CATEGORIES:colleague
+END:VCARD

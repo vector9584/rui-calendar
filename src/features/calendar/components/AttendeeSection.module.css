@@ -1,0 +1,286 @@
+.attendeeSection {
+  margin-top: 4px;
+}
+
+.sectionLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--color-text-secondary, #666);
+  margin-bottom: 6px;
+}
+
+.organizerBadge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px 10px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: var(--radius-sm);
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.organizerLabel {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-tertiary, #888);
+}
+
+.organizerName {
+  color: var(--color-text-primary, #222);
+  font-weight: 500;
+}
+
+.organizerEmail {
+  color: var(--color-text-secondary, #666);
+  font-size: 12px;
+}
+
+.attendeeList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: 8px;
+}
+
+.attendeeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 5px 8px;
+  background: var(--color-bg-secondary, #f5f5f5);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.attendeeAvatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent-strong, var(--color-accent, #4a90d9));
+  color: var(--accent-contrast, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.attendeeInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.attendeeName {
+  color: var(--color-text-primary, #222);
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.attendeeEmail {
+  color: var(--color-text-secondary, #666);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.partstatBadge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* Status chips derive from theme tokens. Mixing the status hue toward --ink
+   darkens the label in light mode and lightens it in dark mode, so both themes
+   stay readable from a single declaration. */
+.partstatAccepted {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: color-mix(in srgb, var(--color-success) 65%, var(--ink));
+}
+
+.partstatDeclined {
+  background: color-mix(in srgb, var(--color-error) 14%, transparent);
+  color: color-mix(in srgb, var(--color-error) 65%, var(--ink));
+}
+
+.partstatTentative {
+  background: color-mix(in srgb, var(--color-warning) 14%, transparent);
+  color: color-mix(in srgb, var(--color-warning) 65%, var(--ink));
+}
+
+.partstatNeedsAction {
+  background: var(--surface-bg);
+  color: var(--color-text-secondary);
+}
+
+.partstatDelegated {
+  background: var(--chip-bg);
+  color: color-mix(in srgb, var(--color-accent) 65%, var(--ink));
+}
+
+.removeAttendeeButton {
+  background: none;
+  border: none;
+  color: var(--color-text-tertiary, #999);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 4px;
+  line-height: 1;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.removeAttendeeButton:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+  color: var(--color-text-primary, #222);
+}
+
+.addAttendeeRow {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.addAttendeeInput {
+  flex: 1;
+  padding: 6px 8px;
+  border: 1px solid var(--color-border, #ddd);
+  border-radius: 6px;
+  font-size: 13px;
+  background: var(--color-bg-input, #fff);
+  color: var(--color-text-primary, #222);
+}
+
+.addAttendeeInput::placeholder {
+  color: var(--color-text-tertiary, #aaa);
+}
+
+.addAttendeeInput:focus {
+  outline: 2px solid var(--color-accent, #4a90d9);
+  outline-offset: -1px;
+}
+
+.addAttendeeButton {
+  padding: 6px 12px;
+  background: var(--accent-strong, var(--color-accent, #4a90d9));
+  color: var(--accent-contrast, #fff);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.addAttendeeButton:hover {
+  background: var(--color-accent-hover, #3a7bc8);
+}
+
+.addAttendeeButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .addAttendeeInput {
+    font-size: 16px;
+  }
+}
+
+/* ── Availability ─────────────────────────────────────────────────────────
+   Colour never carries the meaning on its own: every badge pairs its hue with
+   a text label and an aria-label, and uses a dot rather than an emoji so it
+   renders identically on desktop and in the Android WebView. */
+
+.availabilityBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  white-space: nowrap;
+  border-radius: 10px;
+}
+
+.availabilityDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentcolor;
+}
+
+.availabilityAvailable {
+  background: color-mix(in srgb, var(--color-success) 14%, transparent);
+  color: color-mix(in srgb, var(--color-success) 65%, var(--ink));
+}
+
+.availabilityBusy {
+  background: color-mix(in srgb, var(--color-error) 14%, transparent);
+  color: color-mix(in srgb, var(--color-error) 65%, var(--ink));
+}
+
+/* Unknown is the common case, so it stays visually quiet. */
+.availabilityUnknown {
+  background: transparent;
+  color: var(--color-text-tertiary, #888);
+}
+
+.conflictBanner {
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-warning) 12%, transparent);
+  color: color-mix(in srgb, var(--color-warning) 70%, var(--ink));
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.emailButton {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-accent, #4285f4);
+  background: none;
+  border: 1px solid var(--color-border-subtle, #e8eaed);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.emailButton:hover {
+  background: var(--color-bg-hover);
+}
+
+.privacyNote {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--color-text-tertiary, #888);
+}

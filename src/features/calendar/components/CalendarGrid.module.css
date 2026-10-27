@@ -1,0 +1,778 @@
+/* ============================================================================
+   CalendarGrid — Editorial Design
+   Rounded bordered panel, refined cell styling
+   ============================================================================ */
+
+.grid {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  background: var(--panel);
+  overflow: auto;
+  /* Hide scrollbar visually to prevent horizontal layout squish on month change, 
+     while still allowing mousewheel/trackpad scrolling */
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+.grid::-webkit-scrollbar {
+  display: none; /* Chrome, Safari and Opera */
+}
+
+/* ---- Panel Container ---- */
+.gridPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--panel);
+  margin: 0 var(--grid-margin, 16px) 24px 0;
+}
+
+@media (max-width: 950px) {
+  .gridPanel {
+    margin: 0 5px 0 5px;
+  }
+}
+
+/* Month without the agenda split below it: nothing else in the view reserves
+   room for the floating nav pill (`.main` opts month out of its clearance in
+   App.css, because the split's agenda pane normally absorbs it as trailing
+   scroll padding). Keep the same gap the other views get from `.main`. */
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  .gridPanelStandalone {
+    margin-bottom: calc(84px + var(--safe-area-bottom));
+  }
+
+  /* Matches `.main`'s behaviour: the pill hides while a text input is
+     focused, so the reserved strip would otherwise float above the keyboard. */
+  :global(body.text-input-focused) .gridPanelStandalone {
+    margin-bottom: 0;
+  }
+}
+
+/* ---- Header Row ---- */
+.header {
+  display: grid;
+  grid-template-columns: 46px repeat(7, 1fr);
+  border-bottom: 1px solid var(--line);
+  flex-shrink: 0;
+}
+
+.headerSlim {
+  grid-template-columns: 34px repeat(7, 1fr);
+}
+
+.headerNoWeekNum {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.weekNumHeader {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 13px 8px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  border-right: 1px solid var(--line-2);
+}
+
+.weekday {
+  padding: 13px 16px;
+  text-align: center;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+/* ---- Days Container ---- */
+.daysContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+/* ---- Week Row ---- */
+.weekRow {
+  display: grid;
+  grid-template-columns: 46px repeat(7, 1fr);
+  flex: 1;
+}
+
+.weekRowSlim {
+  grid-template-columns: 34px repeat(7, 1fr);
+}
+
+.weekRowNoWeekNum {
+  grid-template-columns: repeat(7, 1fr);
+}
+
+.compressedWeek {
+  flex: 0.5;
+}
+
+.compressedWeek > .day {
+  min-height: 50px;
+}
+
+.compressedWeek .events {
+  margin-top: 2px;
+}
+
+.compressedWeek .title {
+  font-size: 10px;
+}
+
+/* ---- Week Number ---- */
+.weekNumber {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 5px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+  border-right: 1px solid var(--line-2);
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
+  height: 100%;
+  min-height: var(--month-row-min-height, var(--day-cell-height, 100px));
+}
+
+.weekNumber:hover {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.03);
+  color: var(--accent-strong, var(--accent));
+}
+
+/* Not while the press is on the badge: the shrink pulls the badge away from
+   the pointer (more so the taller the row), so a press near its top edge ended
+   off the button and the click landed on the gutter instead. */
+.weekNumber:active:not(:has([data-component='week-tasks-badge']:active)) {
+  transform: scale(0.9);
+}
+
+/* While a task is dragged the gutters offer themselves as "this week" drop
+   targets; the one under the pointer takes the accent. */
+.weekDropReady {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.weekDropOver {
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* The drag preview for a task lifted out of the week popover. */
+.weekTaskGhost {
+  display: inline-block;
+  max-width: 220px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background: var(--popover-bg, var(--panel, #fff));
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+  cursor: grabbing;
+}
+
+/* Week numbers off: the column only carries the week-task badge, so it drops
+   the number's 28px line and sits flush at the top. */
+.weekNumberSlim {
+  padding-top: 4px;
+}
+
+/* An empty row's add affordance shows while the pointer is over the row. */
+.weekRow:hover [data-week-badge='empty'] {
+  opacity: 1;
+}
+
+/* ---- Day Cell ---- */
+.day {
+  position: relative;
+  padding: 5px;
+  border-right: 1px solid var(--line-2);
+  border-bottom: 1px solid var(--line-2);
+  border-radius: var(--day-cell-radius, 0);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: visible;
+  cursor: pointer;
+  transition: background var(--dur-fast);
+}
+
+.dayContentSlide {
+  animation: daySlideIn var(--slide-duration, 0.18s) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dayContentSlide {
+    animation-duration: 0.01s; /* Practically instant, but still runs lifecycle if needed */
+  }
+}
+
+@keyframes daySlideIn {
+  from {
+    opacity: 0;
+    transform: translate(var(--slide-x, 0px), var(--slide-y, 0px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(0px, 0px);
+  }
+}
+
+.events + .tasks {
+  margin-top: 1px;
+}
+
+.day:last-child {
+  border-right: none;
+}
+
+.day:hover {
+  background: var(--day-cell-hover-bg, rgba(var(--ink-raw, 44, 40, 33), 0.02));
+}
+
+.day:active {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.05);
+  transition-duration: 0.05s;
+}
+
+.day:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.02);
+}
+
+.dropTarget {
+  background: var(--accent-soft);
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+}
+
+/* Month-view drag-to-create: the day cells the user is sweeping across while
+   dragging out an all-day range. Visible selection feedback only — it never
+   changes layout or hit-testing. The start/end/between roles are exposed via
+   `data-create-selection` for tests and/or future edge emphasis. */
+.createSelecting {
+  background: var(--accent-soft);
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+/* ---- Out of Month ---- */
+.otherMonth {
+  background: var(--day-cell-other-month-bg, rgba(var(--ink-raw, 44, 40, 33), 0.02));
+}
+
+/* Dimmed on purpose, but these are still real, clickable dates. The dimming
+   used to be `opacity: 0.85` on top of --ink-3, which dropped the effective
+   contrast to 3.74:1 on white / 3.63:1 on the other-month tint. The opacity
+   trick is gone: --ink-3-dimmed is the muted-but-readable colour at full
+   opacity (4.93:1 on --panel, 4.73:1 on the other-month cell tint). */
+.otherMonth .dayNumber {
+  color: var(--ink-3-dimmed, var(--ink-3));
+  opacity: 1;
+}
+
+/* ---- Today ---- */
+.today {
+  background: var(--day-cell-today-bg, var(--selected-bg));
+  border-radius: var(--day-cell-radius, 0);
+}
+
+.today .dayNumber {
+  background: var(--accent-strong, var(--accent));
+  color: var(--accent-contrast, #fff);
+  font-weight: 600;
+}
+
+/* ---- Day Header ---- */
+.dayHeader {
+  display: flex;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.dayNumber {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast);
+}
+
+.dayNumber:hover {
+  background: var(--day-number-hover-bg, var(--hover-bg));
+  color: var(--color-text-primary);
+}
+
+/* The rule above has the weight of `.today .dayNumber` and comes after it, so
+   without this one hovering today's number washes its circle out and leaves
+   dark digits on a pale disc. */
+.today .dayNumber:hover {
+  background: var(--color-accent-hover, var(--accent-strong, var(--accent)));
+  color: var(--accent-contrast, #fff);
+}
+
+.dayNumber:active {
+  transform: scale(0.88);
+  transition-duration: 0.05s;
+}
+
+.dayNumber:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- Journal Indicator ---- */
+.journalIndicator {
+  margin-left: auto;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-3);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    opacity var(--dur-fast),
+    background var(--dur-fast),
+    color var(--dur-fast);
+  position: relative;
+}
+
+.journalIndicator svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+  opacity: 0;
+  transition: opacity var(--dur-fast);
+}
+
+.journalIndicatorDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0.45;
+  transition: opacity var(--dur-fast);
+  position: absolute;
+}
+
+.day:hover .journalIndicator svg {
+  opacity: 1;
+}
+
+.day:hover .journalIndicatorDot {
+  opacity: 0;
+}
+
+.journalIndicator:hover {
+  background: var(--selected-bg);
+  color: var(--accent-strong, var(--accent));
+}
+
+/* Always show dot on mobile (no hover) */
+@media (max-width: 768px) {
+  .journalIndicatorDot {
+    opacity: 0.45;
+  }
+}
+
+/* ---- Events Container ---- */
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-height: 0;
+  overflow: visible;
+}
+
+.events .card {
+  height: auto !important;
+  flex-shrink: 0;
+}
+
+/* Reserves an empty lane so a spanning pill keeps the same row in every day
+   cell it covers. Mirrors the box of a compact EventCard (`.compact` +
+   `.compact .title` in EventCard.module.css) rather than hardcoding a height:
+   padding + transparent border + one title line must add up to exactly the
+   pill's height, or the spanning pill sits a few px off on spacer days. */
+.eventSpacer {
+  box-sizing: border-box;
+  min-height: 18px;
+  padding: 2px 4px 2px 8px;
+  border: 1px solid transparent;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+.eventSpacer::after {
+  content: '';
+  display: block;
+  font-size: 12px;
+  line-height: 1.3;
+  height: 1.3em;
+}
+
+/* ---- More Events Button ---- */
+.moreEvents {
+  font-size: 11.5px;
+  color: var(--ink-2);
+  padding: 2px 8px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+  transition: color var(--dur-fast);
+}
+
+.moreEvents:hover {
+  color: var(--ink);
+}
+
+.moreEvents:active {
+  transform: scale(0.95);
+}
+
+.moreEvents:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Tasks Container ---- */
+.tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 2px 0 0 0;
+  position: relative;
+  z-index: 0;
+}
+
+.tasks .card {
+  align-self: flex-start;
+  height: auto !important;
+  flex-shrink: 0;
+  z-index: 0;
+}
+
+/* ---- Split View ---- */
+.splitContainer {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gridTop {
+  flex: 0 0 60%;
+  max-height: 800px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  padding: 0 5px;
+  /* Only `min-height` animates, and it only changes when the month's week
+     count does — so swiping between a 5- and 6-week month eases into its new
+     height. Deliberately not `flex-basis`: that one tracks the drag handle,
+     where a transition would just feel like lag. */
+  transition: min-height 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gridTop {
+    transition: none;
+  }
+}
+
+.agendaBottom {
+  flex: 1 1 40%;
+  display: flex;
+  min-height: 0;
+  overflow: hidden;
+  border-top: 1px solid var(--line);
+}
+
+.splitDay {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+}
+
+.splitDay,
+.splitAgenda {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid var(--line);
+}
+
+.splitAgenda {
+  flex: 0 0 35%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.splitHandle {
+  width: 3px;
+  cursor: col-resize;
+  flex-shrink: 0;
+  align-self: stretch;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.splitHandle:hover,
+.splitHandle:active {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.1);
+}
+
+.splitHandleH {
+  position: relative;
+  height: 12px;
+  cursor: row-resize;
+  flex-shrink: 0;
+  /* The drag owns the gesture. React attaches `onTouchStart` passively at the
+     root, so the handler's `preventDefault()` was a no-op that only logged a
+     warning — the page kept scrolling under the finger, which read as the
+     divider lagging. Declaring it here is what actually stops the browser. */
+  touch-action: none;
+  background: transparent;
+  transition: background 0.2s;
+}
+
+.splitHandleH::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 36px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--ink-3, #a39d93);
+  opacity: 0.65;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  transition:
+    opacity 0.2s,
+    width 0.2s;
+}
+
+.splitHandleH:hover,
+.splitHandleH:active {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.1);
+}
+
+.splitHandleH:hover::before,
+.splitHandleH:active::before {
+  width: 44px;
+  opacity: 0.9;
+}
+
+/* ---- Weekend Dimming ---- */
+/* Other-month weekend days opt out entirely: their day numbers already carry
+   the full-opacity --ink-3-dimmed colour (see .otherMonth .dayNumber above),
+   and stacking the 0.9 opacity on top would knock it back under 4.5:1 — the
+   same arithmetic applies to event chips, so `.events` opts out with them.
+   Current-month weekend day numbers (--ink-2 at 0.9) still clear AA at
+   4.98:1. */
+.day:nth-child(7n):not(.today):not(.otherMonth) .dayNumber,
+.day:nth-child(7n):not(.today):not(.otherMonth) .events {
+  opacity: 0.9;
+}
+
+.day:nth-child(7n + 1):not(.today):not(.otherMonth) .dayNumber,
+.day:nth-child(7n + 1):not(.today):not(.otherMonth) .events {
+  opacity: 0.9;
+}
+
+/* ---- Compact Mobile (≤500px) ---- */
+@media (max-width: 500px) {
+  .gridPanel {
+    overflow-x: hidden;
+  }
+
+  /* The week-number column is the setting's to show or hide, not the
+     breakpoint's — it just gets a narrower column here than the 46px desktop
+     one. The `NoWeekNum` rules must follow the base ones to win: same
+     specificity, so order decides. */
+  .header,
+  .weekRow {
+    grid-template-columns: 22px repeat(7, 1fr);
+    border-right: none;
+  }
+
+  .headerNoWeekNum,
+  .weekRowNoWeekNum {
+    grid-template-columns: repeat(7, 1fr);
+  }
+
+  .weekNumHeader,
+  .weekNumber {
+    font-size: 9px;
+    letter-spacing: 0;
+  }
+
+  .weekNumHeader {
+    padding: 8px 1px;
+  }
+
+  .weekNumber {
+    padding-top: 2px;
+    /* The desktop cell-height floor lives on this element, and it's the only
+       thing in a row that carries one. On a phone the day cells size to a row
+       of dots, so leaving it in place forced every week to 100px and made the
+       month swallow the screen. */
+    min-height: 0;
+  }
+
+  .day {
+    /* #79: extra bottom padding leaves the indicator rows some room to sit in
+       rather than running up against the cell edge. Pairs with the tightened
+       .dayHeader margin below, which pulls them up under the day number. */
+    padding: 2px 2px 6px;
+    border-right: none;
+  }
+
+  /* Close the gap between the day number and the indicator rows, so bars and
+     dots read as a band belonging to the number above them. Compact mobile
+     only — the desktop cell has full event chips and needs the 6px. */
+  .dayHeader {
+    margin-bottom: 2px;
+  }
+
+  /* Vertical dividers via left border on every cell except first */
+  .day + .day {
+    border-left: 1px solid var(--line-2);
+  }
+
+  /* Smaller day number */
+  .dayNumber {
+    font-size: 10px;
+    padding: 1px 3px;
+  }
+
+  /* Tighter weekday header */
+  .weekday {
+    padding: 8px 1px;
+    font-size: 9px;
+    letter-spacing: 0.02em;
+  }
+
+  /* Events grid shows dots, allow wrapping */
+  .events {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+  }
+
+  /* Tasks row same */
+  .tasks {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tasks .dot {
+    align-self: center;
+  }
+
+  /* Reduce grid margins */
+  .gridTop {
+    max-height: none !important;
+  }
+
+  /* Split view adjustments */
+  .splitContainer {
+    border-radius: 0;
+  }
+
+  .agendaBottom {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Keep the nested split control touch-friendly on small screens */
+  .splitHandle,
+  .splitHandleH {
+    height: 12px;
+    background: transparent;
+  }
+}
+
+/* Multi-day bars, on their own line above .dotRow. The row always reserves
+   one bar's height even when empty, so the dot row below starts at the same
+   offset in every cell and the dots read as a single row across the month —
+   that alignment is the whole point of splitting the rows. See #79.
+
+   min-height, not height: `monthViewEventLimit` goes up to 5, and 5 bars
+   don't fit a ~53px cell at a 375px viewport. Reserving exactly one line
+   would need overflow:hidden and would silently clip them. This way the
+   common case stays aligned and the rare overflowing day wraps and pushes
+   its own dots down instead of hiding events. */
+.barRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  min-height: 6px;
+}
+
+/* Dot row — single merged row for events+tasks dots in compact mobile */
+.dotRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  align-items: center;
+  min-height: 8px;
+}

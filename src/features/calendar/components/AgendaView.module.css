@@ -1,0 +1,660 @@
+/* ============================================================================
+   AgendaView — Editorial Design
+   ============================================================================ */
+
+.container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+  touch-action: pan-y;
+  padding: 16px 24px;
+  background: var(--canvas, #faf8f3);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line, rgba(var(--ink-raw), 0.09));
+  box-shadow: var(
+    --shadow-card,
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1))),
+    0 6px 16px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.03 * var(--shadow-opacity, 1)))
+  );
+}
+
+/* Wraps a month's worth of rows so they can transition in as one unit. It
+   stands in for the day blocks that used to be direct children, so it carries
+   the column layout they sat in — and grows rather than shrinks, so the empty
+   state still centres and long months scroll the container instead of being
+   squashed. */
+.monthPane {
+  display: flex;
+  flex-direction: column;
+  flex: 1 0 auto;
+  min-height: 0;
+}
+
+.embedded {
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  /* Lets content run behind the floating nav pill until scrolled to the
+     end, instead of always reserving a visible gap (see App.css .main).
+     Declared after .embedded so it wins over its `padding: 0` reset. */
+  .container,
+  .embedded {
+    padding-bottom: calc(84px + var(--safe-area-bottom));
+  }
+
+  /* The rounded card look reads as clipped corners when it spans edge to
+     edge on a phone screen. Go flush instead, matching /tasks and /journal,
+     which are edge-to-edge with just a subtle top line (.tpBar / .bar's
+     border-bottom) rather than a full card border/radius/shadow. */
+  .container {
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid var(--line-2, rgba(var(--ink-raw), 0.05));
+    box-shadow: none;
+  }
+}
+
+.containerShadow {
+  box-shadow: inset 0 -2px 4px
+    rgba(var(--shadow-rgb, 0, 0, 0), calc(0.05 * var(--shadow-opacity, 1)));
+}
+
+/* ---- Day Header ---- */
+.agendaDayHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 14px 20px 6px;
+}
+
+.agendaDayLabel {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.agendaDow {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+}
+
+.agendaDayHeader.isEmpty .agendaDow,
+.agendaDayHeader.isEmpty .agendaDate {
+  color: var(--ink-3, #a39d93);
+}
+
+.agendaDayHeader.isToday .agendaDow,
+.agendaDayHeader.isEmpty.isToday .agendaDow {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+.agendaDayHeader.isToday .agendaDate,
+.agendaDayHeader.isEmpty.isToday .agendaDate {
+  color: var(--panel, #ffffff);
+  background: var(--accent, #b07d4f);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm, 6px);
+  font-weight: 500;
+}
+
+.agendaDate {
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  margin-left: 0;
+}
+
+.agendaAdd {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  padding: 0;
+  font-family: var(
+    --font-sans,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    system-ui,
+    sans-serif
+  );
+  transition: color 0.12s ease;
+}
+
+.agendaAdd:hover {
+  color: var(--ink-2, #6f6a62);
+}
+
+/* ---- Divider ---- */
+.agendaDivider {
+  height: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  margin: 8px 12px 0;
+}
+
+.agendaDayDropZone {
+  border-radius: var(--radius-sm);
+  transition:
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.agendaDropOver {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 5%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, #b07d4f) 35%, transparent);
+}
+
+.agendaInsertDropZone {
+  position: relative;
+  height: 5px;
+  margin: 0 12px;
+}
+
+.agendaInsertDropZone::before {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: var(--accent, #b07d4f);
+  content: '';
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity 0.1s ease;
+}
+
+.agendaInsertDropOver::before {
+  opacity: 1;
+}
+
+.agendaAnimatedItem {
+  /* Let the card's hover lift and shadow extend above the animated wrapper. */
+  overflow: visible;
+}
+
+/* ---- Event Row ---- */
+.agendaEvent {
+  display: flex;
+  align-items: stretch;
+  margin: 0 12px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(var(--ink-raw), 0.09));
+  box-shadow: var(
+    --shadow-event,
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)))
+  );
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    box-shadow 0.14s,
+    transform 0.14s;
+}
+
+.agendaEvent:hover {
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+  transform: translateY(-1px);
+}
+
+.agendaEvent:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 1px;
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+  transform: translateY(-1px);
+}
+
+.agendaEventBar {
+  width: 3px;
+  flex-shrink: 0;
+  background: var(--accent, #b07d4f);
+}
+
+.agendaEventBody {
+  min-width: 0;
+  padding: 10px 14px;
+  flex: 1;
+}
+
+.agendaEventMain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.agendaEventTime {
+  font-size: 11.5px;
+  color: var(--ink-3, #a39d93);
+  font-weight: 500;
+  min-width: 40px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.agendaEventTitle {
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+}
+
+.agendaEventSub {
+  font-size: 11.5px;
+  color: var(--ink-2, #6f6a62);
+  margin-top: 2px;
+  padding-left: 52px;
+}
+
+/* Render the maps link as plain themed text, not a default blue underline. */
+.agendaLocationLink {
+  color: inherit;
+  text-decoration: none;
+}
+
+.agendaLocationLink:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--ink-3, #a8a29a);
+}
+
+/* ---- Skip Row ---- */
+.agendaSkip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 8px 20px;
+  position: relative;
+}
+
+.agendaSkipVisual {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+}
+
+.agendaSkipDropZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+}
+
+.agendaSkipLine {
+  flex: 1;
+  height: 1px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--line, rgba(var(--ink-raw), 0.09)) 0,
+    var(--line, rgba(var(--ink-raw), 0.09)) 4px,
+    transparent 4px,
+    transparent 10px
+  );
+}
+
+.agendaSkipLabel {
+  flex-shrink: 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-3, #a39d93);
+  white-space: nowrap;
+}
+
+/* ---- Task Row ---- */
+.agendaOrphanGroup {
+  position: relative;
+}
+
+.agendaOrphanGroup[data-orphan-position='first']::after,
+.agendaOrphanGroup[data-orphan-position='middle']::after,
+.agendaOrphanGroup[data-orphan-position='last']::after {
+  position: absolute;
+  left: 21px;
+  width: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+  pointer-events: none;
+}
+
+.agendaOrphanGroup[data-orphan-position='first']::after {
+  top: calc(var(--orphan-context-height) + 21px);
+  bottom: 0;
+}
+
+.agendaOrphanGroup[data-orphan-position='middle']::after {
+  top: 0;
+  bottom: 0;
+}
+
+.agendaOrphanGroup[data-orphan-position='last']::after {
+  top: 0;
+  height: 21px;
+}
+
+.taskParentContext {
+  position: relative;
+  margin: 0 12px;
+  color: var(--ink-2, #6f6a62);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.taskParentContextLabel {
+  position: relative;
+  min-height: 27px;
+  padding: 1px 0 8px 3px;
+}
+
+.taskParentContextLabel::before {
+  position: absolute;
+  top: 21px;
+  bottom: -21px;
+  left: 9px;
+  width: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.taskParentContextLabel::after {
+  position: absolute;
+  bottom: -21px;
+  left: 9px;
+  width: 13px;
+  height: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.taskParentContextContinuation {
+  height: 0;
+  min-height: 0;
+}
+
+.taskParentContextContinuation::before {
+  position: absolute;
+  top: 21px;
+  left: 9px;
+  width: 13px;
+  height: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.agendaTask {
+  display: flex;
+  align-items: stretch;
+  margin: 0 12px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--line, rgba(var(--ink-raw), 0.09));
+  box-shadow: var(
+    --shadow-event,
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.04 * var(--shadow-opacity, 1)))
+  );
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    box-shadow 0.14s,
+    transform 0.14s;
+}
+
+.agendaTaskDropOver {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 9%, var(--panel, #ffffff));
+  box-shadow:
+    inset 0 0 0 2px var(--accent, #b07d4f),
+    0 4px 12px color-mix(in srgb, var(--accent, #b07d4f) 18%, transparent);
+}
+
+/* Dropping on a task's top or bottom edge reorders it within the day: a line
+   marks where it will land, instead of the "make subtask" highlight. The row
+   clips its content (overflow: hidden), so the line is an outer shadow pushed
+   into the gap above or below rather than a pseudo-element. */
+.agendaTaskInsertBefore {
+  box-shadow: 0 -4px 0 -1px var(--accent, #b07d4f);
+}
+
+.agendaTaskInsertAfter {
+  box-shadow: 0 4px 0 -1px var(--accent, #b07d4f);
+}
+
+.agendaTaskDropHint {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--accent, #b07d4f);
+  color: var(--panel, #ffffff);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.agendaTaskDropBlocked {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--danger, #b65c5c) 55%, transparent);
+}
+
+.agendaTaskDropHintBlocked {
+  background: var(--danger, #b65c5c);
+}
+
+.agendaTask:hover {
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+  transform: translateY(-1px);
+}
+
+.agendaTask:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 1px;
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)));
+  transform: translateY(-1px);
+}
+
+.agendaTaskBar {
+  width: 3px;
+  flex-shrink: 0;
+  /* Inline style carries the category/calendar colour, as on event rows. */
+  background: var(--ink-3, #a39d93);
+}
+
+.agendaTaskBody {
+  padding: 10px 14px;
+  flex: 1;
+}
+
+.agendaTaskMain {
+  display: flex;
+  align-items: center;
+  /* Tighter than the event row's --space-3 because a task row has an extra
+     column: the check sits between the time and the title, and 12px on both
+     sides of it left the title floating well clear of its own checkbox. The
+     time keeps the full 12px via its own margin below. */
+  gap: 8px;
+}
+
+.agendaTaskTime {
+  font-size: 11.5px;
+  color: var(--ink-3, #a39d93);
+  font-weight: 500;
+  min-width: 40px;
+  margin-right: 4px;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.agendaTaskTitle {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+  cursor: pointer;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agendaTaskTitle:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.agendaTaskCompleted .agendaTaskTitle {
+  text-decoration: line-through;
+  color: var(--ink-3, #a39d93);
+}
+
+.agendaTaskIcon {
+  order: 0;
+  padding: 0;
+  width: 10px;
+  height: 10px;
+  border: 1px solid
+    color-mix(
+      in srgb,
+      var(--event-color, var(--accent)) var(--event-marker-mix, 55%),
+      var(--ink-3, #a39d93)
+    );
+  background: transparent;
+  cursor: pointer;
+  border-radius: 50%;
+  color: #fff;
+  display: grid;
+  place-content: center;
+  flex-shrink: 0;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
+}
+
+.agendaTaskIcon:active {
+  transform: scale(0.85);
+}
+
+.agendaTaskIcon svg {
+  width: 6px;
+  height: 6px;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.agendaTask:hover .agendaTaskIcon {
+  border-color: var(--event-color, var(--accent));
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-bg-mix, 9%),
+    transparent
+  );
+}
+
+.agendaTask:hover .agendaTaskIcon svg {
+  opacity: 0.4;
+}
+
+.agendaTaskCompleted .agendaTaskIcon,
+.agendaTaskCompleted:hover .agendaTaskIcon {
+  background: var(--event-color, var(--accent));
+  border-color: var(--event-color, var(--accent));
+}
+
+.agendaTaskCompleted .agendaTaskIcon svg,
+.agendaTaskCompleted:hover .agendaTaskIcon svg {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.agendaTaskIcon:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 2px;
+}
+
+.agendaTaskCollapseToggle {
+  margin-left: auto;
+  color: var(--ink-2, #6f6a62);
+}
+
+.agendaTaskSubtaskPopupButton {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-bg, rgba(var(--ink-raw), 0.04));
+  color: var(--ink-2, #6f6a62);
+  font: inherit;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agendaTaskSubtaskPopupButton:hover,
+.agendaTaskSubtaskPopupButton:focus-visible {
+  background: var(--surface-bg-strong, rgba(var(--ink-raw), 0.06));
+  color: var(--ink, #2c2823);
+}
+
+.agendaTaskSubtaskPopupButton:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 2px;
+}
+
+/* On a phone the row is wide and mostly empty to the right of the title, so
+   the check reads better parked on the card's trailing edge — thumb-side and
+   in one column down the list — than wedged between the time and the title.
+   Desktop keeps the inline order, where rows are narrower. */
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  .agendaTaskIcon {
+    order: 1;
+    margin-left: 4px;
+  }
+
+  .agendaTaskCollapseToggle {
+    order: 1;
+    margin-left: 0;
+  }
+}
+
+/* ---- Faded Past Days ---- */
+.isPast {
+  opacity: 0.5;
+}
+
+.agendaDragging {
+  opacity: 0.35;
+}
+
+.agendaDragOverlay {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 160px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--panel, #ffffff);
+  border: 1px solid var(--accent, #b07d4f);
+  box-shadow: var(--shadow-card, 0 8px 24px rgba(0, 0, 0, 0.14));
+  color: var(--ink, #2c2823);
+  font-size: 13px;
+  font-weight: 500;
+  pointer-events: none;
+}

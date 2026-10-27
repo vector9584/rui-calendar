@@ -1,0 +1,134 @@
+import type { RefObject } from 'react'
+import { useCallback, useRef, useState } from 'react'
+
+/** The CSS selector a grid cell must match to take part in roving focus. */
+export type RovingGridCellSelector = string
+
+/** Result of moving focus from the active cell towards a target cell. */
+export type RovingMoveResult =
+  { ok: true; target: HTMLElement } | { ok: false; reason: 'no-cell' | 'no-target' }
+
+/**
+ * Roving-tabindex arrow navigation for a grid of focusable cells.
+ *
+ * Mirrors the month view's `handleGridKeyDown` (arrow keys move DOM focus and
+ * the single roving tab stop; the active cell drops to `tabindex=-1` and the
+ * newly focused cell becomes `tabindex=0`, so Tab enters the grid once rather
+ * than once per cell).
+ *
+ * All three functions are stable across renders (the selector and container
+ * ref are read lazily; the anchor is mirrored into a ref so `moveFocus` does
+ * not depend on its state), so a grid can hand them to memoized children
+ * without breaking their memo.
+ *
+ * The hook owns the roving tab stop once the user first moves: callers should
+ * render `tabindex` from `focusAnchor` (falling back to their own default
+ * anchor while it is `null`) rather than from a parallel prop, and reset the
+ * anchor with `setFocusAnchor(null)` whenever the grid's cell set changes
+ * (e.g. the visible week) so the fallback re-engages.
+ *
+ * @param containerRef The element that owns the keydown listener (the same
+ *   element passed to `moveFocus`).
+ * @param cellSelector CSS selector matching the navigable cells.
+ * @param getDelta Key → index delta applied to the flattened cell list.
+ *   `null` means the key is not a grid-navigation key and should be left for
+ *   other handlers. Pass a module-level function (or `useCallback` it) — a
+ *   fresh inline arrow would rebuild `handleKeyDown` every render.
+ * @param isMoveAllowed Optional guard rejecting a move that is in range but
+ *   crosses a boundary the flat index cannot express. A flattened grid only
+ *   models one axis faithfully: the other wraps into the neighbouring
+ *   row/column at its ends. Views where that wrap is wrong (the week view's
+ *   ↑/↓, which must stay inside one day column) reject it here; views where it
+ *   is right (the month view's ←/→ crossing into the next week) omit the
+ *   guard. A rejected move is reported as `no-target`, exactly like the grid
+ *   edge, so edge paging keeps working. Pass a module-level function for the
+ *   same stability reason as `getDelta`.
+ */
+export function useRovingGrid(
+  containerRef: RefObject<HTMLElement | null>,
+  cellSelector: RovingGridCellSelector,
+  getDelta: (key: string) => number | null,
+  isMoveAllowed?: (fromIndex: number, toIndex: number) => boolean
+): {
+  /** Call as the `onKeyDown` handler of the grid container. */
+  handleKeyDown: (e: React.KeyboardEvent<HTMLElement>) => void
+  /** The element that should carry `tabindex=0`; all others use `-1`. */
+  focusAnchor: HTMLElement | null
+  /** Update the anchor after the grid's cells change (e.g. re-render). */
+  setFocusAnchor: (element: HTMLElement | null) => void
+  /**
+   * Move DOM focus and the roving tab stop from the cell currently under the
+   * focus (or, failing that, the anchor cell) towards `delta` cells away.
+   * Returns `{ ok: false, reason: 'no-target' }` when movement is blocked by
+   * the grid edge, which callers use to trigger wrap-around paging.
+   */
+  moveFocus: (delta: number) => RovingMoveResult
+} {
+  const [focusAnchor, setFocusAnchorState] = useState<HTMLElement | null>(null)
+  // Mirror of `focusAnchor` read inside `moveFocus`, so the callback does not
+  // need the state in its dependency array and stays referentially stable.
+  const focusAnchorRef = useRef<HTMLElement | null>(null)
+
+  const setFocusAnchor = useCallback((element: HTMLElement | null): void => {
+    focusAnchorRef.current = element
+    setFocusAnchorState(element)
+  }, [])
+
+  const moveFocus = useCallback(
+    (delta: number): RovingMoveResult => {
+      const container = containerRef.current
+      if (!container) return { ok: false, reason: 'no-target' }
+      const cells = Array.from(container.querySelectorAll<HTMLElement>(cellSelector))
+      const active = document.activeElement as HTMLElement | null
+      const cell = active && container.contains(active) ? active.closest(cellSelector) : null
+      const idx = cell ? cells.indexOf(cell as HTMLElement) : -1
+      // Start from the anchor when the focus is elsewhere (e.g. moved by a
+      // click) so the first keypress still moves relative to the grid.
+      const anchor = focusAnchorRef.current
+      const base = idx !== -1 ? idx : anchor ? cells.indexOf(anchor) : -1
+      if (base === -1) return { ok: false, reason: 'no-cell' }
+      const targetIndex = base + delta
+      const target = cells[targetIndex]
+      if (!target) return { ok: false, reason: 'no-target' }
+      if (isMoveAllowed && !isMoveAllowed(base, targetIndex)) {
+        return { ok: false, reason: 'no-target' }
+      }
+      cells[base].tabIndex = -1
+      target.tabIndex = 0
+      target.focus()
+      setFocusAnchor(target)
+      return { ok: true, target }
+    },
+    [containerRef, cellSelector, setFocusAnchor, isMoveAllowed]
+  )
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLElement>): void => {
+      const delta = getDelta(e.key)
+      if (delta === null) return
+      const container = e.currentTarget
+      const active = document.activeElement as HTMLElement | null
+      const cell = active?.closest(cellSelector) as HTMLElement | null
+      if (!cell || !container.contains(cell)) {
+        // Focus is outside the grid: drop any stale edge marker left over
+        // from a previous interaction so it cannot trigger a spurious page
+        // when the grid is re-entered.
+        delete container.dataset.rovingAtEdge
+        return
+      }
+      // Stop the window-level handlers (e.g. ↑/↓ paging the month) from also
+      // firing while a grid cell owns keyboard focus.
+      e.preventDefault()
+      e.stopPropagation()
+      const result = moveFocus(delta)
+      if (!result.ok && result.reason === 'no-target') {
+        // At the grid edge: the caller may want to page to the next week.
+        e.currentTarget.dataset.rovingAtEdge = e.key
+      } else {
+        delete e.currentTarget.dataset.rovingAtEdge
+      }
+    },
+    [cellSelector, getDelta, moveFocus]
+  )
+
+  return { handleKeyDown, focusAnchor, setFocusAnchor, moveFocus }
+}

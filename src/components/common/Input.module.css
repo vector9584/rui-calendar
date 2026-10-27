@@ -1,0 +1,50 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+.input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  /* 16px, not 14px: anything smaller makes iOS Safari zoom on focus.
+     min-height keeps it at the 44px touch target. (Same rule as EventModal.) */
+  font-size: 16px;
+  min-height: 44px;
+  color: var(--color-text-primary);
+  background: var(--color-bg-secondary);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 15%, transparent);
+}
+
+.input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.hasError {
+  border-color: var(--color-error);
+}
+
+.hasError:focus {
+  border-color: var(--color-error);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 15%, transparent);
+}
+
+.error {
+  font-size: 12px;
+  color: var(--color-error);
+}

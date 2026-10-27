@@ -1,0 +1,116 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { Capacitor } from '@capacitor/core'
+import { Haptics } from '@capacitor/haptics'
+import { useSettingsStore } from '@/store/settingsStore'
+import { haptic, hapticIfEnabled } from '../haptics'
+
+vi.mock('@capacitor/core', () => ({
+  Capacitor: { isNativePlatform: vi.fn(), getPlatform: vi.fn() },
+}))
+
+vi.mock('@capacitor/haptics', () => ({
+  Haptics: { vibrate: vi.fn(), notification: vi.fn() },
+  NotificationType: { Success: 'SUCCESS', Warning: 'WARNING', Error: 'ERROR' },
+}))
+
+describe('haptics', () => {
+  let originalVibrate: Navigator['vibrate']
+
+  beforeEach(() => {
+    originalVibrate = navigator.vibrate
+    vi.stubGlobal('navigator', {
+      vibrate: vi.fn(),
+    })
+  })
+
+  afterEach(() => {
+    vi.stubGlobal('navigator', { vibrate: originalVibrate })
+  })
+
+  describe('haptic', () => {
+    it('calls navigator.vibrate with light pattern', () => {
+      haptic('light')
+      expect(navigator.vibrate).toHaveBeenCalledWith(1)
+    })
+
+    it('calls navigator.vibrate with medium pattern', () => {
+      haptic('medium')
+      expect(navigator.vibrate).toHaveBeenCalledWith(3)
+    })
+
+    it('calls navigator.vibrate with heavy pattern', () => {
+      haptic('heavy')
+      expect(navigator.vibrate).toHaveBeenCalledWith(5)
+    })
+
+    it('calls navigator.vibrate with success pattern', () => {
+      haptic('success')
+      expect(navigator.vibrate).toHaveBeenCalledWith([0, 3, 5, 3])
+    })
+
+    it('calls navigator.vibrate with warning pattern', () => {
+      haptic('warning')
+      expect(navigator.vibrate).toHaveBeenCalledWith([0, 3, 3, 3])
+    })
+
+    it('calls navigator.vibrate with error pattern', () => {
+      haptic('error')
+      expect(navigator.vibrate).toHaveBeenCalledWith([0, 5, 5, 5])
+    })
+
+    it('does not throw when vibrate is not available', () => {
+      vi.stubGlobal('navigator', { vibrate: undefined })
+      expect(() => haptic('medium')).not.toThrow()
+    })
+  })
+
+  describe('hapticIfEnabled', () => {
+    beforeEach(() => {
+      useSettingsStore.setState({ enableHaptics: true })
+    })
+
+    afterEach(() => {
+      vi.clearAllMocks()
+      useSettingsStore.setState({ enableHaptics: true })
+    })
+
+    it('calls Haptics.vibrate with a short duration on native platform for impact types', () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true)
+      hapticIfEnabled('medium')
+      expect(Haptics.vibrate).toHaveBeenCalledWith({ duration: 2 })
+    })
+
+    it('calls Haptics.notification on native platform for notification types', () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true)
+      hapticIfEnabled('success')
+      expect(Haptics.notification).toHaveBeenCalledWith({ type: 'SUCCESS' })
+    })
+
+    it('does not call Haptics or vibrate off native platform', () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(false)
+      hapticIfEnabled('light')
+      expect(Haptics.vibrate).not.toHaveBeenCalled()
+      expect(navigator.vibrate).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when haptics are disabled in settings', () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true)
+      useSettingsStore.setState({ enableHaptics: false })
+      hapticIfEnabled('medium')
+      hapticIfEnabled('success')
+      expect(Haptics.vibrate).not.toHaveBeenCalled()
+      expect(Haptics.notification).not.toHaveBeenCalled()
+    })
+
+    it('reads the setting at call time, not at import time', () => {
+      vi.mocked(Capacitor.isNativePlatform).mockReturnValue(true)
+      useSettingsStore.setState({ enableHaptics: false })
+      hapticIfEnabled('medium')
+      expect(Haptics.vibrate).not.toHaveBeenCalled()
+
+      useSettingsStore.setState({ enableHaptics: true })
+      hapticIfEnabled('medium')
+      expect(Haptics.vibrate).toHaveBeenCalledWith({ duration: 2 })
+    })
+  })
+})

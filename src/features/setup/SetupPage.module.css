@@ -1,0 +1,507 @@
+/* ============================================================================
+   CALINO — Setup Wizard (CSS Module)
+   Standalone page for generating calino.config.json via browser.
+   ========================================================================== */
+
+.page {
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--canvas);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+}
+
+/* Programmatic skip-link target — no focus ring around the whole page. */
+.page:focus {
+  outline: none;
+}
+
+.card {
+  /* Keep short cards centered, but anchor tall cards at the top of the
+     scrollable page instead of letting flex centering clip both ends. */
+  margin-block: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow:
+    0 24px 80px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1))),
+    0 6px 20px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.05 * var(--shadow-opacity, 1)));
+  width: 100%;
+  max-width: 520px;
+  padding: 32px;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.logo {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.title {
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--ink);
+  margin: 0 0 8px;
+  letter-spacing: -0.018em;
+}
+
+.subtitle {
+  font-size: 14px;
+  color: var(--ink-2);
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Step Indicator ─────────────────────────────────────────────────────── */
+.steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: 28px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.stepActive {
+  color: var(--accent-strong, var(--accent));
+  font-weight: 500;
+}
+
+.stepDone {
+  color: var(--color-success, #34a853);
+}
+
+.stepDot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  border: 2px solid var(--line);
+  color: var(--ink-2);
+  background: var(--canvas);
+}
+
+.stepActive .stepDot {
+  border-color: var(--accent);
+  background: var(--accent-strong, var(--accent));
+  color: var(--accent-contrast, #fff);
+}
+
+.stepDone .stepDot {
+  border-color: var(--color-success, #34a853);
+  background: var(--color-success, #34a853);
+  color: #fff;
+}
+
+.stepSep {
+  width: 24px;
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+}
+
+.stepDone + .stepSep,
+.stepSep.done {
+  background: var(--color-success, #34a853);
+}
+
+/* ── Form ───────────────────────────────────────────────────────────────── */
+.field {
+  margin-bottom: 16px;
+}
+
+.label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--canvas);
+  color: var(--ink);
+  box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+
+.inputError {
+  border-color: var(--color-error, #ea4335);
+}
+
+.hint {
+  font-size: 12px;
+  color: var(--ink-2);
+  margin-top: 4px;
+  line-height: 1.5;
+}
+
+.error {
+  color: var(--color-error, #ea4335);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+.success {
+  color: var(--color-success, #34a853);
+  font-size: 13px;
+  margin-top: 6px;
+}
+
+/* ── Proxy Toggle ───────────────────────────────────────────────────────── */
+.proxyToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  font-family: inherit;
+  margin-bottom: 8px;
+}
+
+.proxyToggle svg {
+  transition: transform 0.2s;
+}
+
+/* ── Account List ───────────────────────────────────────────────────────── */
+.accountList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: 16px;
+}
+
+.accountRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--canvas);
+  border: 1px solid var(--line);
+}
+
+.accountIcon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-contrast, #fff);
+  background: var(--accent-strong, var(--accent));
+  flex-shrink: 0;
+}
+
+.accountInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.accountName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountUrl {
+  font-size: 12px;
+  color: var(--ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-2);
+  padding: var(--space-1);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.12s,
+    background 0.12s;
+  flex-shrink: 0;
+}
+
+.removeBtn:hover {
+  color: var(--color-error);
+  background: var(--error-bg);
+}
+
+/* ── Buttons ────────────────────────────────────────────────────────────── */
+.actions {
+  display: flex;
+  gap: var(--space-2);
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink);
+  font-family: inherit;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btnPrimary {
+  background: var(--accent-strong, var(--accent));
+  color: var(--accent-contrast, #fff);
+  border-color: var(--accent);
+}
+
+.btnPrimary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btnSuccess {
+  background: var(--color-success, #34a853);
+  color: #fff;
+  border-color: var(--color-success, #34a853);
+}
+
+.btnSuccess:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.btnGhost {
+  background: none;
+  border-color: transparent;
+  color: var(--ink-2);
+}
+
+.btnGhost:hover:not(:disabled) {
+  color: var(--ink);
+  background: rgba(var(--ink-raw), 0.04);
+}
+
+/* ── Instructions ───────────────────────────────────────────────────────── */
+.instructions {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.instructions h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 12px;
+}
+
+.instructions ol {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.8;
+}
+
+.instructions code {
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  background: rgba(var(--ink-raw), 0.06);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--accent-strong, var(--accent));
+}
+
+.warn {
+  margin-top: 12px;
+  padding: 10px 12px;
+  background: var(--error-bg);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+/* ── Password strength ──────────────────────────────────────────────────── */
+.strengthBar {
+  height: 4px;
+  border-radius: 2px;
+  background: var(--line);
+  margin-top: 8px;
+  overflow: hidden;
+}
+
+.strengthFill {
+  height: 100%;
+  border-radius: 2px;
+  transition:
+    width 0.2s,
+    background 0.2s;
+}
+
+.strengthWeak {
+  width: 33%;
+  background: var(--color-error, #ea4335);
+}
+
+.strengthMedium {
+  width: 66%;
+  background: var(--color-warning, #fbbc04);
+}
+
+.strengthStrong {
+  width: 100%;
+  background: var(--color-success, #34a853);
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .input {
+    font-size: 16px;
+  }
+}
+
+/* Reveals the diagnostics panel after a failed connection test. */
+.linkBtn {
+  display: block;
+  margin: 6px 0 0;
+  padding: 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ── Account form: matches the Add CalDAV account dialog ────────────────── */
+.labelOptional {
+  color: var(--ink-2);
+  font-weight: 400;
+}
+
+.credentialsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.credentialsRow input[aria-invalid='true'] {
+  border-color: var(--color-error, #ea4335);
+}
+
+.errorBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--error-bg, rgba(234, 67, 53, 0.1));
+  border: 1px solid var(--error-border, rgba(234, 67, 53, 0.3));
+}
+
+.errorBoxMessage {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
+.errorBoxHint {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.errorBoxActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.errorBoxNudge,
+.errorBoxLink {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent-strong, var(--accent));
+  cursor: pointer;
+  text-align: left;
+}
+
+.errorBoxNudge {
+  font-weight: 600;
+}
+
+.errorBoxNudge:hover {
+  text-decoration: underline;
+}
+
+.errorBoxLink {
+  text-decoration: underline;
+}

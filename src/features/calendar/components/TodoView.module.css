@@ -1,0 +1,955 @@
+/* ============================================================================
+   TodoView — Editorial Tasks Design
+   Focused reading column, time-to-act grouping, inverted priority hierarchy
+   Design reference: tasks_design/calino/tasks.css
+   ============================================================================ */
+
+/* ---- Page Layout ---- */
+.container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 4px 0 24px;
+  background: var(--canvas, #faf8f3);
+}
+
+@media (max-width: 768px) {
+  /* sync with config.ts MOBILE_BREAKPOINT */
+  /* Replaces the desktop 72px with pill-safe clearance, as trailing scroll
+     padding rather than App.css .main's visible gap (see .main[data-view]). */
+  .container {
+    padding-bottom: calc(84px + var(--safe-area-bottom));
+  }
+}
+
+.tpInner {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 0 12px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.taskList {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+  /* `overflow-y: auto` also makes this a horizontal clipping boundary. Give
+     row hover shadows room to render without moving the task content inward. */
+  margin-inline: -8px;
+  padding-inline: 8px;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Ambient cue shown while dragging a subtask over blank space (anywhere
+   that isn't another task row). There's no dedicated drop zone to aim for —
+   this inset ring is what tells the user "release here to promote to root"
+   without reserving any layout space when at rest. */
+.taskListRootHint {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--accent, #b07d4f) 35%, transparent);
+  background: color-mix(in srgb, var(--accent, #b07d4f) 4%, transparent);
+  border-radius: var(--radius-md);
+}
+
+/* ---- Top Bar ---- */
+.tpBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 8px 14px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line-2, rgba(var(--ink-raw), 0.05));
+}
+
+.tpCount {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 14px;
+  color: var(--ink-2, #6f6a62);
+}
+
+.tpCount b {
+  color: var(--ink, #2c2823);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tpCount .dim {
+  color: var(--ink-3, #a39d93);
+}
+
+.tpControls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  /* "N active" over "N completed" on separate lines — at phone widths the
+     single-line form crowds the filter tabs and Add button beside it. The
+     middot only separated the two inline, so it goes away once they stack. */
+  .tpCount {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0;
+  }
+
+  .tpCount .dim {
+    display: none;
+  }
+
+  /* Keep the counts on the switcher's row — stacking them into two lines is
+     what buys the horizontal room, so the bar must not wrap. Shrink the gap
+     and give the Add button a little clearance from the right edge. */
+  .tpBar {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding-right: 10px;
+  }
+
+  .tpControls {
+    gap: 8px;
+  }
+}
+
+.tpMeta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.projectFilter {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 13px;
+  padding: 4px 0;
+}
+
+.projectFilter svg {
+  width: 14px;
+  height: 14px;
+}
+
+.projectFilter:hover {
+  color: var(--ink);
+}
+
+.projectFilter:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.projectMenu {
+  position: relative;
+}
+
+.projectMenuList {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 10;
+  min-width: 160px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.1 * var(--shadow-opacity, 1)));
+}
+
+.projectMenuItem {
+  width: 100%;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  padding: 7px 8px;
+  text-align: left;
+}
+
+.projectMenuItem:hover,
+.projectMenuItemSelected {
+  background: var(--surface-bg);
+  color: var(--ink);
+}
+
+.projectColor {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+/* ---- Segmented Filter ---- */
+.segmentedControl {
+  position: relative;
+  display: flex;
+  gap: 0;
+  padding: var(--space-1);
+  background: rgba(var(--ink-raw), 0.045);
+  border-radius: var(--view-switcher-radius, 12px);
+}
+
+.tab {
+  position: relative;
+  z-index: 1;
+  height: 30px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-2, #6f6a62);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.14s ease;
+  font-family: inherit;
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: rgba(var(--ink-raw), 0.08);
+  color: var(--ink-3, #a39d93);
+  font-size: 10.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background 0.14s ease,
+    color 0.14s ease;
+}
+
+.tabActive .tabCount {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 16%, transparent);
+  color: var(--accent-strong, var(--accent, #b07d4f));
+}
+
+.tab:hover {
+  color: var(--ink, #2c2823);
+}
+
+.tab:active {
+  transform: scale(0.96);
+}
+
+.tabActive {
+  color: var(--ink, #2c2823);
+}
+
+.tabIndicator {
+  position: absolute;
+  top: 4px;
+  height: 30px;
+  background: var(--panel, #ffffff);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1))),
+    0 0 0 1px var(--line, rgba(var(--shadow-rgb, 0, 0, 0), calc(0.09 * var(--shadow-opacity, 1))));
+  border-radius: var(--view-switcher-indicator-radius, 9px);
+  transition:
+    left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+/* ---- Add Task Button ---- */
+.addTask {
+  height: 36px;
+  padding: 0 15px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-strong, var(--accent, #b07d4f));
+  color: var(--accent-contrast, #fff);
+  font-size: 13.5px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.14 * var(--shadow-opacity, 1)));
+  transition:
+    background 0.14s,
+    transform 0.04s;
+  font-family: inherit;
+}
+
+.addTask:hover {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 88%, #000);
+}
+
+.addTask:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.addTask svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---- Task Group ---- */
+.taskGroup {
+  margin-bottom: 8px;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 14px;
+  margin: 26px 0 2px;
+}
+
+.taskGroup:first-child .groupHeader {
+  margin-top: 14px;
+}
+
+.groupTitle {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  white-space: nowrap;
+  margin: 0;
+}
+
+.groupCount {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2, #6f6a62);
+  background: rgba(var(--ink-raw), 0.07);
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+.groupRule {
+  flex: 1 1 auto;
+  height: 1px;
+  background: var(--line-2, rgba(var(--ink-raw), 0.05));
+}
+
+/* ---- Overdue Group Variant ---- */
+.overdueGroup .groupTitle {
+  color: var(--color-error-muted);
+}
+
+.overdueGroup .groupCount {
+  color: var(--color-error-muted);
+  background: var(--error-bg);
+}
+
+/* ---- Task Row ---- */
+.taskOrphanGroup {
+  position: relative;
+}
+
+.taskOrphanGroup[data-orphan-position='first']::after,
+.taskOrphanGroup[data-orphan-position='middle']::after,
+.taskOrphanGroup[data-orphan-position='last']::after {
+  position: absolute;
+  left: 23px;
+  width: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+  pointer-events: none;
+}
+
+.taskOrphanGroup[data-orphan-position='first']::after {
+  top: calc(var(--orphan-context-height) + 22px);
+  bottom: 0;
+}
+
+.taskOrphanGroup[data-orphan-position='middle']::after {
+  top: 0;
+  bottom: 0;
+}
+
+.taskOrphanGroup[data-orphan-position='last']::after {
+  top: 0;
+  height: 22px;
+}
+
+.taskParentContext {
+  position: relative;
+  margin: 0 14px;
+  color: var(--ink-2, #6f6a62);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 18px;
+}
+
+.taskParentContextLabel {
+  position: relative;
+  min-height: 27px;
+  padding: 1px 0 8px 3px;
+}
+
+.taskParentContextLabel::before {
+  position: absolute;
+  top: 21px;
+  bottom: -22px;
+  left: 9px;
+  width: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.taskParentContextLabel::after {
+  position: absolute;
+  bottom: -22px;
+  left: 9px;
+  width: 15px;
+  height: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.taskParentContextLabel:not(:last-child)::before {
+  bottom: -4px;
+}
+
+.taskParentContextLabel:not(:last-child)::after {
+  bottom: -4px;
+}
+
+.taskParentContextContinuation {
+  height: 0;
+  min-height: 0;
+}
+
+.taskParentContextContinuation::before {
+  position: absolute;
+  top: 22px;
+  left: 9px;
+  width: 15px;
+  height: 1px;
+  background: var(--line, rgba(var(--ink-raw), 0.09));
+  content: '';
+}
+
+.taskRow {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  transition:
+    background 0.12s,
+    transform 0.12s,
+    box-shadow 0.12s;
+}
+
+.taskRow:hover {
+  background: var(--surface-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.06 * var(--shadow-opacity, 1)));
+}
+
+.taskSubtask {
+  padding-top: 9px;
+  padding-bottom: 9px;
+}
+
+.fadingOut {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  pointer-events: none;
+}
+
+/* ---- Completion Checkbox ---- */
+/* Row uses `align-items: start` so multi-line rows (title + .taskNote) keep
+   the checkbox anchored to the first line. The title gets a small `top`
+   offset (see `.taskTitle`) — that's what closes the optical gap to the
+   circle, since Western fonts place most of the visible glyph above the
+   line-box center (ascender space + descender space below). Shifting the
+   title rather than the checkbox lets the title's `::after` strikethrough
+   stay perfectly aligned with the text. */
+.taskCheck {
+  margin-top: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 1.7px solid
+    color-mix(
+      in srgb,
+      var(--event-color, var(--accent)) var(--event-marker-mix, 55%),
+      var(--ink-3, #a39d93)
+    );
+  background: transparent;
+  display: grid;
+  place-content: center;
+  color: #fff;
+  padding: 0;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
+}
+
+.taskCheck:active {
+  transform: scale(0.85);
+}
+
+.taskCheck svg {
+  width: 11px;
+  height: 11px;
+  opacity: 0;
+  transition:
+    opacity 0.12s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.taskRow:hover .taskCheck {
+  border-color: var(--event-color, var(--accent));
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-bg-mix, 9%),
+    transparent
+  );
+}
+
+.taskRow:hover .taskCheck svg {
+  opacity: 0.4;
+}
+
+.taskDone .taskCheck {
+  background: var(--event-color, var(--accent));
+  border-color: var(--event-color, var(--accent));
+}
+
+.taskDone .taskCheck svg {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+.taskCheck:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- Task Body ---- */
+.taskBody {
+  min-width: 0;
+}
+
+.taskTitleRow {
+  display: flex;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 4px;
+}
+
+.taskCollapseToggle {
+  margin-left: auto;
+  color: var(--ink-2, #6f6a62);
+}
+
+.taskSubtaskPopupButton {
+  flex: 0 0 auto;
+  margin: -2px 0 0 auto;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-bg, rgba(var(--ink-raw), 0.04));
+  color: var(--ink-2, #6f6a62);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.taskSubtaskPopupButton:hover,
+.taskSubtaskPopupButton:focus-visible {
+  background: var(--surface-bg-strong, rgba(var(--ink-raw), 0.06));
+  color: var(--ink, #2c2823);
+}
+
+.taskSubtaskPopupButton:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.taskTitle {
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+  line-height: 1.35;
+  position: relative;
+  top: -3px;
+  display: inline;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.taskNote {
+  font-size: 12.5px;
+  color: var(--ink-2, #6f6a62);
+  margin-top: 2px;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.taskDone .taskTitle {
+  color: var(--ink-3, #a39d93);
+  font-weight: 400;
+}
+
+/* Strikethrough line */
+.taskTitle::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 1.5px;
+  background: var(--ink-3, #a39d93);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+  pointer-events: none;
+}
+
+.taskDone .taskTitle::after {
+  transform: scaleX(1);
+}
+
+/* Unstrike: shrinks right→left */
+.unstriking .taskTitle::after {
+  transform: scaleX(0);
+  transform-origin: right;
+  transition: transform 0.25s ease;
+}
+
+.taskDone .taskNote {
+  color: var(--ink-3, #a39d93);
+}
+
+/* ---- Task Meta (Priority + Due) ---- */
+.taskMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding-top: 2px;
+  white-space: nowrap;
+}
+
+.taskCalendarDue {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.taskIndicators {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+  .taskRow {
+    gap: 8px;
+    padding-inline: 8px;
+  }
+
+  .taskMeta {
+    gap: 6px;
+  }
+}
+
+/* R2.7 — Marks a row that stands in for a recurring series. Deliberately quiet:
+   it sits beside the priority chip and due label, and those carry the urgency.
+   Sized to the same 12px optical weight as the due label so the meta column
+   still reads as one row rather than three competing badges. */
+.recurringBadge {
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-3, #a39d93);
+  flex: 0 0 auto;
+}
+
+/* Hover detail for the badge. Fixed-positioned in a body portal because the
+   task list is virtualized and clips its own overflow. `pointer-events: none`
+   keeps it from stealing the hover that spawned it. */
+.recurrenceTooltip {
+  position: fixed;
+  z-index: 10000;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 7px 9px;
+  max-width: 260px;
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.1 * var(--shadow-opacity, 1)));
+  white-space: normal;
+  pointer-events: none;
+}
+
+.recurrenceTooltipTitle {
+  color: var(--ink, #2c2823);
+  font-weight: 600;
+}
+
+/* Touch has no hover, so the tooltip is unreachable there and the glyph is
+   left to speak for itself — the modal is where the rule can be read anyway. */
+@media (max-width: 768px) {
+  .recurrenceTooltip {
+    display: none;
+  }
+}
+
+/* ---- Priority Chips (Inverted: Low recedes, High is loud) ---- */
+.priority {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.priorityHigh {
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--error-bg);
+  color: var(--color-error);
+}
+
+.priorityMed {
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--line, rgba(var(--ink-raw), 0.09));
+  color: var(--ink-2, #6f6a62);
+}
+
+.priorityLow {
+  color: var(--ink-3, #a39d93);
+  letter-spacing: 0.05em;
+}
+
+/* ---- Due Label ---- */
+.dueLabel {
+  font-size: 12.5px;
+  color: var(--ink-3, #a39d93);
+  font-variant-numeric: tabular-nums;
+  min-width: 56px;
+  text-align: right;
+}
+
+.dueOverdue {
+  color: var(--color-error-muted);
+}
+
+.dueToday {
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  font-weight: 600;
+}
+
+@media (max-width: 768px) {
+  .dueLabel {
+    min-width: 40px;
+  }
+}
+
+/* ---- Inline Composer ---- */
+.inlineComposer {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 12px 14px;
+  margin: 8px 0 4px;
+  border-radius: var(--radius-md);
+  background: var(--tag-bg);
+  box-shadow: inset 0 0 0 1px var(--focus-ring);
+}
+
+.composerCheck {
+  margin-top: 1px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.7px solid color-mix(in srgb, var(--accent, #b07d4f) 50%, var(--ink-3, #a39d93));
+  background: transparent;
+  display: grid;
+  place-content: center;
+  cursor: default;
+  padding: 0;
+}
+
+.composerInput {
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--ink, #2c2823);
+  outline: none;
+  width: 100%;
+}
+
+.composerInput::placeholder {
+  color: var(--ink-3, #a39d93);
+}
+
+/* ---- Empty State ---- */
+.emptyState {
+  text-align: center;
+  color: var(--ink-3, #a39d93);
+  font-size: 14px;
+  padding: 64px 0;
+}
+
+.emptyTitle {
+  display: block;
+  color: var(--ink-2, #6f6a62);
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-family: var(--font-serif);
+  font-size: 19px;
+}
+
+.emptyMessage {
+  margin: 0 0 16px;
+  color: var(--ink-3, #a39d93);
+  font-size: 14px;
+}
+
+.emptyCreateBtn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-strong, var(--accent, #b07d4f));
+  color: var(--accent-contrast, #fff);
+  font-size: 13.5px;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.14 * var(--shadow-opacity, 1)));
+  transition:
+    background 0.14s,
+    transform 0.04s;
+  font-family: inherit;
+}
+
+.emptyCreateBtn:hover {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 88%, #000);
+}
+
+.emptyCreateBtn:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+/* ---- Drag and drop ---- */
+/* The taskRow gets a subtle inset ring while another task is hovering it as
+   a drop target. The visual is intentionally restrained — only the row's
+   left edge picks up a tinted bar so the underlying row stays readable. */
+.taskRowDropTarget {
+  outline: 2px solid color-mix(in srgb, var(--event-color, var(--accent)) 35%, transparent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--event-color, var(--accent)) 8%, var(--surface-bg));
+}
+
+/* Dropping on a row's top or bottom edge reorders: a line marks where the
+   task will land, instead of the outline that means "make it a subtask". */
+.taskRowInsertBefore,
+.taskRowInsertAfter {
+  position: relative;
+}
+
+.taskRowInsertBefore::before,
+.taskRowInsertAfter::after {
+  content: '';
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--event-color, var(--accent));
+  pointer-events: none;
+}
+
+.taskRowInsertBefore::before {
+  top: -1px;
+}
+
+.taskRowInsertAfter::after {
+  bottom: -1px;
+}
+
+/* The composer checkmark is now a button — reset native button chrome so
+   it stays a circle the same size as before. */
+.composerCheck {
+  font: inherit;
+  font-size: 14.5px;
+}
+.composerCheck:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 2px;
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .composerInput {
+    font-size: 16px;
+  }
+}
+
+/* A note is one line that ends in an ellipsis. Markdown gives it blocks, so
+   they run inline and the line stays one. */
+.taskNote > div,
+.taskNote p,
+.taskNote ul,
+.taskNote ol,
+.taskNote li {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+
+.taskNote p + p::before,
+.taskNote li + li::before {
+  content: ' ';
+}
+
+/* Links look as they do in the journal. */
+.taskNote a {
+  color: var(--accent-strong, var(--accent));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.taskNote a:hover {
+  color: var(--color-accent-hover, var(--accent));
+}

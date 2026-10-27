@@ -1,0 +1,100 @@
+# Dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# Build output
+dist/
+dist-ssr/
+build/
+*.tsbuildinfo
+
+# Local env files
+.env
+.env.local
+.env.*.local
+e2e/.env.test
+
+# Self-hosted config (contains encrypted credentials)
+calino.config.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Playwright artifacts (test-results/ holds failure screenshots and
+# traces; .last-run.json is the per-CI-run summary)
+e2e/test-results/
+playwright-report/
+
+# Misc
+*.local
+.cache/
+.parcel-cache/
+.vite/
+.eslintcache
+PLAN.md
+PERF_AUDIT.md
+OPUS_AUDIT_PROMPT.md
+
+# Local planning / review artifacts
+.pi/
+.mimocode/
+graphify-out/
+feedback.txt
+scripts/rrule_test.mjs
+scripts/dev-tailscale.sh
+
+# Command Code agent state (taste, plans, session data)
+.commandcode/
+
+# impeccable design tooling — local runtime state only (session logs, caches,
+# locks, server handles) plus the files it injects into the source tree while
+# live editing. Previously in .git/info/exclude, which is per-clone and so left
+# these as untracked noise for everyone else.
+.impeccable/
+.impeccable-live.json
+.impeccable-live/
+**/.impeccable-live/
+src/lib/impeccable/
+**/impeccable-live.client.ts
+
+# Media files
+*.mp4
+*.mp3
+*.avi
+*.mov
+*.pdf
+
+# Archives
+*.zip
+IMG_20260614_100128_preview.jpeg
+open-design-*.exe
+tsetup-x64.6.9.3.exe
+
+# Local fork-review notes
+FORK_NOTES.md
+
+# local Stalwart dev server state (scripts/jmap-dev-server.sh)
+.jmap-dev-data/
+
+# Upstream CI workflows (need workflow-scope PAT to push; not needed for the fork)
+.github/workflows/

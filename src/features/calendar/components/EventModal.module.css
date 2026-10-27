@@ -1,0 +1,1983 @@
+.modalBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--modal-scrim, rgba(26, 26, 26, 0.25));
+  backdrop-filter: var(--modal-blur, blur(3px));
+  transition:
+    background var(--dur-base),
+    backdrop-filter var(--dur-base);
+}
+
+.modalBackdrop.closing {
+  background: transparent;
+  backdrop-filter: none;
+}
+
+.modalCard {
+  width: 520px;
+  max-height: 90vh;
+  border-radius: var(--radius-lg);
+  background: var(--modal-bg, #faf9f7);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: var(--modal-shadow);
+  border: var(--modal-card-border, 1px solid rgba(255, 255, 255, 0.4));
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  animation: modalIn var(--dur-base) ease forwards;
+}
+
+@keyframes modalIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modalCard.modalClosing {
+  animation: modalOut var(--dur-base) ease forwards;
+}
+
+@keyframes modalOut {
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+}
+
+.modalBand {
+  display: none;
+}
+
+/* Wraps everything inside the card. Transparent on desktop; on mobile it's
+   the actual flex layout container (header/scroll/footer stack) AND carries
+   the entrance animation — deliberately a plain CSS keyframe on `transform`/
+   `opacity` here, not anything framer touches, since it sits one level
+   inside the draggable card and can never contend with `sheetY`. */
+.modalEntrance {
+  display: contents;
+}
+
+/* Pure grouping wrapper for the swipe-to-dismiss touch handlers — no layout
+   footprint of its own on any breakpoint. */
+.sheetDragRegion {
+  display: contents;
+}
+
+/* Swipe-to-dismiss grab affordance, mobile sheet only. */
+.dragHandle {
+  display: none;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: flex-start;
+  position: relative;
+  gap: 10px;
+  padding: 20px 22px 14px;
+  overflow: visible;
+}
+
+.titleInputWrapper {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.modalTitle {
+  display: block;
+  width: 100%;
+  flex: 1 1 100%;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  border-radius: 6px;
+  font-family: var(--font-serif, Georgia, serif);
+  font-size: 26px;
+  font-weight: 300;
+  color: var(--color-text-primary, #1a1a1a);
+  letter-spacing: -0.3px;
+  line-height: 1.2;
+  /* Nudged down so the text sits on the same line as .titleEditIcon, whose
+     own 8px top offset keeps it clear of the header's top padding. */
+  padding: 3px 0 0;
+  /* A long title fades out at the right edge instead of being sliced mid-glyph.
+     The mask paints nothing extra when the title is short, so it only shows up
+     once the text actually reaches the edge. */
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+}
+
+.modalTitle:focus,
+.modalTitle:focus-visible {
+  outline: none;
+  /* While editing, the caret and the tail of the text must stay fully legible. */
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.modalTitle::placeholder {
+  color: var(--color-text-muted, #a0a0a0);
+}
+
+.titleEditIcon {
+  flex-shrink: 0;
+  color: var(--color-text-muted, #a0a0a0);
+  margin-right: 8px;
+  margin-top: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.titleEditIcon:hover {
+  color: var(--color-text-secondary, #6b6b6b);
+}
+
+.modalClose {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+  cursor: pointer;
+  color: var(--color-text-secondary, #6b6b6b);
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 4px;
+  box-shadow: var(--shadow-event);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast),
+    transform 0.1s;
+}
+
+.modalClose:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.modalClose:active {
+  transform: scale(0.9);
+}
+
+.modalDivider {
+  border: none;
+  border-top: 1px solid var(--color-border-subtle);
+  margin: 0 22px;
+}
+
+.moreToggle {
+  display: block;
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: var(--accent-strong, var(--accent));
+  background: transparent;
+  border: none;
+  padding: 10px 0;
+  cursor: pointer;
+  transition: color var(--dur-fast);
+}
+
+.moreToggle:hover {
+  color: var(--ink);
+}
+
+/* Attachments */
+.attachmentCount {
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f6368);
+  background: var(--color-bg-tertiary, #f3f2f0);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.attachmentSyncNote {
+  font-size: 11px;
+  color: var(--color-text-secondary, #5f6368);
+  margin: 0 0 8px 0;
+  font-style: italic;
+}
+
+.attachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: 12px;
+}
+
+.attachmentItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 8px 12px;
+  background: var(--color-bg-tertiary, #f3f2f0);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.attachmentIcon {
+  flex-shrink: 0;
+}
+
+.attachmentName {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--accent-strong, var(--color-accent, #1a73e8));
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+}
+
+.attachmentName:hover {
+  text-decoration: underline;
+}
+
+.attachmentSize {
+  color: var(--color-text-secondary, #5f6368);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.removeAttachment {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary, #5f6368);
+  cursor: pointer;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  font-size: 16px;
+  line-height: 1;
+}
+
+.removeAttachment:hover {
+  background: var(--color-bg-hover, #f1f3f4);
+  color: var(--color-text-primary, #202124);
+}
+
+.addAttachmentButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: none;
+  border: 1px dashed var(--color-border-visible, #dadce0);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary, #5f6368);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.addAttachmentButton:hover {
+  border-color: var(--color-accent, #1a73e8);
+  color: var(--accent-strong, var(--color-accent, #1a73e8));
+  background: var(--color-accent-light, rgba(26, 115, 232, 0.04));
+}
+
+.hiddenFileInput {
+  display: none;
+}
+
+/* Compact attachment layout (used inside "More") */
+.attachmentFieldCompact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.attachmentListCompact {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.attachmentItemCompact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: var(--color-bg-tertiary, #f3f2f0);
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.3;
+}
+
+.attachmentItemCompact .attachmentName {
+  font-size: 12px;
+}
+
+.attachmentItemCompact .attachmentSize {
+  font-size: 11px;
+}
+
+.attachmentItemCompact .removeAttachment {
+  padding: 2px;
+  font-size: 14px;
+}
+
+.addAttachmentButtonCompact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 8px;
+  background: none;
+  border: 1px dashed var(--color-border-visible, #dadce0);
+  border-radius: 6px;
+  color: var(--color-text-secondary, #5f6368);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  align-self: flex-start;
+}
+
+.addAttachmentButtonCompact:hover {
+  border-color: var(--color-accent, #1a73e8);
+  color: var(--accent-strong, var(--color-accent, #1a73e8));
+  background: var(--color-accent-light, rgba(26, 115, 232, 0.04));
+}
+
+.modalBody {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: 14px 22px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Desktop uses a dedicated scrolling region so the header and footer stay
+   reachable. Mobile keeps the same region but adds the sheet's larger gutters
+   and grouped field surfaces below. */
+.modalScroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-bottom: 10px;
+}
+
+.modalGroup {
+  display: contents;
+}
+
+.modalInput {
+  width: 100%;
+  box-sizing: border-box;
+  height: 32px;
+  padding: 8px 11px;
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  background: var(--color-bg-tertiary, #f3f2f0);
+  color: var(--color-text-primary, #1a1a1a);
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
+}
+
+.modalInput:focus,
+.modalInput:focus-visible {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: none;
+}
+
+.modalInput::placeholder {
+  color: var(--color-text-muted, #a0a0a0);
+}
+
+.modalDatetime {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dateTimeRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dateTimeGroup {
+  display: flex;
+  flex-direction: column;
+  /* Grid items default to min-width:auto, so the native date/time inputs'
+     intrinsic width would push this row past the other fields' right edge.
+     Allow the cells to shrink to their 1fr track so the row aligns. */
+  min-width: 0;
+}
+
+.dateTimeInputs {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.dateTimeInputs .input {
+  min-width: 0;
+}
+
+.dateTimeInputs > .dateFieldWrapper {
+  flex: 1.4;
+}
+
+.dateTimeInputs .input:first-child {
+  flex: 1.4;
+}
+
+.dateTimeInputs .input:last-child {
+  flex: 1;
+}
+
+/* TimeInput wraps its editable field so the Google Calendar-style menu can be
+   portaled out of the modal's clipped scrolling region. Keep the wrapper in
+   the same flex slot the input used to occupy. */
+.timeInputWrapper {
+  position: relative;
+  /* `contents` keeps TimeInput's wrapper transparent to the compact inline
+     layouts (notably EventPreviewPopup); the modal date row opts into a real
+     flex item below so its portaled menu still has a stable anchor. */
+  display: contents;
+  min-width: 0;
+}
+
+.dateTimeInputs > .timeInputWrapper {
+  display: block;
+  flex: 1;
+}
+
+.dateTimeInputs > .timeInputWrapper > .input {
+  width: 100%;
+}
+
+.timePickerViewport {
+  position: fixed;
+  z-index: 1100;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+/* Let filtered results determine the popup's height; inherit the viewport's
+   cap when the full list is long enough to need scrolling. */
+.timePickerOptions {
+  box-sizing: border-box;
+  width: 100%;
+  height: auto;
+  max-height: inherit;
+  margin: 0;
+  padding: 4px 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  list-style: none;
+  background: var(--popover-bg, #fff);
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  box-shadow: var(--modal-shadow, 0 8px 24px rgba(0, 0, 0, 0.14));
+  animation: slideDown var(--dur-fast) ease-out;
+}
+
+.timePickerOptions::-webkit-scrollbar {
+  display: none;
+}
+
+.timePickerFadeTop,
+.timePickerFadeBottom {
+  position: absolute;
+  right: 1px;
+  left: 1px;
+  z-index: 1;
+  height: 24px;
+  pointer-events: none;
+}
+
+.timePickerFadeTop {
+  top: 1px;
+  background: linear-gradient(to bottom, var(--popover-bg, #fff), transparent);
+}
+
+.timePickerFadeBottom {
+  bottom: 1px;
+  background: linear-gradient(to top, var(--popover-bg, #fff), transparent);
+}
+
+.timePickerOption {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text-primary, #1a1a1a);
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  line-height: 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.timePickerOption:hover,
+.timePickerOptionActive {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+}
+
+.timePickerOptionActive {
+  color: var(--color-text-primary, #1a1a1a);
+  font-weight: 600;
+}
+
+.modalField {
+  display: flex;
+  flex-direction: column;
+}
+
+.modalField label {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #a0a0a0);
+  margin-bottom: 6px;
+}
+
+.modalFieldRow {
+  display: flex;
+  gap: 6px;
+}
+
+.modalFieldRow .modalInput:first-child {
+  flex: 1.4;
+}
+
+.modalFieldRow .modalInput:last-child {
+  flex: 1;
+}
+
+.locationPicker {
+  position: relative;
+  width: 100%;
+}
+
+.locationSuggestions {
+  position: fixed;
+  z-index: 300;
+  max-height: 200px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: var(--popover-bg, #fff);
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  box-shadow: var(--modal-shadow, 0 8px 24px rgba(0, 0, 0, 0.14));
+  animation: slideDown var(--dur-fast) ease-out;
+}
+
+.locationSuggestion {
+  display: block;
+  width: 100%;
+  min-height: 32px;
+  padding: 7px 10px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-primary, #1a1a1a);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.locationSuggestion:hover,
+.locationSuggestion:focus-visible,
+.locationSuggestionActive {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.05));
+  outline: none;
+}
+
+.modalChecks {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.modalCheck {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  color: var(--color-text-secondary, #6b6b6b);
+}
+
+.checkBox {
+  width: 16px;
+  height: 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, #faf9f7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    border-color var(--dur-fast),
+    background var(--dur-fast);
+}
+
+.checkBox.checked {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+  box-shadow: var(--shadow-event);
+}
+
+.modalRow2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.readOnlyNotice {
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f6368);
+  margin: -6px 0 10px;
+}
+
+.modalSelect {
+  padding: 8px 11px;
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  background: var(--color-bg-tertiary, #f3f2f0);
+  color: var(--color-text-primary, #1a1a1a);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast),
+    background var(--dur-fast);
+}
+
+.modalSelect:hover {
+  border-color: rgba(0, 0, 0, 0.15);
+  /* background-color, not the `background` shorthand: the shorthand resets
+     background-image and would erase the chevron on hover. */
+  background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.03));
+}
+
+.modalSelect:focus-visible {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px rgba(196, 168, 154, 0.15);
+}
+
+.modalSelect:active {
+  background-color: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+}
+
+.modalAddDesc {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted, #a0a0a0);
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+}
+
+.modalTextarea {
+  height: 72px;
+  resize: none;
+  line-height: 1.5;
+}
+
+.modalFooter {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 12px 0 14px;
+  border-top: 1px solid var(--color-border-subtle);
+  background: var(--modal-bg, #faf9f7);
+}
+
+.modalActions {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Cancel and the actions menu travel together, so Save keeps the far edge. */
+.modalActionsLeft {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Event-wide actions (export, mail). Anchored to its trigger and opening
+   upward: the footer sits at the bottom of the modal. */
+.actionsMenuWrap {
+  position: relative;
+  display: flex;
+}
+
+.actionsMenuBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--color-text-tertiary, #888);
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast),
+    color var(--dur-fast);
+}
+
+.actionsMenuBtn:hover {
+  color: var(--color-text-primary, #222);
+}
+
+.actionsMenuBtn:hover {
+  background: var(--color-bg-hover);
+}
+
+.actionsMenu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 20;
+  min-width: 190px;
+  padding: 4px;
+  background: var(--panel, var(--color-bg-primary, #fff));
+  border-radius: var(--radius-sm);
+  box-shadow:
+    0 2px 10px rgb(0 0 0 / 15%),
+    0 0 0 1px var(--color-border-subtle, rgb(0 0 0 / 5%));
+}
+
+.actionsMenuItem {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  color: var(--color-text-primary, #222);
+  background: none;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.actionsMenuItem:hover,
+.actionsMenuItem:focus-visible {
+  background: var(--color-bg-hover);
+}
+
+.modalDelete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, #faf9f7);
+  color: var(--color-error-muted, #c47068);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  cursor: pointer;
+  box-shadow: var(--shadow-event);
+  transition:
+    background-color var(--dur-fast),
+    color var(--dur-fast),
+    border-color var(--dur-fast),
+    transform 0.1s;
+}
+
+.modalDelete:hover {
+  background: var(--color-error-muted, #c47068);
+  color: #fff;
+  border-color: var(--color-error-muted, #c47068);
+}
+
+.modalDelete:active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
+}
+
+.modalDeleteConfirm {
+  background: var(--color-error-muted, #c47068);
+  color: #fff;
+  border-color: var(--color-error-muted, #c47068);
+}
+
+.modalCancel {
+  margin-right: auto;
+  padding: 7px 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-surface, #faf9f7);
+  color: var(--color-text-secondary, #6b6b6b);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  cursor: pointer;
+  box-shadow: var(--shadow-event);
+  transition:
+    background var(--dur-fast),
+    color var(--dur-fast),
+    transform 0.1s;
+}
+
+.modalCancel:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.modalCancel:active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
+}
+
+.modalSave {
+  padding: 7px 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: var(--accent-strong, var(--color-accent));
+  color: var(--accent-contrast, #fff);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  cursor: pointer;
+  letter-spacing: -0.01em;
+  box-shadow: var(--modal-save-shadow, 0 2px 8px rgba(196, 168, 154, 0.4));
+  transition:
+    background var(--dur-fast),
+    box-shadow var(--dur-fast),
+    transform 0.1s;
+}
+
+.modalSave:hover {
+  background: var(--color-accent-hover);
+  box-shadow: var(--modal-save-shadow-hover, 0 4px 14px rgba(196, 168, 154, 0.5));
+}
+
+.modalSave:active {
+  transform: scale(0.97);
+  transition-duration: 0.05s;
+}
+
+.modalSave:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* When the button is mid-save, keep it at full opacity so the spinner
+   and "Saving…" label read as "actively working", not "broken". The
+   aria-busy attribute is set on the button while the CalDAV POST is
+   in flight. The :disabled fade still applies for empty-title and
+   end-before-start — those are the "you can't click this yet" states. */
+.modalSave[aria-busy='true'] {
+  opacity: 1;
+  cursor: progress;
+  pointer-events: none;
+}
+
+/* Reserve enough horizontal space for the "Saving…" + spinner label so
+   the button doesn't jitter wider when transitioning from "Save"/"Create". */
+.modalSave {
+  min-width: 110px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.modalSaveContent {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modalSaveSpinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: modalSaveSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes modalSaveSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .modalSaveSpinner {
+    animation-duration: 3s;
+  }
+}
+
+.row {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.row.divider {
+  padding-top: 14px;
+  margin-top: 6px;
+  border-top: 1px solid var(--color-border, rgba(0, 0, 0, 0.1));
+}
+
+.row .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.row .chevronButton {
+  margin-left: auto;
+}
+
+/* "Add subtask" sits beside the Parent task select, not above it. The two
+   fields are unequal heights (only the select has a label above it), so
+   bottom-align the row to put the button on the select's line, and let the
+   button hug its text instead of claiming half the row via .row .field. */
+.row.parentTaskRow {
+  align-items: flex-end;
+}
+
+.row .addSubtaskField {
+  flex: 0 0 auto;
+}
+
+/* "Due time" holds a fixed-width HH:MM, so it doesn't need an equal third of
+   the row. Take 25% off it and hand that space to "Due date", whose value is
+   longer; Priority keeps its default flex: 1. */
+.row .dueTimeField {
+  flex: 0.75;
+}
+
+.row .dueDateField {
+  flex: 1.25;
+}
+
+/* Match the select's height so the two read as one line. The button inherits
+   8px of vertical padding, which fights the fixed height and pushes the label
+   off-centre; zero it and centre the text with flex instead. */
+.addSubtaskField .secondaryButton {
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.row.taskMetaRow {
+  align-items: center;
+}
+
+/* Parent task takes what is left; Priority is a short list, so it stays narrow. */
+.row .priorityField {
+  flex: 0 0 130px;
+}
+
+/* One line: dates, then the start-date buttons. Wraps only when a start date
+   plus a due time leave no room, rather than squeezing the inputs. */
+.row.taskDateRow {
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.row .taskDateField {
+  flex: 0 1 132px;
+  min-width: 118px;
+}
+
+.row .taskDateField .input {
+  min-width: 0;
+}
+
+.row .taskDateButtons {
+  flex: 0 0 auto;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.row .taskDateButtons .secondaryButton {
+  height: 32px;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text-secondary, #5f6368);
+}
+
+.remindersMuted {
+  font-size: 12px;
+  color: var(--color-text-secondary, #5f6368);
+  margin: 0;
+}
+
+.input,
+.select,
+.textarea {
+  padding: 8px 11px;
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  background: var(--color-bg-tertiary, #f3f2f0);
+  color: var(--color-text-primary, #1a1a1a);
+  outline: none;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color var(--dur-fast),
+    box-shadow var(--dur-fast);
+}
+
+.input:focus,
+.input:focus-visible,
+.select:focus,
+.select:focus-visible,
+.textarea:focus,
+.textarea:focus-visible {
+  border-color: var(--color-accent);
+  outline: none;
+  box-shadow: none;
+}
+
+/* One control height for every field in the modal — text inputs and dropdowns
+   alike — so rows like "Due date / Due time / Priority" line up. Vertical
+   padding is zeroed because the fixed height already sets the box; the UA
+   centers the text. .textarea keeps the 8px padding from the rule above. */
+.input,
+.select,
+.modalSelect {
+  height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Draw our own chevron rather than the native one: the browser arrow sits
+   hard against the right border and its inset can't be controlled portably.
+   Matches the Settings select (see Settings.module.css .select).
+   .modalSelect is a separate near-duplicate of .select used by the calendar
+   picker; it shares the chevron and height so the two look identical. */
+.select,
+.modalSelect {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 34px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' stroke='%23a39d93' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  /* 44px is the minimum comfortable touch target; 16px font is what stops iOS
+     zooming the page on focus. */
+  .input,
+  .select,
+  .modalSelect,
+  .modalInput {
+    height: 44px;
+    font-size: 16px;
+  }
+
+  .locationSuggestion {
+    min-height: 44px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+
+  /* Stack the Start and End groups onto their own rows on mobile. Two 1fr
+     tracks leave each date+time pair too narrow to read: the native date
+     input truncates and the time input loses its AM/PM suffix. */
+  .dateTimeRow {
+    grid-template-columns: 1fr;
+  }
+
+  .addSubtaskField .secondaryButton,
+  .taskDateButtons .secondaryButton {
+    height: 44px;
+  }
+
+  .row .priorityField {
+    flex: 0 0 110px;
+  }
+
+  .row .taskDateField {
+    flex: 1 1 140px;
+  }
+
+  /* On mobile "Due time" is a native <input type="time">, whose intrinsic
+     width already accounts for its digits and clock indicator (and is wider
+     in 12h locales, which add AM/PM). Size the field to that content instead
+     of a fixed ratio: any hardcoded share either clips the value or leaves
+     dead space. "Due date" absorbs whatever is left. */
+  .row .dueTimeField {
+    flex: 0 0 auto;
+  }
+
+  /* Trim the side padding on native time inputs so the value and the picker
+     indicator both fit within the field. */
+  .input[type='time'] {
+    padding-left: 8px;
+    padding-right: 4px;
+  }
+
+  /* Issue #59 — stack the "Completed" checkbox row above the due-mode
+     segmented control on mobile so the long-text tabs ("Due date and time" /
+     "Date only" / "No due date") don't squeeze the checkbox off-screen or
+     wrap awkwardly. */
+  .row.taskMetaRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-2);
+  }
+
+  .row.taskMetaRow .field,
+  .row.taskMetaRow .dueModeControl {
+    width: 100%;
+    margin-left: 0;
+    align-self: stretch;
+    justify-content: space-between;
+  }
+
+  /* "All day" / "Available" / "Recurring" + the More toggle don't fit on one
+     line at phone widths — wrap instead of squeezing. When More drops to its
+     own line, keep it left-aligned under the checkboxes rather than stranded
+     on the far right with nothing else on that line. */
+  .row.checksRow {
+    flex-wrap: wrap;
+    row-gap: 10px;
+  }
+
+  .row.checksRow .chevronButton {
+    margin-left: 0;
+  }
+
+  /* Inline subtask actions are part of the mobile form, so give both the
+     checkbox and its title a comfortable row to hit without shrinking the
+     nested indentation. */
+  .subtaskItem {
+    min-height: 44px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .subtaskItem input {
+    width: 20px;
+    height: 20px;
+  }
+
+  .subtaskTitle {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-height: 32px;
+  }
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--color-text-secondary, #6b6b6b);
+  cursor: pointer;
+}
+
+.checkbox input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--color-accent);
+}
+
+.dueModeControl {
+  position: relative;
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+  margin-left: auto;
+  align-self: center;
+  padding: var(--space-1);
+  background: rgba(var(--ink-raw), 0.045);
+  border-radius: var(--view-switcher-radius, 12px);
+}
+
+.dueModeTab {
+  position: relative;
+  z-index: 1;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-2, #6f6a62);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: color 0.14s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.dueModeTab:hover {
+  color: var(--ink, #2c2823);
+}
+
+.dueModeTabActive {
+  color: var(--ink, #2c2823);
+}
+
+.dueModeIndicator {
+  position: absolute;
+  top: 4px;
+  height: calc(100% - 8px);
+  background: var(--panel, #ffffff);
+  box-shadow:
+    0 1px 2px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1))),
+    0 0 0 1px var(--line, rgba(var(--shadow-rgb, 0, 0, 0), calc(0.09 * var(--shadow-opacity, 1))));
+  border-radius: var(--view-switcher-indicator-radius, 9px);
+  transition:
+    left 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 0;
+}
+
+.chevronButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary, #6b6b6b);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.chevronButton:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+.moreOptionsWrapper {
+  display: block;
+  flex: 0 0 auto;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transition:
+    max-height 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.moreOptionsOpen {
+  max-height: 1200px;
+  opacity: 1;
+}
+
+.moreOptionsClosed {
+  max-height: 0;
+  opacity: 0;
+}
+
+.moreOptionsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--color-bg-tertiary, #f3f2f0);
+  border-radius: var(--radius-sm);
+  transform: translateY(-4px);
+  transition: transform 0.2s ease;
+}
+
+.moreOptionsOpen .moreOptionsSection {
+  transform: translateY(0);
+}
+
+.weekdayField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+
+.weekdayRow {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+}
+
+.weekdayBtn {
+  position: relative;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--color-border, rgba(0, 0, 0, 0.12));
+  background: var(--color-bg-secondary, #fff);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  color: var(--color-text-secondary, #6b6b6b);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.weekdayBtn:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+  border-color: var(--color-text-secondary, #6b6b6b);
+}
+
+.weekdayBtn.excluded {
+  background: var(--accent-strong, var(--color-accent));
+  color: var(--accent-contrast, #fff);
+  border-color: var(--color-accent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+}
+
+.weekdayBtn.excluded:hover {
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
+}
+
+.weekdayBtn input {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.fieldHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.removeFieldButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary, #6b6b6b);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.removeFieldButton:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+  color: var(--color-text-primary, #1a1a1a);
+}
+
+@media (max-width: 768px) {
+  .modalBackdrop {
+    align-items: flex-end;
+  }
+
+  /* Anchored Sheet: full-screen takeover instead of a squeezed partial sheet.
+     Header and footer pin outside the scroll region so Create/Save stays
+     reachable even with the keyboard open. */
+  .modalCard {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100dvh;
+    max-height: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    /* The desktop scale+fade keyframe (with its `forwards` fill) would
+       permanently pin `transform`, fighting the swipe-to-dismiss drag's own
+       `y` motion value forever after. `.modalEntrance` (below) carries the
+       mobile entrance instead, on a property this card itself never touches
+       again once the drag is live. */
+    animation: none;
+    /* Full-screen sheet: promote once rather than re-rasterising the whole
+       form on every frame of the slide. */
+    will-change: transform;
+  }
+
+  /* The slide itself now runs on the card's `sheetY` motion value (see
+     EventModal.tsx) so the card's own opaque full-bleed background travels
+     with its contents; translating only the contents read as a pop. All
+     that's left here is a short fade so the fields don't snap in at full
+     strength while the card is still on its way up. */
+  .modalEntrance {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    animation: modalEntranceIn 220ms ease-out;
+  }
+
+  @keyframes modalEntranceIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .modalEntrance {
+      animation: none;
+    }
+  }
+
+  .dragHandle {
+    display: block;
+    flex-shrink: 0;
+    width: 36px;
+    height: 4px;
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-border-visible, rgba(0, 0, 0, 0.12));
+    margin: calc(10px + var(--safe-area-top, 0px)) auto 6px;
+    /* Without this, Android/Chrome can decide partway through the drag that
+       it's actually a page-scroll or pull-to-refresh gesture and cancel the
+       pointer sequence — same fix used for EventCard's resize handle. */
+    touch-action: none;
+  }
+
+  .modalHeader {
+    flex-shrink: 0;
+    padding: 4px 18px 12px;
+    border-bottom: 1px solid var(--color-border-subtle);
+    touch-action: none;
+  }
+
+  /* The header's own border-bottom replaces this divider on mobile. */
+  .modalDivider {
+    display: none;
+  }
+
+  .modalBody {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 0;
+    gap: 0;
+  }
+
+  /* Grouped Sections: related fields cluster into tinted cards with real air
+     between them, instead of one long uniform stack of rows. */
+  .modalScroll {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 16px 18px;
+    gap: var(--space-4);
+    /* Drag-to-dismiss can now start here too (at scrollTop 0). Contain the
+       overscroll bounce instead of letting it chain up to the WebView's own
+       pull-to-refresh, which is what was cancelling the gesture before. */
+    overscroll-behavior-y: contain;
+  }
+
+  .modalGroup {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-4) var(--space-3);
+    border-radius: var(--radius-md);
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+
+  .modalFooter {
+    flex-shrink: 0;
+    padding: 14px 18px calc(14px + var(--safe-area-bottom, 0px));
+    border-top: 1px solid var(--color-border-subtle);
+    background: var(--modal-bg, #faf9f7);
+  }
+}
+
+.categoriesContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  grid-column: 1 / -1;
+}
+
+.categoriesLabel {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted, #a0a0a0);
+}
+
+.categoriesList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  width: 100%;
+}
+
+.categoryChip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-bg-tertiary, #f3f2f0);
+  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text-secondary, #6b6b6b);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+}
+
+.categoryChip:hover {
+  border-color: var(--color-border-visible);
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.categoryChip.categoryChipSelected {
+  border-color: var(--color-accent);
+  background: var(--color-accent-light);
+  color: var(--accent-strong, var(--color-accent));
+}
+
+.categoryChipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Reminder chips */
+.reminderList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  width: 100%;
+}
+
+.reminderChip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-visible, rgba(0, 0, 0, 0.08));
+  background: var(--color-accent-light, rgba(59, 130, 246, 0.08));
+  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--accent-strong-on-soft, var(--accent-strong, var(--color-accent, #3b82f6)));
+  line-height: 1;
+}
+
+.reminderChipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--accent-strong-on-soft, var(--accent-strong, var(--color-accent, #3b82f6)));
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.reminderChipRemove:hover {
+  opacity: 1;
+  background: var(--accent-strong, var(--color-accent, #3b82f6));
+  color: var(--accent-contrast, #fff);
+}
+
+.reminderAddWrapper {
+  position: relative;
+}
+
+.reminderAddBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border: 1px dashed var(--color-border, rgba(0, 0, 0, 0.15));
+  border-radius: var(--radius-lg);
+  background: transparent;
+  font-size: 12px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text-secondary, #6b6b6b);
+  cursor: pointer;
+  transition: all var(--dur-fast) var(--ease-out);
+  line-height: 1;
+}
+
+.reminderAddBtn:hover {
+  border-color: var(--color-accent, #3b82f6);
+  color: var(--accent-strong, var(--color-accent, #3b82f6));
+  background: var(--color-accent-light, rgba(59, 130, 246, 0.08));
+}
+
+.reminderDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 300;
+  min-width: 180px;
+  background: var(--popover-bg, #fff);
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  box-shadow: var(--modal-shadow, 0 8px 24px rgba(0, 0, 0, 0.14));
+  overflow: hidden;
+  animation: slideDown var(--dur-fast) ease-out;
+}
+
+.reminderDropdownItem {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text, #333);
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-fast) var(--ease-out);
+}
+
+.reminderDropdownItem:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.reminderDropdownEmpty {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: var(--color-text-muted, #a0a0a0);
+  text-align: center;
+}
+
+.titleSuggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 300;
+  background: var(--popover-bg, #fff);
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
+  box-shadow: var(--modal-shadow, 0 8px 24px rgba(0, 0, 0, 0.14));
+  overflow: hidden;
+  animation: slideDown var(--dur-fast) ease-out;
+}
+
+.nlpChip {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 300;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  border: 1px solid var(--popover-border, rgba(0, 0, 0, 0.08));
+  border-radius: 999px;
+  background: var(--popover-bg, #fff);
+  box-shadow: var(--modal-shadow, 0 8px 24px rgba(0, 0, 0, 0.14));
+  cursor: pointer;
+  animation: slideDown var(--dur-fast) ease-out;
+}
+
+.nlpChip:hover {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.nlpChipIcon {
+  font-size: 13px;
+  line-height: 1;
+}
+
+.nlpChipText {
+  font-size: 13px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text-primary, #1a1a1a);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.nlpChipKbd {
+  font-size: 10px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text-secondary, #666);
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.06));
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+.suggestionItem {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.suggestionItem:hover,
+.suggestionItemActive {
+  background: var(--color-bg-hover, rgba(0, 0, 0, 0.04));
+}
+
+.suggestionTitle {
+  font-size: 14px;
+  font-family: var(--font-sans, 'Inter', sans-serif);
+  color: var(--color-text-primary, #1a1a1a);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.suggestionDesc {
+  font-size: 11px;
+  color: var(--color-text-muted, #a0a0a0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.3;
+}
+
+.secondaryButton {
+  align-self: end;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--panel);
+  color: var(--ink-2);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.secondaryButton:hover {
+  color: var(--ink);
+  background: var(--surface-bg);
+}
+
+.helperText {
+  margin-bottom: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.subtaskList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 4px 0 12px;
+}
+
+.subtaskHeading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 28px;
+}
+
+.subtaskCollapseToggle {
+  color: var(--ink-2, #6f6a62);
+}
+
+.subtaskItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--ink-2);
+  padding: 5px 8px;
+}
+
+.subtaskItem:hover {
+  background: var(--surface-bg);
+  color: var(--ink);
+}
+
+.subtaskItem input {
+  flex: 0 0 auto;
+  accent-color: var(--accent);
+}
+
+.subtaskTitle {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.subtaskTitle:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .modalInput,
+  .textarea {
+    font-size: 16px;
+  }
+}
+
+/* The event's own wall clock, for a series anchored outside the device zone.
+   The date/time fields above are device-local, so without this a foreign TZID
+   is invisible while editing (see EventFormFields.foreignZoneTimes). */
+.foreignZoneNote {
+  margin: -2px 0 2px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* DateField: a typeable text input in the configured date format, a calendar
+   button on its right edge, and a hidden native date input that only exists to
+   open the browser's picker (anchored under the wrapper). */
+.dateFieldWrapper {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.dateFieldWrapper .dateFieldInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 32px;
+}
+
+.dateFieldButton {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-secondary, #5f6368);
+  cursor: pointer;
+}
+
+.dateFieldButton:hover,
+.dateFieldButton:focus-visible {
+  color: var(--color-accent);
+}
+
+/* It must keep the field's real size: the browser anchors the popup to this
+   element's box, and a zero-height one sends it to the top-left of the screen. */
+.dateFieldNative {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  color-scheme: inherit;
+}

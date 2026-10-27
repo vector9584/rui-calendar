@@ -1,0 +1,71 @@
+import { test, expect } from '@playwright/test'
+import { clearState } from './fixtures/localstorage'
+
+test.describe('language settings', () => {
+  test.beforeEach(async ({ page }) => {
+    await clearState(page)
+  })
+
+  test('switches the interface language and keeps the choice after reload', async ({ page }) => {
+    await page.goto('/settings')
+
+    const language = page.locator('[data-setting="language"]')
+    await expect(language).toBeVisible()
+
+    const selector = language.locator('select')
+    await expect(selector).toHaveValue('en')
+
+    await selector.selectOption('da')
+    await expect(selector).toHaveValue('da')
+    await expect(language).toHaveAttribute('data-value', 'da')
+
+    await page.goto('/month')
+    await page.getByRole('button', { name: 'Tilføj kalender', exact: true }).first().click()
+    await page.getByRole('button', { name: 'Tilføj CalDAV-konto', exact: true }).click()
+    await expect(
+      page.getByRole('dialog').getByRole('heading', { name: 'Tilføj CalDAV-konto', exact: true })
+    ).toBeVisible()
+    await page.keyboard.press('Escape')
+
+    await expect(page.getByRole('button', { name: 'Forrige', exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Næste', exact: true })).toBeVisible()
+    const desktopSwitcher = page.locator('[data-component="view-switcher"]')
+    await expect(desktopSwitcher.getByRole('button', { name: 'Måned', exact: true })).toBeVisible()
+    await expect(desktopSwitcher.getByRole('button', { name: 'Uge', exact: true })).toBeVisible()
+
+    await page.getByRole('button', { name: 'Indstillinger', exact: true }).first().hover()
+    await expect(
+      page.getByRole('button', { name: 'Alle indstillinger →', exact: true })
+    ).toBeVisible()
+
+    await page.goto('/settings')
+    await expect(page.locator('[data-component="settings-page"]')).toBeVisible()
+    await expect(page.locator('[data-setting="language"]').getByRole('combobox')).toHaveValue('da')
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/month')
+    const mobileSwitcher = page.locator('[data-component="nav-pill-switcher"]')
+    await expect(mobileSwitcher.getByRole('button', { name: 'Måned', exact: true })).toBeVisible()
+    await expect(mobileSwitcher.getByRole('button', { name: 'Uge', exact: true })).toBeVisible()
+  })
+
+  test('loads and persists each added interface language', async ({ page }) => {
+    await page.goto('/settings')
+
+    const language = page.locator('[data-setting="language"]')
+    const selector = language.getByRole('combobox')
+    const englishAriaLabel = await selector.getAttribute('aria-label')
+    expect(englishAriaLabel).toBeTruthy()
+
+    for (const code of ['es', 'fr', 'it', 'nl']) {
+      await selector.selectOption(code)
+      await expect(language).toHaveAttribute('data-value', code)
+      await expect(page.locator('html')).toHaveAttribute('lang', code)
+      await expect.poll(() => selector.getAttribute('aria-label')).not.toBe(englishAriaLabel)
+    }
+
+    await page.reload()
+    await expect(page.locator('[data-setting="language"]')).toHaveAttribute('data-value', 'nl')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'nl')
+  })
+})

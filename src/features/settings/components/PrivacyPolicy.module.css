@@ -1,0 +1,121 @@
+/* The route renders outside the app shell, so it paints its own canvas rather
+   than depending on `body`. The page scrolls, not the card inside it — the card
+   used to be the scroll container, which forced it to full viewport height. */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-6);
+  background: var(--color-bg);
+}
+
+/* Programmatic skip-link target — no focus ring around the whole page. */
+.container:focus {
+  outline: none;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding-top: calc(var(--space-6) + var(--safe-area-top));
+    padding-bottom: calc(var(--space-6) + var(--safe-area-bottom));
+  }
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: 32px;
+  flex-shrink: 0;
+}
+
+.backButton {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  transition: background-color var(--transition-fast);
+}
+
+.backButton:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text-primary);
+}
+
+.header h1 {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  margin: 0;
+}
+
+/* Sizes to its content instead of flex: 1 — stretched to the full viewport the
+   panel stopped reading as a card and just looked like an unstyled white page. */
+.content {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-6);
+  margin-bottom: var(--space-6);
+  /* Keep its natural height in the flex column — the container is what scrolls. */
+  flex-shrink: 0;
+}
+
+.lastUpdated {
+  color: var(--color-text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.content section {
+  margin-bottom: 24px;
+}
+
+.content section:last-child {
+  margin-bottom: 0;
+}
+
+.content h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 8px;
+}
+
+.content p {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.content ul {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+}
+
+.content li {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text);
+  margin-bottom: 4px;
+}
+
+.content a {
+  color: var(--accent-strong, var(--color-accent));
+  text-decoration: none;
+}
+
+.content a:hover {
+  text-decoration: underline;
+}

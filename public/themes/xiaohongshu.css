@@ -1,0 +1,122 @@
+/* Theme: Xiaohongshu | light */
+
+[data-theme='light'] {
+  /* ── Canvas & Surfaces ───────────────────────────────────────────
+   *  Xiaohongshu: white card on #F5F5F5 canvas. No shadow separation.
+   *  Depth comes from canvas contrast + generous radius. */
+  --canvas: #f5f5f5;
+  --panel: #ffffff;
+  --side: #ffffff;
+  --color-bg: var(--canvas);
+  --color-bg-primary: var(--canvas);
+  --color-bg-secondary: var(--panel);
+  --color-bg-tertiary: #fafafa;
+  --color-bg-hover: rgba(48, 48, 52, 0.05);
+  --color-bg-input: var(--canvas);
+  --color-surface: var(--panel);
+  --color-surface-raised: var(--panel);
+  --color-surface-glass: rgba(255, 255, 255, 0.85);
+
+  /* ── Foreground ───────────────────────────────────────────────────
+   *  Four translucent black tiers. Pure #000 is never used.
+   *  Title at 0.80 alpha = "soft black". */
+  --ink: rgba(0, 0, 0, 0.80);
+  --ink-2: rgba(0, 0, 0, 0.62);
+  --ink-3: rgba(0, 0, 0, 0.45);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-2);
+  --color-text-muted: var(--ink-3);
+  --color-text-tertiary: rgba(0, 0, 0, 0.27);
+
+  /* ── Borders ─────────────────────────────────────────────────────
+   *  Hairline separators via alpha — same line on white card, photo,
+   *  or sheet without recoloring. */
+  --line: rgba(0, 0, 0, 0.08);
+  --line-2: rgba(0, 0, 0, 0.05);
+  --color-border: var(--line);
+  --color-border-light: var(--line-2);
+  --color-border-subtle: var(--line-2);
+  --color-border-visible: var(--line);
+  --color-border-glass: var(--line);
+
+  /* ── Accent ───────────────────────────────────────────────────────
+   *  Singular brand red. One accent per screen, never two.
+   *  #FF2442 = token default. #FF2E4D = component layer (hover). */
+  --accent: #ff2442;
+  --accent-soft: rgba(255, 36, 66, 0.10);
+  --color-accent: var(--accent);
+  --color-accent-hover: #ff2e4d;
+  --color-accent-light: var(--accent-soft);
+  --color-primary: var(--accent);
+  --color-primary-hover: #ff2e4d;
+  --color-primary-light: var(--accent-soft);
+
+  /* ── Semantic ─────────────────────────────────────────────────────
+   *  Success / warn from production. Danger reuses brand red. */
+  --color-success: #02b940;
+  --color-success-light: rgba(2, 185, 64, 0.10);
+  --color-warning: #ff7d03;
+  --color-error: #ff2442;
+  --color-error-muted: #ff2442;
+  --color-danger: #ff2442;
+  --color-danger-bg: rgba(255, 36, 66, 0.08);
+  --color-info: #3d8af5;
+
+  /* ── Functional ─────────────────────────────────────────────────── */
+  --ink-raw: 0, 0, 0;
+  --event-bg-mix: 8%;
+  --event-bg-mix-hover: 12%;
+
+  /* ── Overlay & Focus ───────────────────────────────────────────── */
+  --color-overlay: rgba(0, 0, 0, 0.5);
+  --color-focus: var(--accent);
+  --color-scrollbar: #e0e0e0;
+  --color-scrollbar-hover: #c0c0c0;
+
+  /* ── Elevation ────────────────────────────────────────────────────
+   *  Near-zero shadow. PC card hover is the only raised moment. */
+  --shadow-event: none;
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-card: none;
+  --shadow-sidebar: none;
+  --shadow-topbar: none;
+  --shadow-today: none;
+  --shadow-glass: none;
+  --shadow-inset: none;
+
+  /* ── Modal / Popover ──────────────────────────────────────────────
+   *  Desktop: centered floating card with subtle shadow.
+   *  Mobile: bottom-sheet, no shadow. */
+  --modal-bg: var(--panel);
+  --popover-bg: var(--panel);
+  --modal-scrim: rgba(0, 0, 0, 0.5);
+  --modal-blur: blur(3px);
+  --modal-border: rgba(0, 0, 0, 0.08);
+  --popover-border: rgba(0, 0, 0, 0.08);
+  --modal-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+  /* ── Typography ───────────────────────────────────────────────────
+   *  PingFang SC throughout — no separate display face.
+   *  Compact heading scale, tracking zero. */
+  --font-serif: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-sans: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+  /* ── Spacing (8pt grid) ────────────────────────────────────────── */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* ── Border Radius ───────────────────────────────────────────────
+   *  Generous rounding: cards 12px, buttons full pill. */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+
+  /* ── Layout ─────────────────────────────────────────────────────── */
+  --sidebar-width: 300px;
+  --sidebar-collapsed-width: 40px;
+  --event-border-radius: 8px;
+  --event-gap: 4px;
+}

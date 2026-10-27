@@ -1,0 +1,1015 @@
+import { useEventContentHeights } from '../hooks/useEventContentHeights'
+import { type JSX } from 'react'
+import { useMemo, useState, useCallback, useRef, useLayoutEffect, useEffect } from 'react'
+import {
+  DndContext,
+  DragOverlay,
+  useSensor,
+  useSensors,
+  MouseSensor,
+  TouchSensor,
+  useDroppable,
+  useDndContext,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
+import { format, startOfDay, endOfDay, parseISO, isToday, addDays, addMinutes } from 'date-fns'
+import { useCalendarStore, getTasksForDay } from '@/store/calendarStore'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
+import { formatDisplayDate } from '@/lib/datetime'
+import { filterTasksByCollapsedAncestors } from '@/lib/taskTree'
+import { compareTaskSortOrder } from '@/lib/taskSortOrder'
+import { useTaskCollapse } from '../hooks/useTaskCollapse'
+import { useSettingsStore } from '@/store/settingsStore'
+import { useCalDAV } from '@/features/caldav/hooks/useCalDAV'
+import { getEventColor } from '@/lib/eventColor'
+import { safeCalDAVUpdate } from '@/lib/caldavHelpers'
+import { EventCard } from './EventCard'
+import { ContextMenu } from '@/components/common/ContextMenu'
+import { useGestures } from '@/hooks/useGestures'
+import { useRovingGrid } from '@/hooks/useRovingGrid'
+import { useContextMenuStore } from '@/store/contextMenuStore'
+import { useWindowHeight } from '@/hooks/useWindowHeight'
+import { useDragDuplicateModifier } from '@/hooks/useDragDuplicateModifier'
+import { useDragModifierStore } from '@/store/dragModifierStore'
+import { hapticIfEnabled } from '@/lib/haptics'
+import { formatTravelDuration, hasDueTime } from '@/lib/events'
+import { positionEvents } from '@/lib/eventPositioning'
+import {
+  positionedEventStyle,
+  transparentEventStyle,
+  travelBarStyle,
+  taskPillStyle,
+  TASK_PILL_LAYOUT_MINUTES,
+} from '../lib/eventLayout'
+import { eventCardVariants } from '../lib/eventAnimations'
+import { eventLastDay } from '../lib/multiDayFragments'
+import { formatTime, pad2, toLocalDateString, toEventInstant } from '@/lib/datetime'
+import { HOURS } from '@/lib/hours'
+import { getTimezoneAbbr, getSecondaryHourLabel } from '@/lib/timezoneHelper'
+import { AnimatePresence, motion } from 'framer-motion'
+import { useReducedMotion } from '@/hooks/useReducedMotion'
+import { CurrentTimeIndicator } from './CurrentTimeIndicator'
+import { DropPreviewBand } from './DropPreviewBand'
+import {
+  MINUTE_SNAP_INTERVAL,
+  snapMinuteOfDay,
+  computeDropPreview,
+  isSameDropPreview,
+  type DropPreview,
+} from '../lib/dragSnap'
+import type { CalendarEvent, TimeFormat } from '@/types'
+import styles from './DayView.module.css'
+import { duplicateEventWithSync } from '@/lib/duplicateWithSync'
+
+const DRAG_ACTIVATION_CONSTRAINT = 8
+const TOUCH_DRAG_ACTIVATION_DELAY = 200
+const TOUCH_DRAG_ACTIVATION_TOLERANCE = 8
+const BASE_HOUR_HEIGHT = 60
+
+// Module-level so `useRovingGrid`'s `handleKeyDown` stays referentially stable.
+// A single column: ↑/↓ move one hour slot; ←/→ fall through to the global
+// handlers (there is nothing to move to sideways).
+const gridDelta = (key: string): number | null =>
+  key === 'ArrowUp' ? -1 : key === 'ArrowDown' ? 1 : null
+
+interface HourCellProps {
+  hour: Date
+  dateStr: string
+  timeFormat: TimeFormat
+  baseDate: Date
+  isDualTz: boolean
+  secondaryTimezone: string | null
+  isFocusAnchor: boolean
+  onCellClick: (hour: Date) => void
+  onDragStart: (hour: Date, e: React.MouseEvent) => void
+}
+
+// The cell is only a drop *target* — the highlight showing where the event will
+// land is drawn by DropPreviewBand, which knows the exact quarter hour.
+function HourCell({
+  hour,
+  dateStr,
+  timeFormat,
+  baseDate,
+  isDualTz,
+  secondaryTimezone,
+  isFocusAnchor,
+  onCellClick,
+  onDragStart,
+}: HourCellProps): JSX.Element {
+  const droppableId = `${dateStr}-${format(hour, 'HH:mm')}`
+  const { setNodeRef } = useDroppable({ id: droppableId })
+  const primaryTime = formatDisplayDate(hour, timeFormat === '24h' ? 'HH:mm' : 'h a')
+
+  let timeContent: React.ReactNode = primaryTime
+
+  if (isDualTz && secondaryTimezone) {
+    const secLabel = getSecondaryHourLabel(hour.getHours(), baseDate, secondaryTimezone, timeFormat)
+    timeContent = (
+      <div className={styles.timeRow}>
+        <span className={styles.primaryTime}>{primaryTime}</span>
+        <span className={styles.secondaryTime}>
+          {secLabel.time}
+          {secLabel.dayDelta && <span className={styles.dayDelta}>{secLabel.dayDelta}</span>}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={styles.hourRow}>
+      <div className={styles.timeLabel}>{timeContent}</div>
+      <div
+        ref={setNodeRef}
+        className={styles.cell}
+        data-hour={format(hour, 'HH:mm')}
+        role="button"
+        // Screen-reader name for the focused slot: without it the roving tab
+        // stop lands on an unnamed "blank". The date comes from `dateStr`, not
+        // from `hour` — HOURS is a module-load constant anchored to real
+        // today, so its calendar date goes stale as soon as the user navigates.
+        aria-label={`${formatDisplayDate(parseISO(dateStr), 'EEEE, MMMM d, yyyy')} ${formatTime(hour, timeFormat, 'hour')}`}
+        tabIndex={isFocusAnchor ? 0 : -1}
+        onClick={() => onCellClick(hour)}
+        onMouseDown={(e) => onDragStart(hour, e)}
+        onKeyDown={(e) => {
+          // Enter/Space on a focused hour slot starts the same quick-create as
+          // a click. (A focused event card handles its own Enter via EventCard.)
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            e.stopPropagation()
+            onCellClick(hour)
+          }
+        }}
+      />
+    </div>
+  )
+}
+
+export function DayView({
+  selectedDate: propDate,
+  onBack,
+}: { selectedDate?: string; onBack?: () => void } = {}): JSX.Element {
+  const { t } = useTranslation('calendar')
+  const storeDate = useCalendarStore((state) => state.currentDate)
+  const currentDate = propDate || storeDate
+  const events = useCalendarStore((state) => state.events)
+  const calendars = useCalendarStore((state) => state.calendars)
+  const taskCollapse = useTaskCollapse(events)
+  const getEventsForDateRange = useCalendarStore((state) => state.getEventsForDateRange)
+  const openModal = useCalendarStore((state) => state.openModal)
+  const storeUpdateEvent = useCalendarStore((state) => state.updateEvent)
+  const setCurrentDate = useCalendarStore((state) => state.setCurrentDate)
+  const timeFormat = useSettingsStore((state) => state.timeFormat)
+  const secondaryTimezoneEnabled = useSettingsStore((state) => state.secondaryTimezoneEnabled)
+  const secondaryTimezone = useSettingsStore((state) => state.secondaryTimezone)
+  const secondaryTimezoneLabel = useSettingsStore((state) => state.secondaryTimezoneLabel)
+  const timezone = useSettingsStore((state) => state.timezone)
+
+  const isDualTz = secondaryTimezoneEnabled && !!secondaryTimezone
+
+  const [activeEvent, setActiveEvent] = useState<CalendarEvent | null>(null)
+  const [dropPreview, setDropPreview] = useState<DropPreview | null>(null)
+  const [isDraggingToCreate, setIsDraggingToCreate] = useState(false)
+  const [dragStart, setDragStart] = useState<string | null>(null)
+  const [dragEnd, setDragEnd] = useState<string | null>(null)
+  const reducedMotion = useReducedMotion()
+  // When an event is being dragged, the source motion.div runs an
+  // exit animation when its key disappears from this day's list —
+  // but the DragOverlay already provides the move visual, so the
+  // extra exit fade at the source reads as a ghostly "jump back" to
+  // the original location. Skip the exit when this event is the
+  // active drag. Multi-day events use id `${event.id}::${date}` so
+  // strip the date suffix to compare against `event.id`.
+  const { active } = useDndContext()
+  const activeMasterId = active ? active.id.toString().split('::')[0] : null
+  const openMenuId = useContextMenuStore((state) => state.openMenuId)
+  const openMenu = useContextMenuStore((state) => state.openMenu)
+  const closeMenu = useContextMenuStore((state) => state.closeMenu)
+
+  const { updateEvent: caldavUpdateEvent, createEvent: createCalDAVEvent } = useCalDAV()
+
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; hour?: number } | null>(
+    null
+  )
+  const bodyRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const eventsOverlayRef = useRef<HTMLDivElement>(null)
+  const [scale, setScale] = useState(1)
+  const windowHeight = useWindowHeight()
+  const stretchFactor = windowHeight > 1570 ? windowHeight / 1570 : 1
+  const effectiveScale = scale * stretchFactor
+  const hourHeight = BASE_HOUR_HEIGHT * effectiveScale
+
+  // Roving-tabindex arrow navigation across the 24 hour-slot column: ↑/↓ move
+  // between hour slots (←/→ have nothing to move to in a single-column grid,
+  // so they fall through to the global handlers). Enter/Space on a focused
+  // slot opens the quick-create modal (same handler as a click).
+  const gridBodyRef = useRef<HTMLDivElement>(null)
+  const {
+    handleKeyDown: handleGridKeyDown,
+    focusAnchor,
+    setFocusAnchor,
+  } = useRovingGrid(gridBodyRef, '[data-hour]', gridDelta)
+  // Both refs point at the same element (the hour-grid body): `bodyRef` for
+  // scroll-to-now / context-menu geometry, `gridBodyRef` for roving focus.
+  const bodyAndGridRef = useCallback((el: HTMLDivElement | null) => {
+    bodyRef.current = el
+    gridBodyRef.current = el
+  }, [])
+
+  // The roving tab stop has ONE owner: the hook's `focusAnchor` state once the
+  // user has moved, "first hour slot" before that. When the visible day
+  // changes, drop the anchor so the default re-engages.
+  const anchorHour = focusAnchor?.dataset.hour ?? null
+  const isCellFocusAnchor = useCallback(
+    (idx: number, hourKey: string): boolean =>
+      anchorHour === null ? idx === 0 : anchorHour === hourKey,
+    [anchorHour]
+  )
+  useEffect(() => {
+    setFocusAnchor(null)
+  }, [currentDate, setFocusAnchor])
+
+  useEffect(() => {
+    if (openMenuId !== null && openMenuId !== 'dayview' && contextMenu) {
+      setContextMenu(null)
+    }
+  }, [openMenuId])
+
+  const handleSwipe = useCallback(
+    (direction: 'left' | 'right' | 'up' | 'down') => {
+      const date = parseISO(currentDate)
+      let newDate: Date
+
+      if (direction === 'left') {
+        newDate = addDays(date, 1)
+      } else if (direction === 'right') {
+        newDate = addDays(date, -1)
+      } else if (direction === 'up') {
+        newDate = addDays(date, 7)
+      } else {
+        newDate = addDays(date, -7)
+      }
+
+      // Local, not UTC — see the matching note in WeekView.
+      setCurrentDate(toLocalDateString(newDate))
+    },
+    [currentDate, setCurrentDate]
+  )
+
+  const handlePinch = useCallback((scaleValue: number) => {
+    setScale(scaleValue)
+  }, [])
+
+  const { bind } = useGestures({
+    onSwipe: handleSwipe,
+    onPinch: handlePinch,
+    swipeThreshold: 50,
+    pinchScaleRange: { min: 1, max: 1.5 },
+  })
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: { distance: DRAG_ACTIVATION_CONSTRAINT },
+    }),
+    // Touch needs a hold delay rather than a distance threshold: distance alone
+    // races against the card's own long-press-for-context-menu timer (and the
+    // browser's native long-press-to-select-text gesture), and usually loses,
+    // which is why holding a card to drag it was acting like a right-click.
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: TOUCH_DRAG_ACTIVATION_DELAY,
+        tolerance: TOUCH_DRAG_ACTIVATION_TOLERANCE,
+      },
+    })
+  )
+
+  // Prefer the droppable directly under the pointer (so dropping on the thin
+  // header strip registers), falling back to rect overlap for the hour grid.
+  const collisionDetection: CollisionDetection = useCallback((args) => {
+    const pointerCollisions = pointerWithin(args)
+    return pointerCollisions.length > 0 ? pointerCollisions : rectIntersection(args)
+  }, [])
+
+  // Live preview of where the dragged event will land, refreshed on drag move.
+  // The card itself follows the pointer freely; only this band snaps.
+  const handleDragMove = (dragEvent: DragMoveEvent): void => {
+    const durationMinutes =
+      activeEvent && !activeEvent.isAllDay
+        ? (parseISO(activeEvent.end).getTime() - parseISO(activeEvent.start).getTime()) / 60_000
+        : 60
+    const next = computeDropPreview(
+      dragEvent.active,
+      dragEvent.over,
+      dragEvent.delta.y,
+      hourHeight,
+      durationMinutes
+    )
+    setDropPreview((prev) => (isSameDropPreview(prev, next) ? prev : next))
+  }
+
+  useEffect(() => {
+    const handleWheelZoom = (e: WheelEvent): void => {
+      if (e.ctrlKey) {
+        e.preventDefault()
+        const delta = e.deltaY > 0 ? -0.1 : 0.1
+        setScale((s) => Math.min(Math.max(s + delta, 1), 1.5))
+      }
+    }
+
+    const container = containerRef.current
+    if (container) {
+      container.addEventListener('wheel', handleWheelZoom, { passive: false })
+    }
+
+    return () => {
+      if (container) {
+        container.removeEventListener('wheel', handleWheelZoom)
+      }
+    }
+  }, [])
+
+  const date = useMemo(() => parseISO(currentDate), [currentDate])
+  const localTzAbbr = useMemo(
+    () => getTimezoneAbbr(date, timezone || Intl.DateTimeFormat().resolvedOptions().timeZone),
+    [date, timezone]
+  )
+  const secondaryTzAbbr = useMemo(
+    () =>
+      secondaryTimezoneLabel || (secondaryTimezone ? getTimezoneAbbr(date, secondaryTimezone) : ''),
+    [date, secondaryTimezone, secondaryTimezoneLabel]
+  )
+  const dateKey = format(date, 'yyyy-MM-dd')
+
+  // The header doubles as a drop target: dragging a timed event onto it turns
+  // the event into an all-day event (the inverse of dragging a pill down).
+  const { setNodeRef: setAllDayDropRef, isOver: isAllDayDropOver } = useDroppable({
+    id: `allday::${dateKey}`,
+  })
+
+  const allDayEvents = useMemo(() => {
+    return getEventsForDateRange(dateKey, dateKey).filter(
+      (e) => e.type !== 'task' && e.type !== 'journal' && e.isAllDay
+    )
+  }, [dateKey, getEventsForDateRange, events])
+
+  const dayEvents = useMemo(() => {
+    const eventsForDay = getEventsForDateRange(dateKey, dateKey).filter(
+      (e) => e.type !== 'task' && !e.isAllDay
+    )
+
+    const fragmentedEvents: CalendarEvent[] = []
+
+    for (const event of eventsForDay) {
+      const eventStart = toEventInstant(event.start, event.timezone)
+      const eventEnd = eventLastDay(event)
+      const eventStartKey = format(eventStart, 'yyyy-MM-dd')
+      const eventEndKey = format(eventEnd, 'yyyy-MM-dd')
+      // Ends exactly at midnight: nothing of it falls on this day.
+      if (eventEndKey < dateKey) continue
+
+      if (eventStartKey === eventEndKey) {
+        fragmentedEvents.push(event)
+      } else {
+        const isFirst = eventStartKey === dateKey
+        const isLast = eventEndKey === dateKey
+
+        const fragment: CalendarEvent = {
+          ...event,
+          start: isFirst ? event.start : format(startOfDay(date), "yyyy-MM-dd'T'HH:mm:ss"),
+          end: isLast ? event.end : format(endOfDay(date), "yyyy-MM-dd'T'HH:mm:ss"),
+          isFragment: true,
+          isFirstFragment: isFirst,
+          isLastFragment: isLast,
+          originalStart: event.start,
+          originalEnd: event.end,
+        }
+        fragmentedEvents.push(fragment)
+      }
+    }
+
+    return fragmentedEvents
+  }, [dateKey, date, getEventsForDateRange, events])
+
+  // Single lookup into the store's shared due-date index instead of scanning
+  // every stored event to find one day's tasks. See #73.
+  const dayTasks = useMemo(() => {
+    const dateKey = format(date, 'yyyy-MM-dd')
+    const visibleCalendarIds = calendars.filter((c) => c.isVisible).map((c) => c.id)
+    const tasks = getTasksForDay(events, dateKey).filter((e) =>
+      visibleCalendarIds.includes(e.calendarId)
+    )
+    return filterTasksByCollapsedAncestors(tasks, events, taskCollapse.collapsedTaskIds)
+  }, [date, events, calendars, taskCollapse.collapsedTaskIds])
+
+  // Tasks with a due time are anchored on the timeline as pills (matching week
+  // view); the rest stay in the header list.
+  const timedTasks = useMemo(() => dayTasks.filter((t) => hasDueTime(t)), [dayTasks])
+  const untimedTasks = useMemo(
+    () => dayTasks.filter((t) => !hasDueTime(t)).sort(compareTaskSortOrder),
+    [dayTasks]
+  )
+
+  // Geometry is independent of pointer-preview and create-drag state. Keep
+  // event preparation behind data, zoom and content measurements so those
+  // interactions only rebuild JSX and the preview overlay.
+  const { contentHeights, reportContentHeight } = useEventContentHeights()
+  const dayEventLayout = useMemo(() => {
+    const sortedEvents = [...dayEvents].sort(
+      (a, b) =>
+        toEventInstant(a.start, a.timezone).getTime() -
+        toEventInstant(b.start, b.timezone).getTime()
+    )
+    const transparentEvents = sortedEvents.filter((e) => e.transparency === 'transparent')
+    const taskById = new Map(timedTasks.map((task) => [task.id, task]))
+    const taskLayoutItems = timedTasks.map((task) => ({
+      ...task,
+      end: format(
+        addMinutes(toEventInstant(task.start, task.timezone), TASK_PILL_LAYOUT_MINUTES),
+        "yyyy-MM-dd'T'HH:mm:ss"
+      ),
+    }))
+
+    return {
+      sortedEvents,
+      transparentEvents,
+      taskById,
+      positionedEvents: positionEvents([...sortedEvents, ...taskLayoutItems], {
+        hourHeight,
+        contentHeights,
+      }),
+    }
+  }, [dayEvents, timedTasks, hourHeight, contentHeights])
+
+  const [isScrolled, setIsScrolled] = useState(false)
+  const lastDateRef = useRef(date.toISOString())
+  const hasScrolledForDate = useRef(false)
+
+  useLayoutEffect(() => {
+    if (!bodyRef.current) return
+
+    const currentDateStr = date.toISOString()
+
+    if (lastDateRef.current !== currentDateStr) {
+      lastDateRef.current = currentDateStr
+      hasScrolledForDate.current = false
+    }
+
+    if (hasScrolledForDate.current) return
+
+    const rafId = requestAnimationFrame(() => {
+      if (!bodyRef.current) return
+
+      const scrollToNow = isToday(date)
+
+      if (scrollToNow) {
+        // Scroll to current time with 2h padding above
+        const now = new Date()
+        const minutesSinceMidnight = now.getHours() * 60 + now.getMinutes()
+        const fraction = minutesSinceMidnight / (24 * 60)
+        const scrollTop =
+          fraction * bodyRef.current.scrollHeight - bodyRef.current.clientHeight * 0.3
+        bodyRef.current.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' })
+      } else if (dayEvents.length > 0) {
+        // Reuse the sorted data used by the event layout below.
+        const firstEvent = dayEventLayout.sortedEvents[0]
+        const eventStart = toEventInstant(firstEvent.start, firstEvent.timezone)
+        const hours = eventStart.getHours()
+        const minutes = eventStart.getMinutes()
+        const fraction = (hours * 60 + minutes) / (24 * 60)
+        const scrollTop = fraction * bodyRef.current.scrollHeight - 60
+        bodyRef.current.scrollTo({ top: Math.max(0, scrollTop), behavior: 'smooth' })
+      }
+
+      hasScrolledForDate.current = true
+    })
+
+    return () => cancelAnimationFrame(rafId)
+  }, [dayEvents, date, dayEventLayout.sortedEvents])
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>): void => {
+    setIsScrolled(e.currentTarget.scrollTop > 0)
+  }
+
+  const handleCellClick = useCallback(
+    (hour: Date): void => {
+      const hourStr = format(hour, 'HH:mm')
+      openModal(`${format(date, 'yyyy-MM-dd')}T${hourStr}`)
+    },
+    [date, openModal]
+  )
+
+  const handleDragStartFromCell = useCallback(
+    (hour: Date, e: React.MouseEvent): void => {
+      if (e.button !== 0) return
+      e.preventDefault()
+      const hourStr = format(hour, 'HH:mm')
+      const startTime = `${format(date, 'yyyy-MM-dd')}T${hourStr}`
+      setIsDraggingToCreate(true)
+      setDragStart(startTime)
+      setDragEnd(startTime)
+    },
+    [date]
+  )
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent): void => {
+      if (!isDraggingToCreate || !dragStart) return
+
+      const overlay = eventsOverlayRef.current
+      if (!overlay) return
+
+      const rect = overlay.getBoundingClientRect()
+      const y = e.clientY - rect.top
+      const totalMinutes = (y / rect.height) * 24 * 60
+      const snappedMinutes = Math.round(totalMinutes / MINUTE_SNAP_INTERVAL) * MINUTE_SNAP_INTERVAL
+      const hours = Math.floor(snappedMinutes / 60)
+      const mins = snappedMinutes % 60
+      const timeStr = `${pad2(hours)}:${pad2(mins)}`
+      const endTime = `${format(date, 'yyyy-MM-dd')}T${timeStr}`
+      setDragEnd(endTime)
+    },
+    [isDraggingToCreate, dragStart, date]
+  )
+
+  const handleMouseUp = useCallback((): void => {
+    if (!isDraggingToCreate || !dragStart || !dragEnd) return
+
+    const startDateTime = parseISO(dragStart)
+    const endDateTime = parseISO(dragEnd)
+
+    if (endDateTime <= startDateTime) {
+      setIsDraggingToCreate(false)
+      setDragStart(null)
+      setDragEnd(null)
+      return
+    }
+
+    const startDateStr = format(startDateTime, 'yyyy-MM-dd')
+    const startTimeStr = format(startDateTime, 'HH:mm')
+    const endDateStr = format(endDateTime, 'yyyy-MM-dd')
+    const endTimeStr = format(endDateTime, 'HH:mm')
+
+    const selectedDate = `${startDateStr}T${startTimeStr}`
+    const endDateTimeStr = `${endDateStr}T${endTimeStr}`
+    openModal(selectedDate, endDateTimeStr)
+
+    setIsDraggingToCreate(false)
+    setDragStart(null)
+    setDragEnd(null)
+  }, [isDraggingToCreate, dragStart, dragEnd, openModal])
+
+  const selectionOverlay = useMemo(() => {
+    if (!isDraggingToCreate || !dragStart || !dragEnd) return null
+
+    const start = parseISO(dragStart)
+    const end = parseISO(dragEnd)
+    const startMinutes = start.getHours() * 60 + start.getMinutes()
+    const endMinutes = end.getHours() * 60 + end.getMinutes()
+    return (
+      <div
+        className={styles.selectionOverlay}
+        style={{
+          top: `calc(var(--hour-height, 60px) * ${startMinutes / 60})`,
+          height: `calc(var(--hour-height, 60px) * ${Math.max((endMinutes - startMinutes) / 60, 0.1)})`,
+        }}
+      />
+    )
+  }, [isDraggingToCreate, dragStart, dragEnd])
+
+  const { markDragStart, markDragEnd } = useDragDuplicateModifier()
+
+  const handleDragStart = (event: DragStartEvent): void => {
+    hapticIfEnabled('light')
+    // A card's own context menu can still be open (e.g. a long-press-hold that
+    // didn't move far enough to count as a drag yet) when a new drag starts —
+    // close it instead of leaving it floating over the grid mid-drag.
+    useContextMenuStore.getState().closeMenu()
+    const eventId = String(event.active.id)
+    const draggedEvent = events.find((e) => e.id === eventId)
+    setActiveEvent(draggedEvent || null)
+    markDragStart(event.activatorEvent)
+  }
+
+  const handleDragEnd = async (dragEvent: DragEndEvent): Promise<void> => {
+    const { active, over, delta } = dragEvent
+    const shouldDuplicate = useDragModifierStore.getState().isDuplicateModifierHeld
+    markDragEnd()
+    setActiveEvent(null)
+    setDropPreview(null)
+
+    if (!over) return
+
+    const droppableId = String(over.id)
+
+    // Dropped on the header → convert a timed event into an all-day event.
+    if (droppableId.startsWith('allday::')) {
+      const dayStr = droppableId.slice('allday::'.length)
+      const originalEvent = events.find((e) => e.id === active.id)
+      if (!originalEvent || originalEvent.isAllDay) return
+      // Defensive: dnd-kit's useDraggable is disabled on recurring events, but
+      // if some other code path triggers a drop on a recurring event, refuse
+      // rather than silently moving the whole series.
+      if (originalEvent.recurrence || originalEvent.rruleString) return
+
+      const allDayUpdates = {
+        start: `${dayStr}T00:00:00`,
+        end: `${dayStr}T00:00:00`,
+        isAllDay: true,
+      }
+      if (shouldDuplicate) {
+        duplicateEventWithSync({
+          eventId: originalEvent.id,
+          addCopySuffix: false,
+          updates: allDayUpdates,
+          createCalDAVEvent,
+        })
+        return
+      }
+      storeUpdateEvent(String(active.id), allDayUpdates)
+      await safeCalDAVUpdate(
+        caldavUpdateEvent,
+        originalEvent.calendarId,
+        { ...originalEvent, ...allDayUpdates },
+        allDayUpdates,
+        i18n.t('errors:ui.dragSync.event')
+      )
+      return
+    }
+
+    const lastDashIndex = droppableId.lastIndexOf('-')
+    const dayStr = droppableId.substring(0, lastDashIndex)
+    const hourStr = droppableId.substring(lastDashIndex + 1)
+
+    if (!dayStr || !hourStr) return
+
+    const originalEvent = events.find((e) => e.id === active.id)
+    if (!originalEvent) return
+    // Defensive: dnd-kit's useDraggable is disabled on recurring events, but
+    // if some other code path triggers a drop on a recurring event, refuse
+    // rather than silently moving the whole series.
+    if (originalEvent.recurrence || originalEvent.rruleString) return
+
+    // Dragging an all-day event into the timed grid turns it into a regular
+    // timed event: default it to a 1-hour block starting at the drop time.
+    // Otherwise preserve the event's existing duration.
+    let updates: { start: string; end: string; isAllDay?: boolean }
+    if (originalEvent.isAllDay) {
+      const newStart = parseISO(`${dayStr}T${hourStr}`)
+      const newEnd = new Date(newStart.getTime() + 60 * 60 * 1000)
+      updates = {
+        start: newStart.toISOString(),
+        end: newEnd.toISOString(),
+        isAllDay: false,
+      }
+    } else {
+      // Phase 2 (C3) — baseline in the device frame so the drop target is
+      // the instant the user sees; updateEvent re-frames it for TZID events.
+      const originalStart = toEventInstant(originalEvent.start, originalEvent.timezone)
+      const originalEnd = toEventInstant(originalEvent.end, originalEvent.timezone)
+      const durationMs = originalEnd.getTime() - originalStart.getTime()
+      // The droppable cell only tells us which day was dropped on; the time of
+      // day comes from how far the card was dragged vertically, snapped to a
+      // quarter hour. Using the hour cell alone would round to whole hours.
+      const startMinutes = originalStart.getHours() * 60 + originalStart.getMinutes()
+      const newStart = parseISO(`${dayStr}T00:00:00`)
+      newStart.setMinutes(snapMinuteOfDay(startMinutes, delta.y, hourHeight))
+      const newEnd = new Date(newStart.getTime() + durationMs)
+      updates = {
+        start: newStart.toISOString(),
+        end: newEnd.toISOString(),
+      }
+    }
+
+    if (shouldDuplicate) {
+      duplicateEventWithSync({
+        eventId: originalEvent.id,
+        addCopySuffix: false,
+        updates: updates,
+        createCalDAVEvent,
+      })
+      return
+    }
+
+    storeUpdateEvent(String(active.id), updates)
+
+    await safeCalDAVUpdate(
+      caldavUpdateEvent,
+      originalEvent.calendarId,
+      { ...originalEvent, ...updates },
+      updates,
+      i18n.t('errors:ui.dragSync.event')
+    )
+  }
+
+  const renderEvents = (): JSX.Element => {
+    const { transparentEvents, taskById, positionedEvents } = dayEventLayout
+
+    const elements: JSX.Element[] = []
+    // Single transition override applied to every motion.div below —
+    // `reducedMotion` collapses the animation to 0ms (jump straight to
+    // the final state) per the same pattern App.tsx uses for view
+    // transitions. The variants themselves stay defined so that the
+    // initial paint still lands on the right state if the component
+    // is re-mounted under a different reduce-motion setting.
+    const enterTransition = { duration: reducedMotion ? 0 : 0.18, ease: 'easeOut' as const }
+    // When the user prefers reduced motion, skip the `initial` state
+    // entirely and use an opacity-only exit (no scale). Matches the
+    // pattern in DayEventsPopup / EventPreviewPopup so the codebase
+    // speaks one language for reduced-motion handling.
+    const cardInitial = reducedMotion ? false : 'initial'
+    const cardExit = reducedMotion ? { opacity: 0 } : 'exit'
+    // Compute the skip-exit flag per event: when this event is the
+    // active drag, its source motion.div would otherwise run exit at
+    // the original position (looking like a "jump back"). The
+    // DragOverlay already shows the move visually, so skip the exit.
+    const skipExit = (id: string): boolean => activeMasterId === id
+
+    for (const event of transparentEvents) {
+      const eventColor = getEventColor(event, {
+        categories: [],
+        calendars,
+        useCategoryColors: false,
+      })
+      const style = transparentEventStyle(event, 4)
+
+      elements.push(
+        <motion.div
+          key={event.id}
+          variants={eventCardVariants}
+          initial={cardInitial}
+          animate="animate"
+          exit={skipExit(event.id) ? undefined : cardExit}
+          transition={enterTransition}
+          className={`${styles.eventPositioned} ${styles.eventTransparent}`}
+          style={{ ...style, backgroundColor: `${eventColor}20` }}
+        >
+          <EventCard event={event} transparent />
+        </motion.div>
+      )
+    }
+
+    for (const { event, column, totalColumns, columnSpan, inset } of positionedEvents) {
+      const task = taskById.get(event.id)
+      if (task) {
+        elements.push(
+          <motion.div
+            key={task.id}
+            variants={eventCardVariants}
+            initial={cardInitial}
+            animate="animate"
+            exit={skipExit(task.id) ? undefined : cardExit}
+            transition={enterTransition}
+            className={`${styles.eventPositioned} ${styles.taskPositioned}`}
+            style={taskPillStyle(task, column, totalColumns, columnSpan, inset)}
+          >
+            <EventCard
+              event={task}
+              onContentHeightChange={reportContentHeight}
+              compact
+              monthView
+              enableResize={false}
+              hideDueTime
+              taskHasSubtasks={taskCollapse.hasSubtasks(task.id)}
+              taskSubtasksCollapsed={taskCollapse.isCollapsed(task.id)}
+              taskSubtaskCount={taskCollapse.descendantCount(task.id)}
+              onToggleTaskSubtasks={() => taskCollapse.toggleTask(task.id)}
+            />
+          </motion.div>
+        )
+        continue
+      }
+
+      const eventColor = getEventColor(event, {
+        categories: [],
+        calendars,
+        useCategoryColors: false,
+      })
+      const style = positionedEventStyle(event, column, totalColumns, columnSpan, inset)
+
+      if (event.travelDuration && event.travelDuration > 0) {
+        elements.push(
+          <motion.div
+            key={`${event.id}-travel`}
+            variants={eventCardVariants}
+            initial={cardInitial}
+            animate="animate"
+            exit={skipExit(event.id) ? undefined : cardExit}
+            transition={enterTransition}
+            className={styles.travelBar}
+            style={{
+              ...travelBarStyle(event, column, totalColumns, columnSpan, inset),
+              backgroundColor: `${eventColor}15`,
+            }}
+            onClick={() => openModal(undefined, undefined, event.id)}
+          >
+            <span className={styles.travelBarInner}>
+              {t('ui.travel.bar', { duration: formatTravelDuration(event.travelDuration) })}
+            </span>
+          </motion.div>
+        )
+      }
+
+      elements.push(
+        <motion.div
+          key={event.id}
+          variants={eventCardVariants}
+          initial={cardInitial}
+          animate="animate"
+          exit={skipExit(event.id) ? undefined : cardExit}
+          transition={enterTransition}
+          className={styles.eventPositioned}
+          style={{ ...style, zIndex: 2 }}
+        >
+          <EventCard
+            event={event}
+            onContentHeightChange={reportContentHeight}
+            hourHeight={hourHeight}
+            hideTopRadius={!!event.travelDuration}
+          />
+        </motion.div>
+      )
+    }
+
+    // `initial={false}` on AnimatePresence is critical: without it,
+    // framer-motion would run the enter animation on every child
+    // present on first mount (a flash on every navigation), AND it
+    // would suppress exit animations because AnimatePresence can't
+    // distinguish "newly mounted" from "just appeared via re-render"
+    // when initial is enabled. With `initial={false}`, only children
+    // that JOIN later (create, undo, recurring-instance edit)
+    // animate in, and children that LEAVE (delete) animate out.
+    return <AnimatePresence initial={false}>{elements}</AnimatePresence>
+  }
+
+  const isCurrentDay = isToday(date)
+  const dateStr = format(date, 'yyyy-MM-dd')
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragStart={handleDragStart}
+      onDragMove={handleDragMove}
+      onDragEnd={handleDragEnd}
+      onDragCancel={() => setDropPreview(null)}
+    >
+      <div
+        className={styles.container}
+        data-embedded={onBack ? '' : undefined}
+        ref={containerRef}
+        style={
+          {
+            '--hour-height': `${hourHeight}px`,
+            '--time-gutter-width': isDualTz ? '100px' : '60px',
+          } as React.CSSProperties
+        }
+        onContextMenu={(e) => {
+          e.preventDefault()
+          openMenu('dayview')
+          const bodyRect = bodyRef.current?.getBoundingClientRect()
+          const bodyTop = bodyRect?.top ?? e.currentTarget.getBoundingClientRect().top
+          const bodyHeight = bodyRect?.height ?? 24 * 60 * effectiveScale
+          const y = e.clientY - bodyTop
+          const hourClicked = Math.max(0, Math.min(23, Math.floor((y / bodyHeight) * 24)))
+          setContextMenu({ x: e.clientX, y: e.clientY, hour: hourClicked })
+        }}
+        {...bind}
+      >
+        <div
+          ref={setAllDayDropRef}
+          className={`${styles.header} ${isScrolled ? styles.headerShadow : ''} ${allDayEvents.length > 0 ? styles.hasAllDayEvents : ''} ${isAllDayDropOver && activeEvent && !activeEvent.isAllDay ? styles.headerDropActive : ''}`}
+        >
+          {isDualTz && (
+            <div className={styles.headerGutter}>
+              <div className={styles.timeZoneHeaders}>
+                <span className={styles.primaryTzHeader}>{localTzAbbr}</span>
+                <span className={styles.secondaryTzHeader}>{secondaryTzAbbr}</span>
+              </div>
+            </div>
+          )}
+          {onBack && (
+            <button
+              className={styles.backButton}
+              onClick={onBack}
+              aria-label={t('views.day.backToAgenda')}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path
+                  d="M10 3L5 8L10 13"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
+          <div className={styles.dayInfo}>
+            <div className={styles.dayName}>{formatDisplayDate(date, 'EEEE')}</div>
+            <div className={`${styles.dayNumber} ${isCurrentDay ? styles.today : ''}`}>
+              {format(date, 'd')}
+            </div>
+            {allDayEvents.length > 0 && (
+              <div className={styles.allDayEventsInHeader}>
+                {allDayEvents.map((event) => (
+                  <EventCard key={event.id} event={event} compact monthView enableResize={false} />
+                ))}
+              </div>
+            )}
+            {untimedTasks.length > 0 && (
+              <div className={styles.allDayEventsInHeader}>
+                {untimedTasks.map((task) => (
+                  <EventCard
+                    key={task.id}
+                    event={task}
+                    compact
+                    monthView
+                    enableResize={false}
+                    taskHasSubtasks={taskCollapse.hasSubtasks(task.id)}
+                    taskSubtasksCollapsed={taskCollapse.isCollapsed(task.id)}
+                    taskSubtaskCount={taskCollapse.descendantCount(task.id)}
+                    onToggleTaskSubtasks={() => taskCollapse.toggleTask(task.id)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <div
+          ref={bodyAndGridRef}
+          className={styles.body}
+          data-component="day-grid"
+          onKeyDown={handleGridKeyDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
+          onScroll={handleScroll}
+        >
+          {HOURS.map((hour, idx) => (
+            <HourCell
+              key={hour.toISOString()}
+              hour={hour}
+              dateStr={dateStr}
+              timeFormat={timeFormat}
+              baseDate={date}
+              isDualTz={isDualTz}
+              secondaryTimezone={secondaryTimezone}
+              isFocusAnchor={isCellFocusAnchor(idx, format(hour, 'HH:mm'))}
+              onCellClick={handleCellClick}
+              onDragStart={handleDragStartFromCell}
+            />
+          ))}
+          <div ref={eventsOverlayRef} className={styles.eventsOverlay}>
+            {selectionOverlay}
+            {dropPreview && <DropPreviewBand preview={dropPreview} timeFormat={timeFormat} />}
+            {renderEvents()}
+            {isCurrentDay && (
+              <CurrentTimeIndicator hourHeight={hourHeight} timeFormat={timeFormat} />
+            )}
+          </div>
+        </div>
+      </div>
+      <DragOverlay dropAnimation={null}>
+        {activeEvent ? <EventCard event={activeEvent} isDragging /> : null}
+      </DragOverlay>
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          menuId="dayview"
+          onClose={() => {
+            closeMenu()
+            setContextMenu(null)
+          }}
+          items={[
+            {
+              label: t('views.week.createEvent'),
+              onClick: () => {
+                const hourStr =
+                  contextMenu.hour !== undefined ? `T${pad2(contextMenu.hour)}:00` : ''
+                openModal(`${format(date, 'yyyy-MM-dd')}${hourStr}`)
+                setContextMenu(null)
+              },
+            },
+            {
+              label: t('views.week.createTask'),
+              onClick: () => {
+                const dateStr = format(date, 'yyyy-MM-dd')
+                openModal(dateStr, undefined, undefined, 'task')
+                setContextMenu(null)
+              },
+            },
+          ]}
+        />
+      )}
+    </DndContext>
+  )
+}

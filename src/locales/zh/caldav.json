@@ -1,0 +1,71 @@
+{
+  "progress": {
+    "checkingConnection": "正在检查连接…",
+    "lookingForCalendars": "正在查找日历…",
+    "savingAccount": "正在保存账户…",
+    "syncingEvents": "正在同步事件…",
+    "checkingForContacts": "正在检查联系人…",
+    "importingCalendar": "正在导入 {{name}}…",
+    "downloadingCalendars_one": "正在从 {{count}} 个日历下载事件…",
+    "downloadingCalendars_other": "正在从 {{count}} 个日历下载事件…",
+    "savingEvent": "正在保存事件…",
+    "savingEvents": "正在保存事件…",
+    "deletingEvent": "正在删除事件…",
+    "creatingCalendar": "正在创建日历…",
+    "savingCalendar": "正在保存日历…",
+    "deletingCalendar": "正在删除日历…"
+  },
+  "ui": {
+    "cleartextWarning": "该连接使用纯 HTTP，因此你的密码和日历数据会以未加密方式传输。在私有网络或 VPN 下没问题——但在不受你控制的 Wi-Fi 上请避免使用。",
+    "headers": {
+      "count_one": "{{count}} 个自定义标头",
+      "count_other": "{{count}} 个自定义标头",
+      "proxyOn": "代理已开启",
+      "optional": "可选",
+      "protectedServers": "用于受保护的 CalDAV 服务器",
+      "connectionSettings": "连接设置",
+      "gatewayAccess": "网关访问",
+      "headerN": "标头 {{n}}",
+      "removeHeader": "移除标头",
+      "removeHeaderN": "移除标头 {{n}}",
+      "name": "名称",
+      "nameAria": "标头 {{n}} 名称",
+      "namePlaceholder": "例如 P-Access-Token-Id",
+      "value": "值",
+      "valueAria": "标头 {{n}} 值",
+      "valuePlaceholder": "输入密钥值",
+      "revealAria": "显示标头 {{n}} 的密钥",
+      "hideAria": "隐藏标头 {{n}} 的密钥",
+      "hideValue": "隐藏值",
+      "showValue": "显示值",
+      "addHeader": "添加标头",
+      "proxyUrl": "代理 URL",
+      "proxyWarning": "凭据和日历数据会经过此服务器。请只使用你信任的代理。",
+      "learnMore": "了解更多",
+      "customHeaders": "自定义标头",
+      "gatewayHint": "用于位于认证网关之后的服务器"
+    },
+    "nudge": {
+      "checkProxyAction": "检查代理 URL ↓",
+      "checkProxyLabel": "检查代理 URL",
+      "setUpProxyAction": "设置代理 ↓",
+      "proxyMayFix": "代理或许能解决此问题",
+      "headersAction": "此服务器是否位于网关之后？添加标头 ↓",
+      "headerMayFix": "自定义标头或许能解决此问题"
+    },
+    "connecting": "正在连接服务器…",
+    "addAccountFailed": "添加账户失败",
+    "syncFailed": "同步失败",
+    "accountNotFound": "未找到账户",
+    "credentialsNotFound": "未找到凭据",
+    "headerErrors": {
+      "invalid": "自定义标头无效。",
+      "proxyConflict": "自定义标头需要直连 DAV；请移除代理 URL。",
+      "invalidName": "自定义标头名称无效或为保留名称：{{name}}",
+      "duplicateName": "自定义标头名称重复：{{name}}",
+      "invalidValue": "自定义标头的值无效：{{name}}",
+      "originChanged": "DAV 请求更改了源。请直接输入最终的 DAV URL。",
+      "requestFailed": "DAV 请求失败或被重定向。请直接输入最终的 DAV URL，并检查自定义标头的 CORS 设置。"
+    }
+  }
+}

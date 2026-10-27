@@ -1,0 +1,103 @@
+apply plugin: 'com.android.application'
+
+import groovy.json.JsonSlurper
+
+// Single source of truth for the app version is package.json — bump it there
+// (already the convention for web releases) and both Android version fields
+// follow automatically.
+def appPackageJson = new JsonSlurper().parse(file('../../package.json'))
+def appVersionName = appPackageJson.version
+// versionName carries the full semver, prerelease suffix and all, so a beta
+// build says so on the About screen and in bug reports. versionCode has to be
+// a plain integer though, so the suffix is stripped before parsing: a
+// `0.27.0-beta.1` tester build and the eventual `0.27.0` share a code, which
+// is fine for sideloaded betas but means the final has to be installed over
+// the beta rather than upgrading it in place.
+def (verMajor, verMinor, verPatch) = appVersionName.split('-')[0].tokenize('.').collect { it.toInteger() }
+def appVersionCode = verMajor * 1000000 + verMinor * 1000 + verPatch
+
+def keystorePropertiesFile = rootProject.file('keystore.properties')
+def keystoreProperties = new Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+android {
+    namespace = "calino.malinov.ski"
+    compileSdk = rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "calino.malinov.ski"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode appVersionCode
+        versionName appVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+    signingConfigs {
+        release {
+            if (keystorePropertiesFile.exists()) {
+                storeFile rootProject.file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+    buildTypes {
+        debug {
+            // Distinct applicationId so a debug build installs side by side with
+            // the release one. Android scopes app storage (and therefore the
+            // WebView's localStorage, where settings and API keys live) by
+            // applicationId, so the two builds can no longer clobber each other.
+            applicationIdSuffix ".debug"
+            versionNameSuffix "-debug"
+        }
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (keystorePropertiesFile.exists()) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    // DavHttpPlugin: HttpURLConnection can't send WebDAV verbs, OkHttp can.
+    implementation "com.squareup.okhttp3:okhttp:$okhttpVersion"
+    // HeadlessSyncWorker: periodic background CalDAV refresh, so the calendar
+    // mirror holds events Calino never saw in the foreground.
+    implementation "androidx.work:work-runtime:$androidxWorkVersion"
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

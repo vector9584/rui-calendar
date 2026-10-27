@@ -1,0 +1,796 @@
+/* ============================================================================
+   ContactList — Left panel: search, meta bar, alphabetical contact list
+   ============================================================================ */
+
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- Search Bar ---- */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 10px 14px 0;
+  padding: 0 10px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  background: var(--side, #f5f3f0);
+  transition:
+    border-color 0.16s,
+    box-shadow 0.16s;
+}
+
+.searchBar:focus-within {
+  border-color: color-mix(in srgb, var(--accent, #b07d4f) 40%, var(--line, rgba(0, 0, 0, 0.1)));
+  box-shadow: 0 0 0 3px var(--selected-bg);
+}
+
+.searchIcon {
+  width: 15px;
+  height: 15px;
+  color: var(--ink-3, #a39d93);
+  flex-shrink: 0;
+}
+
+.searchInput {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--ink, #2c2823);
+  outline: none;
+  min-width: 0;
+  line-height: 34px;
+}
+
+.searchInput::placeholder {
+  color: var(--ink-3, #a39d93);
+}
+
+.clearBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--ink-3, #a39d93);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition:
+    background 0.14s,
+    color 0.14s,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.clearBtn:hover {
+  background: var(--surface-bg-strong);
+  color: var(--ink-2, #6f6a62);
+}
+
+.clearBtn:active {
+  transform: scale(0.85);
+}
+
+.clearBtn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* ---- Tag Filter ---- */
+.tagRow {
+  display: flex;
+  gap: 6px;
+  padding: 2px 14px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex-shrink: 0;
+  cursor: grab;
+}
+
+.tagRow:active {
+  cursor: grabbing;
+}
+
+.tagRow::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fade an edge while more tags are scrolled out of view beyond it. */
+.tagRow {
+  mask-image: linear-gradient(
+    90deg,
+    transparent,
+    #000 var(--fade-start, 0px),
+    #000 calc(100% - var(--fade-end, 0px)),
+    transparent
+  );
+}
+
+.tagRowFadeStart {
+  --fade-start: 40px;
+}
+
+.tagRowFadeEnd {
+  --fade-end: 48px;
+}
+
+.tagChip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  color: var(--ink, #2c2823);
+  background: transparent;
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: 9px;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background 0.14s,
+    border-color 0.14s,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tagChip:hover {
+  background: var(--surface-bg);
+}
+
+.tagChip:active {
+  transform: scale(0.96);
+}
+
+.tagChip:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 1px;
+}
+
+.tagChipActive,
+.tagChipActive:hover {
+  color: var(--canvas, #faf8f3);
+  background: var(--ink, #2c2823);
+  border-color: var(--ink, #2c2823);
+}
+
+.tagChipCount {
+  font-size: 11.5px;
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* ---- Tag dropdown (many tags) ---- */
+.tagDropdown {
+  position: relative;
+  padding: 2px 14px 10px;
+  flex-shrink: 0;
+}
+
+.tagTrigger {
+  display: flex;
+  align-items: stretch;
+  height: 32px;
+  color: var(--ink, #2c2823);
+  border: 1px solid var(--line, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+  transition:
+    background 0.14s,
+    border-color 0.14s;
+}
+
+.tagTrigger:hover {
+  background: var(--surface-bg);
+}
+
+.tagTriggerActive,
+.tagTriggerActive:hover {
+  background: var(--accent-soft, #efe7db);
+  border-color: color-mix(in srgb, var(--accent, #b07d4f) 55%, transparent);
+}
+
+.tagTriggerButton {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px 0 11px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.tagTriggerButton:focus-visible,
+.tagTriggerClear:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: 1px;
+}
+
+.tagTriggerIcon,
+.tagTriggerChevron {
+  flex-shrink: 0;
+  color: var(--ink-3, #756d62);
+}
+
+.tagTriggerLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagTriggerChevron {
+  transition: transform 0.16s ease;
+}
+
+.tagTriggerChevronOpen {
+  transform: rotate(180deg);
+}
+
+.tagTriggerClear {
+  width: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: var(--ink-3, #756d62);
+  background: none;
+  border: none;
+  border-left: 1px solid color-mix(in srgb, var(--accent, #b07d4f) 30%, transparent);
+  border-radius: 0 9px 9px 0;
+  cursor: pointer;
+}
+
+.tagTriggerClear:hover {
+  color: var(--ink, #2c2823);
+}
+
+.tagPanel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% - 6px);
+  left: 14px;
+  right: 14px;
+  display: flex;
+  flex-direction: column;
+  padding: 5px;
+  background: var(--popover-bg, var(--panel, #fff));
+  border: 1px solid var(--popover-border, var(--line, rgba(0, 0, 0, 0.1)));
+  border-radius: 13px;
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.14),
+    0 2px 6px rgba(0, 0, 0, 0.08);
+  animation: tagPanelIn 0.12s ease-out;
+}
+
+@keyframes tagPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tagPanel {
+    animation: none;
+  }
+
+  .tagTriggerChevron {
+    transition: none;
+  }
+}
+
+.tagPanelList {
+  max-height: min(264px, 45vh);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tagPanelDivider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line-2, rgba(0, 0, 0, 0.05));
+}
+
+.tagOption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  font-size: 13.5px;
+  color: var(--ink, #2c2823);
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tagOption:hover {
+  background: var(--surface-bg);
+}
+
+.tagOption:has(.tagCheckbox:focus-visible) {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: -2px;
+}
+
+.tagCheckbox {
+  appearance: none;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  display: grid;
+  place-content: center;
+  background: transparent;
+  border: 1.5px solid color-mix(in srgb, var(--ink, #2c2823) 35%, transparent);
+  border-radius: 5px;
+  transition:
+    background 0.12s,
+    border-color 0.12s;
+}
+
+.tagCheckbox::after {
+  content: '';
+  width: 8px;
+  height: 4px;
+  margin-top: -2px;
+  border-left: 2px solid var(--canvas, #faf8f3);
+  border-bottom: 2px solid var(--canvas, #faf8f3);
+  transform: rotate(-45deg) scale(0);
+  transition: transform 0.12s ease;
+}
+
+.tagCheckbox:checked {
+  background: var(--ink, #2c2823);
+  border-color: var(--ink, #2c2823);
+}
+
+.tagCheckbox:checked::after {
+  transform: rotate(-45deg) scale(1);
+}
+
+.tagOptionLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tagOptionCount {
+  font-size: 12px;
+  color: var(--ink-3, #756d62);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Meta Bar (count + new button) ---- */
+.metaBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px 5px;
+}
+
+.count {
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+}
+
+.newBtn {
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--accent-strong, var(--accent, #b07d4f));
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 4px 8px;
+  cursor: pointer;
+  line-height: 1;
+  transition:
+    background 0.14s,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.newBtn:hover {
+  background: var(--selected-bg);
+}
+
+.newBtn:active {
+  transform: scale(0.95);
+}
+
+/* ---- Contact List ---- */
+.list {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+/* ---- Alphabetical Groups ---- */
+.alphaGroup {
+  /* no visual boundary between groups — just structure */
+}
+
+.alphaHeader {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-3, #a39d93);
+  padding: 10px 20px 4px;
+  user-select: none;
+}
+
+/* ---- Contact Item ---- */
+.contactItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 9px 20px;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  margin: 0 6px;
+  transition:
+    background 0.14s,
+    transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.contactItem:hover {
+  background: var(--surface-bg);
+}
+
+.contactItem:active {
+  transform: scale(0.98);
+}
+
+.contactItem.selected {
+  background: color-mix(in srgb, var(--accent, #b07d4f) 8%, var(--canvas, #f9f7f4));
+  border-radius: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+.contactItem:focus-visible {
+  outline: 2px solid var(--accent, #b07d4f);
+  outline-offset: -2px;
+  border-radius: 4px 0 0 4px;
+}
+
+/* ---- Selected Rail ---- */
+.selectedRail {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent, #b07d4f);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ---- Avatar ---- */
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #ffffff;
+  flex-shrink: 0;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.contactItem:hover .avatar {
+  transform: scale(1.05);
+}
+
+.avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- Contact Info ---- */
+.contactInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.contactName {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink, #2c2823);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.contactOrg {
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+.contactEmail {
+  font-size: 12px;
+  color: var(--ink-3, #a39d93);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+/* ---- Empty State ---- */
+.emptyState {
+  text-align: center;
+  color: var(--ink-3, #a39d93);
+  font-size: 13.5px;
+  padding: 48px 24px;
+}
+
+.emptyTitle {
+  display: block;
+  color: var(--ink-2, #6f6a62);
+  font-weight: 500;
+  margin-bottom: 4px;
+  font-size: 16px;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+  /* Clear the floating nav pill so the last contact isn't hidden under it. */
+  .list {
+    padding-bottom: calc(84px + var(--safe-area-bottom));
+  }
+
+  .searchBar {
+    margin: 8px 10px 0;
+    height: 34px;
+    border-radius: var(--radius-sm);
+  }
+
+  .metaBar {
+    padding: 7px 14px 3px;
+  }
+
+  .alphaHeader {
+    padding: 8px 14px 3px;
+  }
+
+  .contactItem {
+    padding: 8px 14px;
+    margin: 0 4px;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+  }
+
+  .contactName {
+    font-size: 13.5px;
+  }
+
+  .contactOrg,
+  .contactEmail {
+    font-size: 11.5px;
+  }
+
+  .newBtn {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+
+  .emptyState {
+    padding: 36px 16px;
+    font-size: 13px;
+  }
+
+  .emptyTitle {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 400px) {
+  .searchBar {
+    margin: 6px 8px 0;
+  }
+
+  .contactItem {
+    padding: 7px 10px;
+    gap: var(--space-2);
+  }
+
+  .avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+  }
+}
+
+/* ---- Contact List Skeleton ---- */
+
+.skeletonContactList {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
+.skeletonSearchBar {
+  margin: 8px 12px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonMetaBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 20px 6px;
+}
+
+.skeletonCount {
+  width: 60px;
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonNewBtn {
+  width: 52px;
+  height: 26px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonAlphaHeader {
+  width: 20px;
+  height: 10px;
+  border-radius: 3px;
+  margin: 10px 20px 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonContactItem {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  padding: 9px 20px;
+  margin: 0 6px;
+}
+
+.skeletonAvatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-lg);
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonContactText {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.skeletonBar {
+  height: 12px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(
+    90deg,
+    var(--color-bg-tertiary, #f3f2f0) 25%,
+    var(--color-bg-hover, rgba(0, 0, 0, 0.03)) 50%,
+    var(--color-bg-tertiary, #f3f2f0) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s ease-in-out infinite;
+}
+
+.skeletonBar--name {
+  width: 55%;
+  height: 14px;
+}
+
+.skeletonBar--sub {
+  width: 40%;
+  height: 11px;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* iOS Safari zooms the page when a focused field's text is under 16px, and
+   never zooms back out. These sizes are deliberate for dense pointer
+   layouts, so they only lift on touch — where the extra size helps anyway.
+   Kept here, last in the file, so source order settles the tie. */
+@media (pointer: coarse) {
+  .searchInput {
+    font-size: 16px;
+  }
+}

@@ -1,0 +1,92 @@
+/* Theme: Mist Green | light */
+
+:root,
+[data-theme='light'] {
+  /* ── Canvas & Surfaces ── */
+  --canvas: #f4f7f4;
+  --panel: #ffffff;
+  --side: #edf2ed;
+  --color-bg: #f4f7f4;
+  --color-bg-primary: #f4f7f4;
+  --color-bg-secondary: #ffffff;
+  --color-bg-tertiary: #edf2ed;
+  --color-bg-hover: rgba(0, 0, 0, 0.03);
+  --color-bg-input: #f4f7f4;
+  --color-surface: #ffffff;
+  --color-surface-raised: #ffffff;
+  --color-surface-glass: rgba(255, 255, 255, 0.85);
+
+  /* ── Text ── */
+  --ink: #1a241a;
+  --ink-2: #4a604a;
+  --ink-3: #8fa48f;
+  --color-text-primary: #1a241a;
+  --color-text-secondary: #4a604a;
+  --color-text-muted: #8fa48f;
+  --color-text-tertiary: #8fa48f;
+
+  /* ── Borders ── */
+  --line: rgba(0, 0, 0, 0.08);
+  --line-2: rgba(0, 0, 0, 0.04);
+  --color-border: rgba(0, 0, 0, 0.08);
+  --color-border-light: rgba(0, 0, 0, 0.04);
+  --color-border-subtle: rgba(0, 0, 0, 0.04);
+  --color-border-visible: rgba(0, 0, 0, 0.08);
+  --color-border-glass: rgba(0, 0, 0, 0.06);
+
+  /* ── Accent ── */
+  --accent: #40a060;
+  --accent-soft: rgba(64, 160, 96, 0.1);
+  --color-accent: #40a060;
+  --color-accent-hover: #358a52;
+  --color-accent-light: rgba(64, 160, 96, 0.1);
+  --color-primary: #40a060;
+  --color-primary-hover: #358a52;
+  --color-primary-light: rgba(64, 160, 96, 0.1);
+
+  /* ── Status ── */
+  --color-success: #40a060;
+  --color-success-light: rgba(64, 160, 96, 0.1);
+  --color-warning: #d4a740;
+  --color-error: #d44040;
+  --color-error-muted: #b83535;
+  --color-danger: #d44040;
+  --color-danger-bg: rgba(212, 64, 64, 0.08);
+  --color-info: #4080c0;
+
+  /* ── Event cards ── */
+  --ink-raw: 26, 36, 26;
+  --event-bg-mix: 8%;
+  --event-bg-mix-hover: 11%;
+
+  /* ── Overlay & Focus ── */
+  --color-overlay: rgba(0, 0, 0, 0.45);
+  --color-focus: #40a060;
+
+  /* ── Scrollbar ── */
+  --color-scrollbar: #c8d4c8;
+  --color-scrollbar-hover: #8fa48f;
+
+  /* ── Shadows ── */
+  --shadow-event: 0 1px 2px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-event-hover: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05), 0 0 0 1px rgba(0, 0, 0, 0.04);
+  --shadow-sidebar: 2px 0 12px rgba(0, 0, 0, 0.04);
+  --shadow-topbar: 0 1px 4px rgba(0, 0, 0, 0.04);
+  --shadow-today: inset 0 0 0 1.5px rgba(64, 160, 96, 0.35);
+  --shadow-glass: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+  --shadow-inset: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+
+  /* ── Modal / Popover ── */
+  --modal-bg: #ffffff;
+  --popover-bg: #ffffff;
+  --modal-scrim: rgba(0, 0, 0, 0.4);
+  --modal-blur: blur(3px);
+  --modal-border: rgba(0, 0, 0, 0.06);
+  --popover-border: rgba(0, 0, 0, 0.08);
+  --modal-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
+
+  /* ── Typography ── */
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}

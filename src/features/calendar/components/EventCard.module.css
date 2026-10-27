@@ -1,0 +1,945 @@
+/* ============================================================================
+   EventCard — Editorial Design (Accent Rail Treatment)
+   Color signals category without shouting; text stays in calm ink
+   ============================================================================ */
+
+/* ---- Base Card ---- */
+.card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 9px 4px 13px;
+  border-radius: var(--event-border-radius, 7px);
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-bg-mix, 9%),
+    var(--canvas)
+  );
+  border: 1px solid rgba(var(--ink-raw, 44, 40, 33), 0.06);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.3;
+  min-width: 0;
+  transition:
+    box-shadow var(--duration-fast, 180ms)
+      var(--ease-out-soft, cubic-bezier(0.25, 0.46, 0.45, 0.94)),
+    transform var(--duration-fast, 180ms) var(--ease-spring, cubic-bezier(0.32, 0.72, 0, 1));
+  overflow: hidden;
+  user-select: none;
+  box-sizing: border-box;
+  box-shadow: var(--shadow-event, none);
+  height: 100%;
+}
+
+/* Recurring events: force a pointer cursor on the card and override the
+   drag-handle area so neither dnd-kit's listeners nor the resize handle
+   grab the pointer. The user has to click through the modal to edit. */
+.card.noDrag,
+.card.noDrag .dragContent {
+  cursor: pointer;
+}
+
+.card.noDrag .dragContent:active {
+  cursor: pointer;
+}
+
+/* ---- Keyword Background (decorative) ---- */
+.keywordBackground {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: auto;
+  height: 22px;
+  color: var(--event-color, var(--accent));
+  opacity: 0.16;
+  stroke-width: 1.75;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.card:hover .keywordBackground,
+.card.hovered .keywordBackground {
+  opacity: 0.22;
+}
+
+/* Keep textual content above the decorative art. dragContent is otherwise
+   statically positioned, so it needs position:relative for z-index to apply;
+   iconGroup/checkbox are already absolutely positioned, so only bump z-index
+   there (overriding their position would break icon placement). */
+.card > .dragContent {
+  position: relative;
+  z-index: 1;
+}
+
+.card > .iconGroup,
+.card > .checkbox {
+  z-index: 1;
+}
+
+/* ---- Color Rail (Accent Rail) ---- */
+.card::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: 4px;
+  bottom: 4px;
+  width: 3px;
+  border-radius: 3px;
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-rail-mix, 50%),
+    var(--canvas, #fff)
+  );
+}
+
+.compact::before {
+  display: none;
+}
+
+.card:hover,
+.card.hovered {
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-bg-mix-hover, 12%),
+    var(--canvas)
+  );
+  box-shadow: var(
+    --shadow-event-hover,
+    0 2px 8px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.08 * var(--shadow-opacity, 1)))
+  );
+  transform: translateY(-1px);
+}
+
+.card:active {
+  transform: translateY(0);
+  box-shadow: none;
+  transition-duration: 0.05s;
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--event-bg-mix-hover, 12%),
+    var(--canvas)
+  );
+}
+
+/* ---- Drag Content ---- */
+.dragContent {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  cursor: grab;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Required for dnd-kit's TouchSensor to receive the hold-to-drag gesture
+     instead of the browser treating it as a scroll. Also suppresses the
+     native long-press callout (text-selection popup / context menu) that
+     otherwise wins the race and blocks dragging on touch. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.dragContent:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+.dragContent:active {
+  cursor: grabbing;
+}
+
+/* ---- Event Body ---- */
+.evtBody {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---- Title ---- */
+.title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Time ---- */
+.time {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--event-ink-2, var(--ink-2));
+  margin-top: 1px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phase 2 (C2) — shown when the event's zone differs from the device zone.
+   Sits on the time line, not under it: a short card clips a second row. */
+.tzInline {
+  min-width: 0;
+  font-size: 10.5px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--event-ink-2, var(--ink-2));
+  opacity: 0.75;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---- Meta (time + location on one line) ---- */
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.meta .time {
+  /* The time matters more than the location or zone, so it only gives up
+     width once those have collapsed, and then it ellipsizes like the title. */
+  flex-shrink: 0.01;
+  min-width: 0;
+}
+
+/* Stacked cards: scale the time down to fit the card width before it
+   ellipsizes. ~0.58em per character is the tabular-nums average; the font
+   floors at 9px, below which the text truncates. Tight cards share a row with
+   the title, so they skip this and just truncate. */
+.card:not(.tight) .meta {
+  container-type: inline-size;
+}
+
+.card:not(.tight) .meta .time {
+  font-size: clamp(9px, calc(100cqw / (var(--time-chars, 13) * 0.58)), 11.5px);
+}
+
+.metaDot {
+  flex-shrink: 0;
+  font-size: 11px;
+  color: var(--event-ink-3, var(--ink-3));
+}
+
+.meta .location {
+  margin-top: 0;
+  min-width: 0;
+}
+
+/* ---- Location ---- */
+.location {
+  display: inline-block;
+  max-width: 100%;
+  font-size: 11px;
+  color: var(--event-ink-2, var(--ink-2));
+  margin-top: -2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+}
+
+.location:hover {
+  text-decoration: underline;
+}
+
+/* ---- Travel Time ---- */
+.travelTime {
+  font-size: 11px;
+  color: var(--event-ink-2, var(--ink-2));
+  margin-top: 1px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.travelTime svg {
+  flex-shrink: 0;
+}
+
+/* ---- Recurring Icon ---- */
+.recurringIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recurringIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+.iconGroup {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  color: var(--event-ink-3, var(--ink-3));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.attachmentIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.attachmentIcon svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* ---- Duplicate badge (Ctrl+drag preview) ---- */
+.duplicateBadge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--color-surface, var(--panel, #fff));
+  color: var(--color-text-primary, var(--ink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.duplicateBadge svg {
+  width: 10px;
+  height: 10px;
+}
+
+/* ---- Sync Failed Icon ---- */
+.syncFailedIcon {
+  position: absolute;
+  top: 4px;
+  right: 22px;
+  color: var(--color-warning-text, var(--color-warning));
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: syncFailedPulse 2s ease-in-out infinite;
+}
+
+@keyframes syncFailedPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ---- Checkbox (for tasks) ---- */
+.checkbox {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: none;
+}
+
+.checkbox svg {
+  width: 13px;
+  height: 13px;
+  display: block;
+  opacity: 0.5;
+  transition:
+    opacity var(--dur-fast),
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.checkbox:hover {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.05);
+}
+
+.checkbox:active svg {
+  transform: scale(0.85);
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: var(--radius-sm);
+}
+
+/* ---- Compact Mode (Month View) ---- */
+.compact {
+  padding: 2px 4px 2px 8px;
+  min-height: 18px;
+  height: auto;
+  flex-shrink: 0;
+}
+
+.compact::before {
+  display: none;
+}
+
+.compact .resizeHandle {
+  display: none;
+}
+
+.compact .title {
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compact .dragContent {
+  padding: 0;
+}
+
+/* Month view: allow travel time to overflow */
+.monthView {
+  overflow: visible;
+}
+
+.monthView .dragContent {
+  overflow: visible;
+}
+
+.compact .time,
+.compact .location,
+.compact .travelTime,
+.compact .meta {
+  display: none;
+}
+
+.compact .syncFailedIcon {
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+}
+
+/* ---- Dragging State ---- */
+.dragging {
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(var(--shadow-rgb, 0, 0, 0), calc(0.15 * var(--shadow-opacity, 1)));
+  transform: scale(1.02);
+  z-index: 1000;
+}
+
+/* ---- Resizing State ---- */
+.resizing {
+  resize: vertical;
+  overflow: hidden;
+}
+
+.resizeHandle {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  cursor: ns-resize;
+  background: transparent;
+  border-radius: 0 0 4px 4px;
+  /* Without this, the browser can decide mid-gesture that a touch-resize is
+     actually a scroll attempt and cancel the pointer sequence after a small
+     amount of movement — this is what made resizing "deselect" after only a
+     quarter hour of drag. See EventCard.tsx's handleResizeStart. */
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.resizeHandle:hover {
+  background: rgba(var(--ink-raw, 44, 40, 33), 0.05);
+}
+
+/* ---- Multi-Day Events ---- */
+.multiDay {
+  clip-path: var(
+    --multi-day-clip,
+    polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)
+  );
+  padding-right: 12px;
+}
+
+.multiDay::before {
+  left: 0;
+  border-radius: 0;
+}
+
+/* ---- Fragment Styles (for multi-day spanning) ---- */
+.fragmentMiddle {
+  border-left: none !important;
+  border-right: none !important;
+  border-radius: 0 !important;
+  padding: 2px 0 2px 10px !important;
+  margin-left: -5px;
+  margin-right: -7px;
+  width: calc(100% + 12px);
+}
+
+.fragmentMiddle::before {
+  left: 0;
+  border-radius: 0;
+}
+
+.fragmentFirst {
+  border-radius: var(--event-border-radius, 8px) 0 0 var(--event-border-radius, 8px) !important;
+  padding: 2px 0 2px 13px !important;
+  margin-right: -7px !important;
+  border-left: none !important;
+  border-right: none !important;
+}
+
+/* In compact/month pills the accent rail is hidden, so the first fragment's
+   rail-clearing left padding over-indents its title vs. neighbouring pills. */
+.compact.fragmentFirst {
+  padding-left: 8px !important;
+}
+
+/* The first visible fragment in each week owns the label for that week. Let a
+   long title flow through continuation fragments instead of ellipsizing it at
+   the first cell's edge. */
+.compact.fragmentTitle {
+  z-index: 2;
+}
+
+/* Cap at the cells this week's run covers (~27px = day-cell gutter plus the
+   card's side padding) so a very long title ellipsizes at the end of the span
+   instead of running over the next event. */
+.compact.fragmentTitle .title {
+  width: max-content;
+  max-width: calc(var(--fragment-span, 1) * 100% + (var(--fragment-span, 1) - 1) * 27px - 4px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fragmentLast {
+  border-radius: 0 var(--event-border-radius, 8px) var(--event-border-radius, 8px) 0 !important;
+  padding: 2px 4px 2px 10px !important;
+  margin-left: -5px !important;
+  border-left: none !important;
+}
+
+.fragmentLast::before {
+  left: 6px;
+  border-radius: 0;
+}
+
+/* ---- No Top Radius ---- */
+.noTopRadius {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+.noTopRadius::before {
+  top: 0;
+}
+
+/* ---- Transparent ---- */
+.transparent {
+  opacity: 0.5;
+}
+
+.transparent::before {
+  display: none;
+}
+
+/* ---- Task Variant ---- */
+/* Tasks carry a lighter wash of their calendar colour than events, so the
+   two stay distinguishable while a task still reads as belonging to its
+   calendar. Derived from the theme's event mix so dark themes scale too. */
+.task {
+  --task-bg-mix: calc(var(--event-bg-mix, 9%) * 0.65);
+  --task-bg-mix-hover: calc(var(--event-bg-mix-hover, 12%) * 0.65);
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--task-bg-mix),
+    var(--canvas)
+  );
+  border-color: transparent;
+  box-shadow: none;
+  padding: 2px 22px 2px 8px;
+  min-height: 18px;
+}
+
+.task:hover,
+.task.hovered {
+  box-shadow: none;
+  transform: none;
+}
+
+.task:not(.dot):hover,
+.task:not(.dot).hovered {
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--task-bg-mix-hover),
+    var(--canvas)
+  );
+}
+
+.task .dragContent {
+  padding-left: 16px;
+  padding-right: 0;
+}
+
+.task .dragContentWithCollapse {
+  flex-direction: row;
+  align-items: center;
+  gap: 3px;
+}
+
+.cardTaskCollapseToggle {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  z-index: 2;
+  margin: 0;
+  color: var(--event-color, var(--accent));
+  transform: translateY(-50%);
+}
+
+/* Keep the disclosure outside the clipped drag surface so a long title can
+   never hide it. The task card already reserves trailing padding for it. */
+.task .cardTaskCollapseToggle {
+  width: 20px;
+  height: 20px;
+}
+
+.dotTaskCollapseToggle {
+  position: absolute;
+  top: 50%;
+  right: -8px;
+  z-index: 2;
+  margin: 0;
+  color: var(--event-color, var(--accent));
+  transform: translateY(-50%);
+}
+
+.task .dragContentWithCollapse .title {
+  min-width: 0;
+  flex: 1;
+}
+
+/* Month-view child tasks carry a small branch marker so their relationship is
+   visible even when the title and due date are otherwise identical to a root
+   task. It lives inside the drag content so it truncates naturally with the
+   title instead of consuming a second row. */
+.monthView.subtask .dragContent {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.subtaskMarker {
+  flex: 0 0 auto;
+  color: var(--event-color, var(--accent));
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: 0.7;
+}
+
+.task::before {
+  display: none;
+}
+
+.task .taskCheckbox {
+  left: 5px;
+  right: auto;
+  width: 15px;
+  height: 15px;
+  /* Sit above .dragContent (z-index:1), which is a later sibling and would
+     otherwise paint over the checkbox and its expanded ::before hit area,
+     swallowing all but the very edge of the box. */
+  z-index: 2;
+  border-radius: var(--radius-sm);
+  border: 1.6px solid color-mix(in srgb, var(--event-color, var(--accent)) 60%, var(--ink-3));
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    background var(--dur-fast),
+    border-color var(--dur-fast);
+}
+
+/* Expand the tappable area beyond the 15px visual box (a bare 15px target is
+   far too small to hit reliably, especially on touch) without shifting the
+   layout. The transparent overlay forwards clicks to the button. Kept at 6px so
+   the effective ~27px target stays clear of the ~3px gap to a stacked
+   neighbour's checkbox — a bigger inset could toggle the wrong task. */
+.task .taskCheckbox::before {
+  content: '';
+  position: absolute;
+  inset: -6px;
+}
+
+.task .taskCheckbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.task .taskCheckbox:hover {
+  border-color: var(--event-color, var(--accent));
+}
+
+.task.isDone .taskCheckbox {
+  background: var(--event-color, var(--accent));
+  border-color: var(--event-color, var(--accent));
+}
+
+.task .taskCheckbox svg {
+  width: 11px;
+  height: 11px;
+  color: #fff;
+}
+
+.task .resizeHandle {
+  display: none;
+}
+
+/* ---- Completed State ---- */
+.isDone .title {
+  text-decoration: line-through;
+  color: var(--event-ink-3, var(--ink-3));
+}
+
+/* ---- Due Date ---- */
+.dueDate {
+  font-size: 10px;
+  color: var(--event-ink-2, var(--ink-2));
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pill look for tasks in the month grid and the week/day header, matching the
+   "Sometime this week" bar: an outlined capsule with a round checkbox. Dot mode
+   (dense/mobile month) keeps its own compact rendering. */
+.task.monthView:not(.dot) {
+  border: 1px solid var(--line, rgba(var(--ink-raw), 0.09));
+  border-radius: 999px;
+  background: color-mix(
+    in srgb,
+    var(--event-color, var(--accent)) var(--task-bg-mix),
+    var(--panel, var(--canvas))
+  );
+}
+
+.task.monthView:not(.dot) .taskCheckbox {
+  left: 6px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+}
+
+.task.monthView:not(.dot) .taskCheckbox svg {
+  width: 9px;
+  height: 9px;
+}
+
+/* Geometry shared with the "Sometime this week" pills (WeekTasksBar.module.css):
+   2px/10px padding, 13px checkbox inset 6px, 6px gap, 13px/15px regular title.
+   Keep the two in step. The trailing 22px is only reserved when the pill
+   carries a subtask disclosure. */
+.task.monthView:not(.dot) {
+  min-height: 0;
+  padding: 2px 10px 2px 8px;
+}
+
+.task.monthView:not(.dot):has(.cardTaskCollapseToggle) {
+  padding-right: 22px;
+}
+
+.task.monthView:not(.dot) .dragContent {
+  padding-left: 17px;
+}
+
+.task.monthView:not(.dot) .title {
+  font-size: 13px;
+  font-weight: 400;
+  /* Whole pixels: with 2px padding this makes the pill 21px tall (no taller
+     than an event pill), so the text and the 13px checkbox centre on whole
+     pixels at any zoom. */
+  line-height: 15px;
+}
+
+/* Task pills in the month-view day cell are always .compact for layout
+   (hides location/travel time, drops the resize handle), which also shrinks
+   the title and leaves the due-date font smaller than a non-compact event's
+   .time — making tasks read visibly smaller than the events sharing the same
+   cell. Match the default (non-compact) event sizes here only; scoped to the
+   month-grid day cell via [data-component="day-tasks"] so the Week/Day
+   all-day header (where tasks and events are already both .compact) is
+   unaffected. */
+[data-component='day-tasks'] .task.compact .title {
+  font-size: 13px;
+}
+
+[data-component='day-tasks'] .task.compact .dueDate {
+  font-size: 11.5px;
+}
+
+/* ---- Mobile Month ---- */
+.mobileMonth {
+  padding-left: 8px;
+  border-left: none;
+}
+
+.mobileMonth::before {
+  display: none;
+}
+
+.mobileMonth .title {
+  white-space: normal;
+  overflow: hidden;
+  text-overflow: unset;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.mobileMonth .time,
+.mobileMonth .location,
+.mobileMonth .travelTime,
+.mobileMonth .metaDot,
+.mobileMonth .meta {
+  display: none;
+}
+
+/* Compact events in mobile month view still need text truncation */
+.compact.mobileMonth .title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Dot mode for compact mobile (≤500px) — render as a tiny colored dot */
+.dot {
+  padding: 0;
+  min-height: 0;
+  height: 6px;
+  width: 6px;
+  min-width: 6px;
+  overflow: visible;
+  border-radius: 50%;
+  background: var(--event-color, var(--accent));
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Fragment styles: bar dots in dot mode (always spanning events).
+   The shape has to differ from the single-day dot in kind, not degree — at
+   6px tall a 3px radius is a fully rounded end, so the old 10px pill read as
+   a stretched circle rather than a bar. 2px corners plus a 2.5:1 ratio makes
+   it a distinct shape without relying on color (already spoken for by the
+   calendar) or on size (these are density indicators, not touch targets).
+   Position does most of the work — these sit in their own .barRow above the
+   dots — so the width here only has to not crowd a ~53px cell at a 375px
+   viewport; .barRow wraps if it does. See #79. */
+.dot.fragmentFirst,
+.dot.fragmentMiddle,
+.dot.fragmentLast {
+  margin: 0 !important;
+  padding: 0 !important;
+  border-left: none !important;
+  border-radius: 2px !important;
+  width: 15px !important;
+  min-width: 15px !important;
+  clip-path: none !important;
+}
+
+.dot::before {
+  display: none;
+}
+
+.dot .title,
+.dot .time,
+.dot .location,
+.dot .travelTime,
+.dot .meta,
+.dot .metaDot,
+.dot .resizeHandle,
+.dot .checkbox,
+.dot .taskCheckbox,
+.dot .recurringIcon,
+.dot .iconGroup,
+.dot .syncFailedIcon,
+.dot .attachmentIcon,
+.dot .dragContent,
+.dot .dueDate {
+  display: none;
+}
+
+/* Mobile month tasks are dots rather than titled pills. A ring distinguishes
+   a child task without relying on color, while the card's aria-label carries
+   the full relationship for assistive technology. */
+.dot.task.subtask {
+  border: 2px solid color-mix(in srgb, var(--event-color, var(--accent)) 70%, white);
+  box-shadow: inset 0 0 0 1px var(--canvas, #fff);
+}
+
+/* ---- Tight cards ----
+   A card whose duration leaves room for one line only. Title and time share
+   that line rather than stacking, so nothing is clipped in half. */
+.card.tight {
+  padding-top: 2px;
+  padding-bottom: 2px;
+  align-items: center;
+}
+
+.card.tight .dragContent {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 5px;
+}
+
+.card.tight .title {
+  flex: 0 1 auto;
+}
+
+.card.tight .meta {
+  flex: 0 1 auto;
+  gap: 4px;
+}
+
+.card.tight .time {
+  margin-top: 0;
+}
+
+/* A pen mark sits above the title, rather than inside its ellipsis mask.
+   CategoryStyleTitle keeps a separate clipped text span for long titles. */
+.card[data-category-sketch],
+.card[data-category-sketch] .dragContent,
+.card[data-category-sketch] .title {
+  overflow: visible;
+}
+
+.card[data-category-sketch]:not(.dragging):not(.resizing) {
+  z-index: 2;
+}

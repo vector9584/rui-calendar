@@ -1,0 +1,336 @@
+import type { JSX } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+import { createPortal } from 'react-dom'
+import {
+  type AddWebcalSubscriptionOptions,
+  type UpdateWebcalSubscriptionOptions,
+} from '@/features/webcal/hooks/useWebcalSubscriptions'
+import type { WebcalSubscription } from '@/features/webcal/types'
+import { useAnimatedClose } from '@/hooks/useAnimatedClose'
+import { useModalDismiss } from '@/hooks/useModalDismiss'
+import { EVENT_COLORS } from '@/store/settingsStore'
+import { calendarMutesReminders, useCalendarStore } from '@/store/calendarStore'
+import { classifySyncError, syncErrorReason } from '@/features/caldav/client/errorMessages'
+import { normalizeWebcalUrl } from '@/features/webcal/fetchWebcal'
+import { proxyBase } from '@/features/webcal/presetSubscriptions'
+import styles from './AddCalendarModal.module.css'
+
+interface SubscribeCalendarModalProps {
+  isOpen: boolean
+  onClose: () => void
+  mode?: 'add' | 'edit'
+  subscription?: WebcalSubscription
+  addSubscription: (options: AddWebcalSubscriptionOptions) => Promise<WebcalSubscription>
+  updateSubscription: (id: string, options: UpdateWebcalSubscriptionOptions) => Promise<void>
+}
+
+const REFRESH_OPTIONS = [
+  { labelKey: 'ui.calModal.refresh15', minutes: 15 },
+  { labelKey: 'ui.calModal.refresh30', minutes: 30 },
+  { labelKey: 'ui.calModal.refresh60', minutes: 60 },
+  { labelKey: 'ui.calModal.refresh360', minutes: 360 },
+  { labelKey: 'ui.calModal.refresh1440', minutes: 1440 },
+]
+
+export function SubscribeCalendarModal({
+  isOpen,
+  onClose,
+  mode = 'add',
+  subscription,
+  addSubscription,
+  updateSubscription,
+}: SubscribeCalendarModalProps): JSX.Element | null {
+  const { t } = useTranslation('calendar')
+  const isEdit = mode === 'edit' && subscription !== undefined
+  const urlLocked = Boolean(isEdit && subscription.isPreconfigured)
+
+  const [name, setName] = useState('')
+  const [url, setUrl] = useState('')
+  const [color, setColor] = useState<string>(EVENT_COLORS[0])
+  const [refreshIntervalMinutes, setRefreshIntervalMinutes] = useState(60)
+  const [showProxyField, setShowProxyField] = useState(false)
+  const [proxyUrl, setProxyUrl] = useState(proxyBase())
+  const [muteReminders, setMuteReminders] = useState(true)
+  const [isSaving, setIsSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const formRef = useRef<HTMLFormElement>(null)
+  const isSavingRef = useRef(false)
+
+  const resetForm = useCallback((): void => {
+    setName('')
+    setUrl('')
+    setColor(EVENT_COLORS[0])
+    setRefreshIntervalMinutes(60)
+    setShowProxyField(false)
+    setProxyUrl(proxyBase())
+    setMuteReminders(true)
+    setError('')
+  }, [])
+
+  useEffect(() => {
+    if (!isOpen || !isEdit || !subscription) return
+    const calendar = useCalendarStore
+      .getState()
+      .calendars.find((item) => item.id === subscription.calendarId)
+    setName((calendar?.name ?? subscription.name).trim())
+    setUrl(subscription.url)
+    setColor(calendar?.color ?? EVENT_COLORS[0])
+    setRefreshIntervalMinutes(subscription.refreshIntervalMinutes)
+    setProxyUrl(subscription.proxyUrl ?? '')
+    setShowProxyField(Boolean(subscription.proxyUrl))
+    setMuteReminders(calendarMutesReminders(calendar))
+    setError('')
+  }, [isOpen, isEdit, subscription])
+
+  const doClose = useCallback((): void => {
+    resetForm()
+    onClose()
+  }, [onClose, resetForm])
+  const { rendered, closing, requestClose } = useAnimatedClose(isOpen, doClose, 200)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  useModalDismiss(dialogRef, rendered && !closing, requestClose)
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault()
+    if (isSavingRef.current) return
+    if (!url.trim()) {
+      setError(t('ui.calModal.enterUrl'))
+      return
+    }
+
+    if (isEdit && subscription && !urlLocked) {
+      const nextUrl = normalizeWebcalUrl(url.trim())
+      const nextProxy = proxyUrl.trim() || null
+      const feedChanged =
+        nextUrl !== subscription.url || nextProxy !== (subscription.proxyUrl ?? null)
+      if (feedChanged && !confirm(t('surface.confirmChangeSubscriptionUrl'))) {
+        return
+      }
+    }
+
+    isSavingRef.current = true
+    setIsSaving(true)
+    setError('')
+
+    const notifyReminders = !muteReminders
+    const displayName = name.trim() || (isEdit ? subscription!.name : 'Subscribed calendar')
+
+    try {
+      if (isEdit && subscription) {
+        await updateSubscription(subscription.id, {
+          url: url.trim(),
+          name: displayName,
+          color,
+          refreshIntervalMinutes,
+          proxyUrl: proxyUrl.trim() || undefined,
+          notifyReminders,
+        })
+      } else {
+        await addSubscription({
+          url: url.trim(),
+          name: displayName,
+          color,
+          refreshIntervalMinutes,
+          proxyUrl: proxyUrl.trim() || undefined,
+          notifyReminders,
+        })
+      }
+      requestClose()
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? t(isEdit ? 'ui.calModal.updateFailedReason' : 'ui.calModal.subscribeFailedReason', {
+              reason: syncErrorReason(classifySyncError(err.message), err.message),
+            })
+          : t(isEdit ? 'ui.calModal.updateFailed' : 'ui.calModal.subscribeFailed')
+      )
+    } finally {
+      isSavingRef.current = false
+      setIsSaving(false)
+    }
+  }
+
+  const handleBackdropClick = (e: React.MouseEvent): void => {
+    if (e.target === e.currentTarget) {
+      requestClose()
+    }
+  }
+
+  if (!rendered) {
+    return null
+  }
+
+  return createPortal(
+    <div
+      className={`${styles.modal} ${closing ? styles.closing : ''}`}
+      onClick={handleBackdropClick}
+    >
+      <div
+        ref={dialogRef}
+        className={styles.modalContent}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="subscribe-modal-title"
+      >
+        <div className={styles.modalHeader}>
+          <h3 className={styles.modalTitle} id="subscribe-modal-title">
+            {isEdit ? t('surface.editSubscriptionTitle') : t('surface.subscribeCalendarTitle')}
+          </h3>
+          <button
+            className={styles.modalClose}
+            onClick={requestClose}
+            aria-label={t('surface.close')}
+          >
+            ✕
+          </button>
+        </div>
+        <form ref={formRef} onSubmit={handleSubmit}>
+          <div className={styles.formGroup}>
+            <label htmlFor="subscribeName" className={styles.formLabel}>
+              {t('ui.calModal.nameOptional')}
+            </label>
+            <input
+              id="subscribeName"
+              className={styles.input}
+              placeholder={t('surface.subscriptionNamePlaceholder')}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="subscribeUrl" className={styles.formLabel}>
+              {t('ui.calModal.calendarUrl')}
+            </label>
+            <input
+              id="subscribeUrl"
+              className={styles.input}
+              placeholder={t('surface.webcalUrlPlaceholder')}
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              required
+              disabled={urlLocked}
+            />
+            <span className={styles.formHint}>{t('ui.calModal.readOnlyHint')}</span>
+          </div>
+          <div className={styles.formGroup}>
+            <label htmlFor="subscribeRefresh" className={styles.formLabel}>
+              {t('ui.calModal.refresh')}
+            </label>
+            <select
+              id="subscribeRefresh"
+              className={styles.input}
+              value={refreshIntervalMinutes}
+              onChange={(e) => setRefreshIntervalMinutes(Number(e.target.value))}
+            >
+              {REFRESH_OPTIONS.map((opt) => (
+                <option key={opt.minutes} value={opt.minutes}>
+                  {t(opt.labelKey)}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.formLabel}>{t('surface.color')}</label>
+            <div className={styles.colorGrid}>
+              {EVENT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  className={`${styles.colorOption} ${color === c ? styles.colorSelected : ''}`}
+                  style={{ backgroundColor: c }}
+                  onClick={() => setColor(c)}
+                  aria-label={t('ui.calModal.selectColor', { color: c })}
+                />
+              ))}
+            </div>
+          </div>
+          <div className={styles.formGroup}>
+            <label className={styles.muteRow} htmlFor="subscribe-mute-reminders">
+              <input
+                id="subscribe-mute-reminders"
+                type="checkbox"
+                checked={muteReminders}
+                onChange={(e) => setMuteReminders(e.target.checked)}
+                data-component="mute-reminders"
+                data-setting="mute-reminders"
+              />
+              <span className={styles.formLabel}>{t('surface.muteReminders')}</span>
+            </label>
+            <span className={styles.formHint}>{t('surface.muteRemindersHint')}</span>
+          </div>
+          <div className={styles.formGroup}>
+            <button
+              type="button"
+              className={styles.chevronLabel}
+              onClick={() => setShowProxyField(!showProxyField)}
+            >
+              <svg
+                aria-hidden="true"
+                className={styles.chevronIcon}
+                style={{ transform: showProxyField ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M4 6L8 10L12 6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span>{t('surface.proxyUrlOptional')}</span>
+            </button>
+            {showProxyField && (
+              <>
+                <input
+                  id="subscribeProxyUrl"
+                  className={styles.input}
+                  placeholder={t('surface.proxyUrlPlaceholder')}
+                  value={proxyUrl}
+                  onChange={(e) => setProxyUrl(e.target.value)}
+                />
+                <span className={styles.proxyInfoText}>{t('ui.calModal.proxyHint')}</span>
+              </>
+            )}
+          </div>
+          {error && <p className={styles.errorMessage}>{error}</p>}
+          <div className={styles.modalFooter}>
+            <button
+              type="button"
+              className={`${styles.button} ${styles.buttonSecondary}`}
+              onClick={requestClose}
+              disabled={isSaving}
+            >
+              {t('actions.cancel', { ns: 'common' })}
+            </button>
+            <button
+              type="submit"
+              className={`${styles.button} ${styles.buttonPrimary}`}
+              disabled={isSaving}
+              aria-busy={isSaving}
+              data-component="modal-save"
+            >
+              {isSaving && <span className={styles.buttonSpinner} aria-hidden="true" />}
+              <span>
+                {isSaving
+                  ? isEdit
+                    ? t('ui.calModal.saving')
+                    : t('ui.calModal.subscribing')
+                  : isEdit
+                    ? t('ui.calModal.saveChanges')
+                    : t('ui.calModal.subscribe')}
+              </span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>,
+    document.body
+  )
+}
