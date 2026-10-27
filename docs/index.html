@@ -143,13 +143,24 @@
   @keyframes grad-flow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
   .hero-copy h1 .line { display: block; }
   .hero-copy h1 .brand-mark {
-    font-family: 'Ma Shan Zheng', 'PingFang SC', 'Microsoft YaHei', sans-serif;
-    font-weight: 400; font-size: 1.32em; letter-spacing: 0.05em; line-height: 1;
-    display: inline-block; vertical-align: -0.1em; margin-left: 0.1em;
-    background: linear-gradient(120deg, var(--brand), var(--brand-2) 55%, var(--sun));
+    position: relative;
+    font-weight: 800; font-size: 1.32em; letter-spacing: 0.02em; line-height: 1;
+    display: inline-block; vertical-align: -0.1em; margin-left: 0.12em;
+    background: linear-gradient(115deg, var(--brand) 15%, var(--brand-2) 50%, var(--sun) 90%);
     -webkit-background-clip: text; background-clip: text; color: transparent;
-    background-size: 200% 100%;
-    animation: grad-flow 7s ease-in-out infinite;
+  }
+  .hero-copy h1 .brand-mark::after {
+    content: attr(data-text);
+    position: absolute; inset: 0;
+    background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.95) 50%, transparent 68%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 260% 100%;
+    background-position: 140% 0;
+    animation: brand-shine 3.8s ease-in-out infinite;
+  }
+  @keyframes brand-shine {
+    0%, 58% { background-position: 140% 0; }
+    92%, 100% { background-position: -120% 0; }
   }
   .hero-copy .tag { font-size: clamp(15px, 2vw, 17px); color: var(--ink-2); max-width: 520px; margin-bottom: 30px; }
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
@@ -228,6 +239,7 @@
   /* 区块 */
   .section { padding: 56px 0; }
   .section-head { text-align: center; max-width: 640px; margin: 0 auto 44px; }
+  #tech .section-head { margin-bottom: 2px; }
   .kicker {
     display: inline-flex; align-items: center; gap: 7px;
     font-size: 12.5px; font-weight: 600; letter-spacing: 0.5px;
@@ -236,6 +248,10 @@
   }
   .kicker .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
   .section-head h2 { font-size: clamp(25px, 3.8vw, 34px); font-weight: 750; letter-spacing: -0.4px; margin-bottom: 12px; }
+  .section-head h2 .brand-font {
+    font-family: 'Ma Shan Zheng', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    font-weight: 400; font-size: 1.18em; letter-spacing: 0.02em;
+  }
   .section-head p { color: var(--ink-2); font-size: 15.5px; }
 
   /* 统一卡片系统 */
@@ -363,7 +379,7 @@
   .bubble-cloud {
     position: relative;
     width: min(560px, 100%);
-    height: 520px;
+    height: 420px;
     margin: 0 auto;
   }
   .bwrap {
@@ -413,8 +429,8 @@
   @media (prefers-reduced-motion: reduce) {
     .bubble { transition: none; }
   }
-  @media (max-width: 640px) { .bubble-cloud { height: 430px; } }
-  @media (max-width: 400px) { .bubble-cloud { height: 400px; } }
+  @media (max-width: 640px) { .bubble-cloud { height: 360px; } }
+  @media (max-width: 400px) { .bubble-cloud { height: 340px; } }
 
   footer {
     border-top: 1px solid var(--line); padding: 38px 0 46px; margin-top: 24px;
@@ -531,7 +547,7 @@
         <span class="line">历法天下所同</span>
         <span class="line">日子各归各人</span>
         <span class="line grad">嘉日相续</span>
-        <span class="line">是谓<span class="brand-mark">瑞历</span></span>
+        <span class="line">是谓<span class="brand-mark" data-text="瑞历">瑞历</span></span>
       </h1>
       <p class="tag">
         一套开源自托管的日历。日程、联系人、待办，都收在你自己的设备上——
@@ -699,7 +715,7 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="kicker"><span class="dot"></span>技术栈</span>
-        <h2>这些零件，拼成了整个瑞历</h2>
+        <h2>这些零件，拼成了整个<span class="brand-font">瑞历</span></h2>
       </div>
       
       <div class="reveal">
@@ -837,7 +853,7 @@
         for (let j = i + 1; j < items.length; j++) {
           const o = items[j];
           const dx = it.x - o.x, dy = it.y - o.y, d = Math.hypot(dx, dy) || 0.01;
-          const min = (it.r + o.r) * scale + 11 * scale;
+          const min = (it.r + o.r) * scale + 16 * scale;
           if (d < min) { const f = (min - d) / d * 0.14; it.vx += dx * f; it.vy += dy * f; o.vx -= dx * f; o.vy -= dy * f; }
         }
         if (mx !== null) {
