@@ -1,7 +1,7 @@
 {
-  "name": "瑞历",
+  "name": "Rui Calendar",
   "short_name": "瑞历",
-  "description": "An easy, private, local web calendar with CalDAV sync",
+  "description": "Rui Calendar — a self-hosted CalDAV calendar system with a Chinese-first web client",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#faf9f7",
