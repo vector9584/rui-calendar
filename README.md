@@ -41,7 +41,7 @@
 
 ### 2. 一个漂亮的中文界面，管理上面所有这些
 
-网页前端「瑞历」基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）深度中文化定制，功能齐全：
+网页前端（Calino 中文定制版）基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）深度中文化定制，功能齐全：
 
 - **看日历**：月 / 周 / 3 天 / 日 / 议程 / 年，多种视图，拖拽移动和缩放事件。
 - **建日程**：用大白话直接输入「周五下午三点开会」，自动解析成日程（自然语言，无需 AI）。
@@ -107,7 +107,7 @@ flowchart LR
         FRPC["frpc 客户端（主动出站）"]
         subgraph Docker["Docker 容器"]
             BAIKAL["Baikal<br/>存储后端"]
-            CALINO["瑞历<br/>网页前端"]
+            CALINO["网页前端<br/>Calino 中文定制"]
             PROXY["calino-proxy<br/>CORS 代理"]
         end
     end
@@ -133,7 +133,7 @@ flowchart LR
 ```mermaid
 flowchart TB
     subgraph Clients["客户端层（五端一致）"]
-        Web["瑞历网页前端<br/>Calino 中文定制版"]
+        Web["网页前端<br/>Calino 中文定制版"]
         iOS["iOS 原生日历 App"]
         Android["Android 原生日历 App"]
         Desktop["Windows 桌面悬浮<br/>（Electron）"]
@@ -208,7 +208,7 @@ flowchart TB
 flowchart LR
     subgraph Service["统一服务端"]
         Baikal["Baikal<br/>CalDAV / CardDAV<br/>唯一存储"]
-        Calino["瑞历网页<br/>Calino"]
+        Calino["网页前端<br/>Calino"]
     end
 
     iPhone["iPhone 原生日历"]
@@ -227,16 +227,18 @@ flowchart LR
     Hermes -->|"CalDAV 直写"| Baikal
 ```
 
-一句话总结：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的中文网页前端，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加在其上，五端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+一句话总结：**瑞历（Rui Calendar）是这一整套方案的名字——Baikal 是唯一存储（日历 + 联系人），网页前端（Calino 中文定制）负责漂亮的中文界面，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加其上，五端数据一致。** 网页前端是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
 
 ---
 
 ## 组件清单
 
+「瑞历（Rui Calendar）」是这一整套解决方案的名字，下表是构成它的各个组件：
+
 | 组件 | 职责 | 说明 |
 |---|---|---|
 | **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
-| **瑞历（Rui Calendar）** | 中文网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
+| **网页前端** | 中文网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
 | **瑞历桌面版** | Windows 桌面悬浮日历 | 本仓库 `desktop/`，Electron 打包，便携版 + 安装版 |
 | **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
 | **frpc / frps** | 内网穿透 | NAS 主动出站连公网 frps，映射 3 条隧道 |
@@ -248,7 +250,7 @@ flowchart LR
 
 ## 桌面客户端
 
-已完成，不再「规划中」。Windows 桌面悬浮日历，把瑞历网页包成一个桌面小组件，源码在本仓库 [`desktop/`](desktop/)。
+已完成，不再「规划中」。Windows 桌面悬浮日历，把网页前端包成一个桌面小组件，源码在本仓库 [`desktop/`](desktop/)。
 
 ### 功能
 
@@ -278,7 +280,7 @@ npm run dist            # 构建安装版 + 便携版（产物在 dist/）
 npm run dist:portable   # 仅构建便携版
 ```
 
-默认内嵌的日历地址在 [`desktop/main.js`](desktop/main.js) 顶部的 `CALENDAR_URL`，替换成你自己的瑞历部署地址后重新构建即可。
+默认内嵌的日历地址在 [`desktop/main.js`](desktop/main.js) 顶部的 `CALENDAR_URL`，替换成你自己的网页前端地址后重新构建即可。
 
 ---
 
@@ -292,7 +294,7 @@ pnpm dev          # 本地开发
 pnpm build        # 产物在 dist/
 ```
 
-完整部署（Baikal + 瑞历 + proxy + frp + nginx + iOS + AI 助手）见 [deploy/README.md](deploy/README.md)。
+完整部署（Baikal + 网页前端 + proxy + frp + nginx + iOS + AI 助手）见 [deploy/README.md](deploy/README.md)。
 
 ---
 
@@ -302,7 +304,7 @@ pnpm build        # 产物在 dist/
 |---|---|
 | [应用主页](https://vector9584.github.io/rui-calendar/) | 在线介绍页（卡片式，含下载地址） |
 | [JOURNEY.md](JOURNEY.md) | 完整心路历程：从调研 Y日历 到落地这套系统的决策与踩坑 |
-| [deploy/README.md](deploy/README.md) | 部署手册：Baikal → 前端 → 代理 → 隧道 → nginx → iOS → AI 集成 |
+| [deploy/README.md](deploy/README.md) | 部署手册：Baikal → 网页前端 → 代理 → 隧道 → nginx → iOS → AI 集成 |
 | [desktop/README.md](desktop/README.md) | 桌面悬浮客户端：功能、安装、构建 |
 | [deploy/hermes/SKILL.md](deploy/hermes/SKILL.md) | Hermes AI 助手操作手册（可直接作为 Hermes skill 使用） |
 | [deploy/hermes/baikal_calendar.py](deploy/hermes/baikal_calendar.py) | 零依赖 CalDAV 写入 helper |

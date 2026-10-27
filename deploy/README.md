@@ -8,21 +8,21 @@
 
 ```
 iOS 原生日历 ──CalDAV──┐
-桌面浏览器 ──瑞历网页──┤
+桌面浏览器 ──网页前端──┤
                        ├──> ECS nginx （独立 ssl 端口） ──┬─> /          → frpc 7002 → Calino(5233)
                         │                              ├─> /dav.php   → frpc 7001 → Baikal(5232)
                         │                              ├─> /admin+/res→ frpc 7001 → Baikal 管理后台
                         │                              └─> /proxy/    → frpc 7003 → calino-proxy(5234) → 任意 https 目标
 ```
 
-一句话：Baikal 是唯一存储（日历 + 联系人），瑞历（Calino 定制版）是网页前端，iOS 原生 App 直连 Baikal，三端数据一致。瑞历纯前端无状态，数据全在 Baikal。
+一句话：Baikal 是唯一存储（日历 + 联系人），网页前端（Calino 中文定制版）负责界面，iOS 原生 App 直连 Baikal，三端数据一致。网页前端纯前端无状态，数据全在 Baikal。
 
 ## 组件与端口
 
 | 组件 | 镜像/进程 | 内网 | frpc | 作用 |
 |---|---|---|---|---|
 | Baikal | `ckulka/baikal:0.10.1-nginx` | 127.0.0.1:5232 | 7001 | CalDAV/CardDAV 服务器，唯一存储 |
-| 瑞历（Calino） | `ghcr.io/ivan-malinovski/calino:0.41.0`（或自构建镜像） | 127.0.0.1:5233 | 7002 | 网页日历客户端（本仓库） |
+| 网页前端（Calino） | `ghcr.io/ivan-malinovski/calino:0.41.0`（或自构建镜像） | 127.0.0.1:5233 | 7002 | 网页日历客户端（本仓库） |
 | calino-proxy | 本仓库 `proxy/` 自构建 | 127.0.0.1:5234 | 7003 | 通用 CORS 代理（订阅外部 ICS） |
 | frpc | 飞牛应用 / 独立进程 | webServer 7400 | — | default 实例，reload=GET /api/reload |
 | ECS nginx | 宝塔 / 裸 nginx | — | — | 独立 ssl 端口，公网 HTTPS 入口 |
@@ -39,16 +39,16 @@ docker run -d --name baikal --restart unless-stopped \
 
 首次访问 `http://127.0.0.1:5232/admin/` 完成两步初始化：
 
-1. **Config Standard**：时区、管理员密码、认证方式选 **Basic**（瑞历/iOS 都用 Basic 认证）。
+1. **Config Standard**：时区、管理员密码、认证方式选 **Basic**（网页前端/iOS 都用 Basic 认证）。
 2. **Config Database**：选 SQLite，点提交才真正初始化 `db.sqlite`（只交第一步会报 `no connection to a database`）。
 
 然后在后台建一个 CalDAV 用户（如 `your-username`），并建一个日历（uri 建议 `personal`，颜色可自选）。
 
-> ⚠️ 认证方式务必选 Basic。若误选/翻译成其他值（如 Digest），Basic 客户端（瑞历/iOS）会全部 401。
+> ⚠️ 认证方式务必选 Basic。若误选/翻译成其他值（如 Digest），Basic 客户端（网页前端/iOS）会全部 401。
 
-## 二、构建并部署瑞历（Calino 前端）
+## 二、构建并部署网页前端（Calino 定制版）
 
-本仓库即瑞历前端源码。构建：
+本仓库即网页前端源码。构建：
 
 ```bash
 pnpm install --frozen-lockfile

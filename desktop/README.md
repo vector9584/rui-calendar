@@ -1,8 +1,8 @@
 # 瑞历桌面悬浮日历
 
-把自托管的「瑞历」网页日历包装成一个 Windows 桌面悬浮小组件，支持悬浮/置顶、透明度调节、锁定点击穿透、开机启动等。
+把自托管的「瑞历」网页前端包装成一个 Windows 桌面悬浮小组件，支持悬浮/置顶、透明度调节、锁定点击穿透、开机启动等。
 
-> 本项目为桌面客户端。内嵌网页「瑞历」见 [vector9584/rui-calendar](https://github.com/vector9584/rui-calendar)。
+> 本项目为桌面客户端。内嵌的网页前端见 [vector9584/rui-calendar](https://github.com/vector9584/rui-calendar)。
 
 ## 功能特性
 
@@ -23,17 +23,17 @@
 const CALENDAR_URL = 'https://your-calendar.example.com/';
 ```
 
-将其替换为你自己部署的「瑞历」网页地址后重新构建即可。
+将其替换为你自己部署的网页前端地址后重新构建即可。
 
 ## 安装
 
 ### 便携版（免安装）
 
-下载 `瑞历 x.x.x.exe`，双击直接运行，无需安装。
+下载 `Rui-Calendar-x.x.x-portable.exe`，双击直接运行，无需安装。
 
 ### 安装版
 
-下载 `瑞历 Setup x.x.x.exe`，双击按向导安装。
+下载 `Rui-Calendar-x.x.x-setup.exe`，双击按向导安装。
 
 ### 卸载
 
