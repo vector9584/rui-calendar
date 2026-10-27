@@ -5,8 +5,8 @@
 <h1 align="center">Rui Calendar（瑞历）</h1>
 
 <p align="center">
-  <b>一套完全自托管的日历系统 —— 数据归你，界面归你，日历归你</b><br/>
-  网页 · iPhone/iPad · Android · Windows 桌面悬浮，五端读写同一份数据
+  <b>把日历、联系人、待办从云服务商手里拿回来，装进你自己的服务器</b><br/>
+  网页 · iPhone/iPad · Android · Windows 桌面，五端读写同一份数据
 </p>
 
 <p align="center">
@@ -39,7 +39,7 @@
 
 数据落盘在你自己的 SQLite 里，删了、导了、备份了，都是你说了算。没有「某某云服务条款更新后数据没了」这回事。
 
-### 2. 一个漂亮的中文界面，管理上面所有这些
+### 2. 网页客户端：中文界面，管日历、联系人和待办
 
 网页前端（Calino 中文定制版）基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）深度中文化定制，功能齐全：
 
@@ -227,7 +227,7 @@ flowchart LR
     Hermes -->|"CalDAV 直写"| Baikal
 ```
 
-一句话总结：**瑞历（Rui Calendar）是这一整套方案的名字——Baikal 是唯一存储（日历 + 联系人），网页前端（Calino 中文定制）负责漂亮的中文界面，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加其上，五端数据一致。** 网页前端是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+一句话总结：**瑞历（Rui Calendar）是这一整套方案的名字——Baikal 是唯一存储（日历 + 联系人），网页前端（Calino 中文定制）提供中文界面，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加其上，五端数据一致。** 网页前端是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
 
 ---
 
