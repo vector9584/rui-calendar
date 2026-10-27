@@ -5,14 +5,15 @@
 <h1 align="center">Rui Calendar（瑞历）</h1>
 
 <p align="center">
-  <b>一套完全自托管的日历系统</b><br/>
-  Baikal 存储 · 瑞历网页前端 · CORS 代理 · nginx/frp 公网穿透 · iOS/Android 原生直连 · AI 助手集成
+  <b>一套完全自托管的日历系统 —— 数据归你，界面归你，日历归你</b><br/>
+  网页 · iPhone/iPad · Android · Windows 桌面悬浮，五端读写同一份数据
 </p>
 
 <p align="center">
-  <a href="#特性">特性</a> ·
+  <a href="#能做什么">能做什么</a> ·
   <a href="#架构">架构</a> ·
   <a href="#组件清单">组件</a> ·
+  <a href="#桌面客户端">桌面客户端</a> ·
   <a href="#快速开始">快速开始</a> ·
   <a href="#文档">文档</a> ·
   <a href="JOURNEY.md">心路历程</a>
@@ -20,13 +21,42 @@
 
 ---
 
-## 这是什么
+## 能做什么
 
-Rui Calendar（瑞历）是一套「数据完全归自己掌控」的日历基础设施，不是单个应用。
+**一句话：把日历、联系人、待办全部收回到你自己的服务器上，数据只存在你的机器里，不经过任何第三方。**
 
-日历和联系人的数据存在你自己的服务器上；网页端、iPhone/iPad 原生日历 App、Android 原生日历 App，以及（规划中的）桌面客户端，都通过标准 CalDAV / CardDAV 协议读写**同一份数据**，三端实时一致。你还能订阅外部日历、把自建日程整合发布，甚至让 AI 助手直接帮你写日历。
+往下拆成三件事，这是这套系统真正的用途：
 
-数据层用老牌 CalDAV 服务器 [Baikal](https://sabre.io/baikal/)（PHP + sabre/dav + SQLite），前端是本仓库的**瑞历**——基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）深度定制的**中文版**网页日历客户端。
+### 1. 你拥有自己的日历，而不是租用日历
+
+底层是一台 CalDAV / CardDAV 服务器（[Baikal](https://sabre.io/baikal/)，PHP + sabre/dav + SQLite）。它在你的机器上存着：
+
+- **日历**：多本日历、多用户、颜色标签，随便建，不占用任何云盘配额。
+- **联系人**：地址簿（CardDAV），手机通讯录可以直连。
+- **待办**：任务列表（VTODO），和日历事件一起管理。
+
+数据落盘在你自己的 SQLite 里，删了、导了、备份了，都是你说了算。没有「某某云服务条款更新后数据没了」这回事。
+
+### 2. 一个漂亮的中文界面，管理上面所有这些
+
+网页前端「瑞历」基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）深度中文化定制，功能齐全：
+
+- **看日历**：月 / 周 / 3 天 / 日 / 议程 / 年，多种视图，拖拽移动和缩放事件。
+- **建日程**：用大白话直接输入「周五下午三点开会」，自动解析成日程（自然语言，无需 AI）。
+- **记日记**：内置日记（VJOURNAL），支持 Markdown。
+- **管联系人**：地址簿自动识别，卡片式管理。
+- **搜一切**：全文模糊搜索，翻几十个日程秒找到。
+- **提醒**：桌面通知，可自定义提醒时间。
+- **深浅主题**：亮色 / 暗色 / 跟随系统，还能自己加主题。
+
+### 3. 五端同步 + 订阅 + AI，把它变成日常工具
+
+- **多端同步**：网页端、iPhone/iPad 原生日历 App、Android 原生日历 App，都直连同一个 Baikal，改一处处处更新。桌面端还有独立的悬浮小组件（见下文）。
+- **订阅外部日历**：开箱即用 6 个中文订阅源——老黄历（宜/忌）、法定节假日、节日节气、星座运势、天气（全国省市县三级联动，34 省 412 城 3577 区县）。
+- **AI 帮你写日历**：AI 助手（Hermes）通过一个零依赖脚本直接走 CalDAV 协议写日程，你说「帮我加个下周二去医院的提醒」，它就能落到日历里并同步到所有端。
+- **公网穿透**：NAS 没有公网 IP 也能在外网用——ECS nginx 做 HTTPS 终止，frp 隧道（NAS 主动出站）把内网服务映射到公网独立端口，不碰 80/443 主站。
+
+---
 
 ## 特性
 
@@ -42,27 +72,12 @@ Rui Calendar（瑞历）是一套「数据完全归自己掌控」的日历基�
 - 多用户、多日历、地址簿，颜色字段原生支持。
 - 认证走标准 Basic auth，任何 CalDAV 客户端都能接。
 
-### 三端一致
-
-- 网页端编辑、iOS/Android 原生日历 App 读写，指向同一个 Baikal，实时同步。
-- 桌面客户端（Windows）规划中，同样走 CalDAV 连 Baikal。
-
-### 内置中文订阅源
-
-开箱即用 6 个订阅：老黄历（宜/忌）、法定节假日、节日节气、星座运势、天气。天气支持全国省市县三级中文联动下拉（34 省 412 城 3577 区县）。
-
-### 公网穿透
-
-NAS 无公网 IP 也能用——ECS nginx 做 HTTPS 终止 + 反代，frp 隧道（NAS 主动出站）把内网容器映射到公网**独立端口**，绝不碰 80/443 主站。
-
-### AI 助手集成
-
-AI 助手（Hermes）通过 `deploy/hermes/baikal_calendar.py` 直接走 CalDAV 协议写 Baikal，加日程/待办/提醒实时同步到所有端。操作手册见 [`deploy/hermes/SKILL.md`](deploy/hermes/SKILL.md)。
-
 ### 安全与隐私
 
 - 外网资源全本地化：移除 Google Fonts 和 jsdelivr 依赖，CSP 收紧到 `'self'`，断网/内网可用。
 - CORS 代理内置 SSRF 防护（默认阻断环回/内网/链路本地/云元数据地址）。
+
+---
 
 ## 架构
 
@@ -78,7 +93,7 @@ flowchart LR
         iOS["iOS 原生日历"]
         Android["Android 原生日历"]
         Browser["桌面浏览器"]
-        Desktop["桌面客户端（规划中）"]
+        Desktop["Windows 桌面悬浮"]
     end
 
     subgraph ECS["ECS 公网服务器"]
@@ -115,11 +130,11 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph Clients["客户端层（三端一致）"]
+    subgraph Clients["客户端层（五端一致）"]
         Web["瑞历网页前端<br/>Calino 中文定制版"]
         iOS["iOS 原生日历 App"]
         Android["Android 原生日历 App"]
-        Desktop["桌面客户端（规划中）"]
+        Desktop["Windows 桌面悬浮<br/>（Electron）"]
     end
 
     subgraph Edge["边缘接入层"]
@@ -158,6 +173,7 @@ flowchart TB
         I["i18next（完整 zh 语言包）"]
         Z["Zustand + localStorage / IndexedDB"]
         D["date-fns（中文日期格式）"]
+        E["Electron（Windows 桌面悬浮）"]
     end
 
     subgraph L2["接入层 / 网关"]
@@ -197,7 +213,7 @@ flowchart LR
     iPad["iPad 原生日历"]
     Android["Android 原生日历"]
     Browser["桌面浏览器"]
-    WinExe["Windows 桌面客户端<br/>（规划中）"]
+    WinExe["Windows 桌面悬浮<br/>（Electron）"]
     Hermes["Hermes AI 助手"]
 
     iPhone -->|"CalDAV 读写日历"| Baikal
@@ -209,7 +225,9 @@ flowchart LR
     Hermes -->|"CalDAV 直写"| Baikal
 ```
 
-一句话总结：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的中文网页前端，iOS/Android 原生 App 直连 Baikal，三端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+一句话总结：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的中文网页前端，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加在其上，五端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+
+---
 
 ## 组件清单
 
@@ -217,11 +235,50 @@ flowchart LR
 |---|---|---|
 | **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
 | **瑞历（Rui Calendar）** | 中文网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
+| **瑞历桌面版** | Windows 桌面悬浮日历 | 本仓库 `desktop/`，Electron 打包，便携版 + 安装版 |
 | **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
 | **frpc / frps** | 内网穿透 | NAS 主动出站连公网 frps，映射 3 条隧道 |
 | **nginx（ECS）** | 公网 HTTPS 入口 | 独立 ssl 端口，反代 + 证书终止 |
 | **iOS/Android 原生日历** | 移动端读写 | 系统日历账户直连 Baikal，与网页端同一份数据 |
 | **Hermes / AI 助手** | 程序化操作日历 | `deploy/hermes/baikal_calendar.py` 直写 Baikal，操作手册见 [`deploy/hermes/SKILL.md`](deploy/hermes/SKILL.md) |
+
+---
+
+## 桌面客户端
+
+已完成，不再「规划中」。Windows 桌面悬浮日历，把瑞历网页包成一个桌面小组件，源码在本仓库 [`desktop/`](desktop/)。
+
+### 功能
+
+- **悬浮 / 置顶**：可普通悬浮在桌面，或置顶在所有窗口之上。
+- **透明度**：5% ~ 100% 可调。
+- **锁定**：锁定后点击穿透、隐藏顶部栏，只能通过系统托盘菜单解锁。
+- **开机启动**：登录 Windows 后自动运行。
+- **顶部栏**：关闭（隐藏到托盘）、刷新、设置三个按钮。
+- **托盘菜单**：悬浮 / 锁定 / 开机启动（红=关，绿=开）、设置、退出。
+- **主题跟随**：顶部栏颜色随网页明暗主题实时切换。
+- **无滚动条**：页面自适应填满窗口。
+
+### 产物
+
+两种打包形式，均基于 Electron：
+
+- **便携版**：`瑞历 1.1.0.exe`，双击直接运行，免安装。
+- **安装版**：`瑞历 Setup 1.1.0.exe`，按向导安装，带桌面/开始菜单快捷方式。
+
+### 构建
+
+```bash
+cd desktop
+npm install
+npm start               # 本地运行
+npm run dist            # 构建安装版 + 便携版（产物在 dist/）
+npm run dist:portable   # 仅构建便携版
+```
+
+默认内嵌的日历地址在 [`desktop/main.js`](desktop/main.js) 顶部的 `CALENDAR_URL`，替换成你自己的瑞历部署地址后重新构建即可。
+
+---
 
 ## 快速开始
 
@@ -235,19 +292,20 @@ pnpm build        # 产物在 dist/
 
 完整部署（Baikal + 瑞历 + proxy + frp + nginx + iOS + AI 助手）见 [deploy/README.md](deploy/README.md)。
 
+---
+
 ## 文档
 
 | 文档 | 内容 |
 |---|---|
 | [JOURNEY.md](JOURNEY.md) | 完整心路历程：从调研 Y日历 到落地这套系统的决策与踩坑 |
 | [deploy/README.md](deploy/README.md) | 部署手册：Baikal → 前端 → 代理 → 隧道 → nginx → iOS → AI 集成 |
+| [desktop/README.md](desktop/README.md) | 桌面悬浮客户端：功能、安装、构建 |
 | [deploy/hermes/SKILL.md](deploy/hermes/SKILL.md) | Hermes AI 助手操作手册（可直接作为 Hermes skill 使用） |
 | [deploy/hermes/baikal_calendar.py](deploy/hermes/baikal_calendar.py) | 零依赖 CalDAV 写入 helper |
 | [deploy/hermes/test_baikal_calendar.py](deploy/hermes/test_baikal_calendar.py) | helper 回归测试 |
 
-## 桌面客户端
-
-规划中：后续会补充一个 Windows 桌面客户端（可执行文件），同样通过 CalDAV 连 Baikal，与网页端 / iOS 读写同一份数据。落地后会在此仓库补充对应说明。
+---
 
 ## 脱敏说明
 
@@ -255,8 +313,11 @@ pnpm build        # 产物在 dist/
 
 - 引导弹框预填的 CalDAV 服务器地址、订阅源域名、代理路径等已替换为占位符。
 - 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，端口为示例值，clone 后替换成你的真实地址即可。
+- `desktop/main.js` 的日历地址为占位符，构建前替换。
 - `deploy/hermes/SKILL.md` 中的真实域名、内网 IP、用户名、姓名均已脱敏。
+
+---
 
 ## 许可证
 
-本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发。上游代码版权归 Ivan Malinovski 所有，中文化、品牌化及部署资产等新增部分遵循 [MIT License](LICENSE) 发布。
+本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发。上游代码版权归 Ivan Malinovski 所有，中文化、品牌化及部署资产等新增部分遵循 [MIT License](LICENSE) 发布。桌面客户端（`desktop/`）为独立 MIT 项目，见 [desktop/LICENSE](desktop/LICENSE)。

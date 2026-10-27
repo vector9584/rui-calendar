@@ -1,0 +1,50 @@
+{
+  "name": "ruili-calendar",
+  "version": "1.1.0",
+  "description": "瑞历",
+  "main": "main.js",
+  "author": "瑞历",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:portable": "electron-builder --win portable"
+  },
+  "devDependencies": {
+    "electron": "^45.0.0",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "com.ruili.calendar",
+    "productName": "瑞历",
+    "directories": {
+      "output": "dist"
+    },
+    "asar": false,
+    "files": [
+      "main.js",
+      "preload.js",
+      "settings-preload.js",
+      "settings.html",
+      "settings.js",
+      "menu.html",
+      "menu-preload.js",
+      "menu.js",
+      "assets/**/*"
+    ],
+    "win": {
+      "icon": "assets/瑞历.png",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "瑞历"
+    }
+  }
+}

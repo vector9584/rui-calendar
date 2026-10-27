@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>菜单</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      background: transparent;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .panel {
+      position: absolute;
+      inset: 8px;
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      border-radius: 14px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.16);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 46px;
+      padding: 0 14px;
+      cursor: pointer;
+      transition: background .12s;
+      flex-shrink: 0;
+    }
+    .row:hover { background: rgba(0, 0, 0, 0.04); }
+    .row .label { font-size: 13px; color: #1f2937; font-weight: 500; }
+
+    /* 红绿切换开关：红=关，绿=开 */
+    .toggle {
+      position: relative;
+      width: 40px;
+      height: 22px;
+      border-radius: 11px;
+      background: #ef4444;
+      transition: background .18s;
+      flex-shrink: 0;
+    }
+    .toggle .knob {
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+      transition: transform .18s;
+    }
+    .toggle.on { background: #22c55e; }
+    .toggle.on .knob { transform: translateX(18px); }
+
+    .divider {
+      height: 1px;
+      background: rgba(0, 0, 0, 0.06);
+      margin: 4px 0;
+      flex-shrink: 0;
+    }
+
+    .footer {
+      display: flex;
+      margin-top: auto;
+      flex-shrink: 0;
+    }
+    .footer button {
+      flex: 1;
+      height: 40px;
+      border: none;
+      background: transparent;
+      font-size: 12.5px;
+      color: #374151;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .footer button:hover { background: rgba(0, 0, 0, 0.05); }
+    .footer button + button { border-left: 1px solid rgba(0, 0, 0, 0.06); }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <div class="row" data-key="mode">
+      <span class="label">悬浮</span>
+      <span class="toggle" id="t-mode"><span class="knob"></span></span>
+    </div>
+    <div class="row" data-key="locked">
+      <span class="label">锁定</span>
+      <span class="toggle" id="t-locked"><span class="knob"></span></span>
+    </div>
+    <div class="row" data-key="autoStart">
+      <span class="label">开机启动</span>
+      <span class="toggle" id="t-autoStart"><span class="knob"></span></span>
+    </div>
+    <div class="divider"></div>
+    <div class="footer">
+      <button id="settingsBtn">设置</button>
+      <button id="quitBtn">退出</button>
+    </div>
+  </div>
+
+  <script src="menu.js"></script>
+</body>
+</html>

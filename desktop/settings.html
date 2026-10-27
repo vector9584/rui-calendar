@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>悬浮日历设置</title>
+  <style>
+    :root {
+      --bg: #f3f6f4;
+      --panel: #ffffff;
+      --text: #15201e;
+      --muted: #6b7a74;
+      --accent: #2f7d6b;
+      --accent-hover: #28695a;
+      --border: #e2e9e5;
+      --radius: 12px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+    }
+
+    .window {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: var(--bg);
+    }
+
+    /* 标题栏（可拖动） */
+    .titlebar {
+      -webkit-app-region: drag;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 8px 0 16px;
+      flex-shrink: 0;
+    }
+    .titlebar .title {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+    .close-btn {
+      -webkit-app-region: no-drag;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background .15s, color .15s;
+    }
+    .close-btn:hover { background: rgba(0,0,0,0.07); color: var(--text); }
+
+    .content {
+      flex: 1;
+      padding: 4px 16px 16px;
+      overflow-y: auto;
+    }
+
+    .section {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+    }
+    .section-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    /* 分段选择 */
+    .segmented {
+      display: flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .segmented label {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      cursor: pointer;
+      transition: background .18s, color .18s, box-shadow .18s;
+    }
+    .segmented input { display: none; }
+    .segmented input:checked + span {
+      display: block;
+      padding: 8px 0;
+      margin: -8px 0;
+      border-radius: 8px;
+      background: var(--panel);
+      color: var(--accent);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(21,32,30,0.08);
+    }
+
+    /* 透明度滑块 */
+    .opacity-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    input[type="range"] {
+      flex: 1;
+      -webkit-appearance: none;
+      appearance: none;
+      height: 4px;
+      border-radius: 2px;
+      background: var(--border);
+      outline: none;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      border: 3px solid #fff;
+      box-shadow: 0 1px 3px rgba(21,32,30,0.2);
+      transition: background .15s;
+    }
+    input[type="range"]::-webkit-slider-thumb:hover { background: var(--accent-hover); }
+    .opacity-value {
+      width: 46px;
+      text-align: right;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* 开关 */
+    .switch-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .switch-row .desc { font-size: 13px; }
+    .switch-row .hint { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .switch {
+      position: relative;
+      width: 44px;
+      height: 26px;
+      flex-shrink: 0;
+    }
+    .switch input { display: none; }
+    .switch .track {
+      position: absolute;
+      inset: 0;
+      border-radius: 13px;
+      background: var(--border);
+      transition: background .2s;
+      cursor: pointer;
+    }
+    .switch .thumb {
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 1px 3px rgba(21,32,30,0.25);
+      transition: transform .2s;
+    }
+    .switch input:checked + .track { background: var(--accent); }
+    .switch input:checked + .track + .thumb { transform: translateX(18px); }
+
+    .footer {
+      padding: 4px 16px 16px;
+      flex-shrink: 0;
+    }
+    .done-btn {
+      width: 100%;
+      padding: 11px 0;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background .18s;
+    }
+    .done-btn:hover { background: var(--accent-hover); }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <span class="title">悬浮日历设置</span>
+      <button class="close-btn" id="closeBtn" title="关闭">✕</button>
+    </div>
+
+    <div class="content">
+      <div class="section">
+        <div class="switch-row">
+          <div>
+            <span class="desc">悬浮</span>
+            <span class="hint">开启后窗口始终置顶显示在其他窗口之上</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="modeTop" />
+            <span class="track"></span>
+            <span class="thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="switch-row">
+          <div>
+            <span class="desc">锁定</span>
+            <span class="hint">锁定后日历不响应鼠标并隐藏顶部栏，只能通过托盘菜单解锁</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="locked" />
+            <span class="track"></span>
+            <span class="thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">透明度</div>
+        <div class="opacity-row">
+          <input type="range" id="opacity" min="5" max="100" step="1" />
+          <span class="opacity-value" id="opacityValue">95%</span>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="switch-row">
+          <div>
+            <span class="desc">开机启动</span>
+            <span class="hint">登录 Windows 后自动运行悬浮日历</span>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="autoStart" />
+            <span class="track"></span>
+            <span class="thumb"></span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <button class="done-btn" id="doneBtn">完成</button>
+    </div>
+  </div>
+
+  <script src="settings.js"></script>
+</body>
+</html>
