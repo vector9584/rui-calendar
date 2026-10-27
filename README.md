@@ -83,7 +83,7 @@
 
 ## 架构
 
-四张图从不同视角描述这套系统。
+四张图从不同视角描述这套系统。每节两张：先看手绘示意图，再往下是同样内容的 mermaid 源码（可直接改）。
 
 ### 1. 网络拓扑图
 
@@ -126,6 +126,10 @@ flowchart LR
     PROXY -.->|"拉取外部订阅"| External
 ```
 
+<p align="center">
+  <img src="docs/assets/arch/network-topology.png" alt="瑞历网络拓扑图：公网设备 → ECS nginx → frp 隧道 → NAS 内网 Docker 容器" width="900" />
+</p>
+
 ### 2. 系统架构图
 
 逻辑组件与数据流。核心原则：**Baikal 是唯一数据存储，所有端读写同一份数据**。
@@ -164,6 +168,10 @@ flowchart TB
     Hermes -->|"CalDAV 直写"| Nginx
 ```
 
+<p align="center">
+  <img src="docs/assets/arch/system-architecture.png" alt="瑞历系统架构图：客户端层 → 边缘接入层 → 核心层 → SQLite 存储" width="900" />
+</p>
+
 ### 3. 技术架构图
 
 每一层用什么技术栈。
@@ -200,6 +208,10 @@ flowchart TB
     L3 -.-> ICS
 ```
 
+<p align="center">
+  <img src="docs/assets/arch/tech-architecture.png" alt="瑞历技术架构图：表现层 / 接入层 / 服务层 / 协议层四层技术选型" width="900" />
+</p>
+
 ### 4. 设备互联图
 
 每台终端设备如何接入、分别连到哪个服务。
@@ -228,6 +240,10 @@ flowchart LR
 ```
 
 一句话总结：**瑞历（Rui Calendar）是这一整套方案的名字——Baikal 是唯一存储（日历 + 联系人），网页前端（Calino 中文定制）提供中文界面，iOS/Android 原生 App 直连 Baikal，Windows 桌面悬浮组件叠加其上，五端数据一致。** 网页前端是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+
+<p align="center">
+  <img src="docs/assets/arch/device-topology.png" alt="瑞历设备互联图：iPhone / iPad / Android / Windows / Hermes 全部连到同一套 Baikal" width="900" />
+</p>
 
 ---
 

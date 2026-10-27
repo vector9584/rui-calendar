@@ -432,6 +432,96 @@
   @media (max-width: 640px) { .bubble-cloud { height: 360px; } }
   @media (max-width: 400px) { .bubble-cloud { height: 340px; } }
 
+
+  /* 架构图查看器 */
+  .arch-viewer { position: relative; }
+  .arch-viewer > input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .arch-tabs { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; }
+  .arch-tabs label {
+    display: inline-flex; align-items: center; gap: 9px; cursor: pointer;
+    padding: 10px 18px; border-radius: 12px;
+    font-size: 14px; font-weight: 650; color: var(--ink-2);
+    background: var(--card); border: 1px solid var(--line);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: color .2s ease, border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+  }
+  .arch-tabs label .n { font-size: 11px; font-weight: 700; letter-spacing: .06em; color: var(--brand); opacity: .85; }
+  .arch-tabs label:hover { transform: translateY(-2px); border-color: var(--line-strong); box-shadow: var(--shadow-sm); }
+  .arch-viewer > input:focus-visible ~ .arch-tabs label { outline: 2px solid var(--brand); outline-offset: 2px; }
+#arch-tab-1:checked ~ .arch-tabs label[for="arch-tab-1"],
+  #arch-tab-2:checked ~ .arch-tabs label[for="arch-tab-2"],
+  #arch-tab-3:checked ~ .arch-tabs label[for="arch-tab-3"],
+  #arch-tab-4:checked ~ .arch-tabs label[for="arch-tab-4"] {
+    color: #fff; border-color: transparent;
+    background: linear-gradient(135deg, var(--brand), var(--brand-2));
+    box-shadow: 0 8px 20px rgba(47,158,143,.30);
+  }
+  #arch-tab-1:checked ~ .arch-tabs label[for="arch-tab-1"] .n,
+  #arch-tab-2:checked ~ .arch-tabs label[for="arch-tab-2"] .n,
+  #arch-tab-3:checked ~ .arch-tabs label[for="arch-tab-3"] .n,
+  #arch-tab-4:checked ~ .arch-tabs label[for="arch-tab-4"] .n { color: #fff; opacity: .85; }
+
+  .arch-stage { position: relative; }
+  .arch-pane { display: none; margin: 0; }
+#arch-tab-1:checked ~ .arch-stage #arch-pane-1,
+  #arch-tab-2:checked ~ .arch-stage #arch-pane-2,
+  #arch-tab-3:checked ~ .arch-stage #arch-pane-3,
+  #arch-tab-4:checked ~ .arch-stage #arch-pane-4 {
+    display: block;
+    animation: archIn .45s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes archIn { from { opacity: 0; transform: translateY(10px) scale(.996); } to { opacity: 1; transform: none; } }
+  .arch-shot {
+    position: relative; border-radius: var(--radius); overflow: hidden; cursor: zoom-in;
+    background: #fff;
+    box-shadow: var(--shadow-md), inset 0 0 0 1px rgba(16,40,32,.10);
+    transition: box-shadow .28s ease, transform .28s ease;
+  }
+  .arch-shot:hover { box-shadow: var(--shadow-lg), inset 0 0 0 1px rgba(16,40,32,.10); }
+  .arch-shot img { display: block; width: 100%; height: auto; }
+  .arch-shot .zoom {
+    position: absolute; right: 14px; bottom: 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 13px; border-radius: 10px;
+    font-size: 12.5px; font-weight: 600; color: #fff;
+    background: rgba(11,18,16,.55);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    opacity: 0; transform: translateY(6px);
+    transition: opacity .22s ease, transform .22s ease;
+  }
+  .arch-shot .zoom svg { width: 15px; height: 15px; }
+  .arch-shot:hover .zoom { opacity: 1; transform: none; }
+  .arch-pane figcaption { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 14px 4px 0; }
+  .arch-pane figcaption .t { font-weight: 700; font-size: 15px; }
+  .arch-pane figcaption .d { font-size: 13px; color: var(--muted); }
+  @media (hover: none) { .arch-shot .zoom { opacity: 1; transform: none; } }
+  @media (max-width: 560px) {
+    .arch-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .arch-tabs::-webkit-scrollbar { display: none; }
+    .arch-tabs label { flex: 0 0 auto; padding: 9px 14px; font-size: 13px; }
+    .arch-pane figcaption { gap: 4px; }
+  }
+
+  /* 大图预览 */
+  dialog#lightbox {
+    margin: auto; border: 0; padding: 0; background: transparent;
+    max-width: min(1500px, 94vw); max-height: 92vh; overflow: visible;
+  }
+  dialog#lightbox::backdrop { background: rgba(6,12,10,.86); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+  dialog#lightbox img {
+    display: block; width: 100%; height: auto; max-height: 84vh; object-fit: contain;
+    border-radius: 14px; background: #fff; box-shadow: var(--shadow-lg);
+  }
+  dialog#lightbox .lb-cap { margin-top: 12px; color: #d7e7e1; font-size: 13.5px; text-align: center; }
+  dialog#lightbox .lb-close {
+    position: fixed; top: 18px; right: 20px; width: 40px; height: 40px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.22); color: #fff;
+    font-size: 20px; line-height: 1; transition: background .2s ease, transform .2s ease;
+  }
+  dialog#lightbox .lb-close:hover { background: rgba(255,255,255,.22); transform: rotate(90deg); }
+  @media (max-width: 760px) { .arch-grid { grid-template-columns: 1fr; } }
+
   footer {
     border-top: 1px solid var(--line); padding: 38px 0 46px; margin-top: 24px;
     text-align: center; color: var(--muted); font-size: 13.5px;
@@ -510,6 +600,9 @@
   <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
     <rect x="4.5" y="11" width="15" height="10" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
   </symbol>
+  <symbol id="i-zoom" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7"/><path d="M20 20l-4.2-4.2M11 8.5v5M8.5 11h5"/>
+  </symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <path d="M5 12h14M13 6l6 6-6 6"/>
   </symbol>
@@ -532,6 +625,7 @@
     <div class="nav-links">
       <a href="#features">能做什么</a>
       <a href="#flow">数据怎么走</a>
+      <a href="#arch">架构</a>
       <a href="#clients">多端</a>
       <a href="#download">下载</a>
       <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">源码</a>
@@ -585,7 +679,7 @@
   </section>
 
   <section class="wrap stats reveal">
-    <div class="stat"><div class="num" data-target="4">0</div><div class="lbl">端共用一个日历</div></div>
+    <div class="stat"><div class="num" data-target="5">0</div><div class="lbl">端共用一个日历</div></div>
     <div class="stat"><div class="num" data-target="100">0</div><div class="lbl">% 数据自主</div></div>
     <div class="stat"><div class="num" data-target="0">0</div><div class="lbl">条记录交给别人</div></div>
     <div class="stat"><div class="num" data-target="2">0</div><div class="lbl">套开放协议 CalDAV / CardDAV</div></div>
@@ -668,6 +762,58 @@
     </div>
   </section>
 
+  <section class="section" id="arch">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="kicker"><span class="dot"></span>整套架构</span>
+        <h2>四张图，看懂它怎么跑起来</h2>
+        <p>网络怎么穿透、系统怎么分层、技术怎么选型、每台设备怎么接入。切上面四个标签看，点图放大。</p>
+      </div>
+      <div class="arch-viewer reveal">
+      <input type="radio" name="arch-tab" id="arch-tab-1" checked>
+      <input type="radio" name="arch-tab" id="arch-tab-2">
+      <input type="radio" name="arch-tab" id="arch-tab-3">
+      <input type="radio" name="arch-tab" id="arch-tab-4">
+        <div class="arch-tabs" role="tablist" aria-label="架构图切换">
+        <label for="arch-tab-1"><span class="n">01</span>网络拓扑图</label>
+        <label for="arch-tab-2"><span class="n">02</span>系统架构图</label>
+        <label for="arch-tab-3"><span class="n">03</span>技术架构图</label>
+        <label for="arch-tab-4"><span class="n">04</span>设备互联图</label>
+        </div>
+        <div class="arch-stage">
+        <figure class="arch-pane" id="arch-pane-1" data-full="assets/arch/network-topology.png" data-cap="网络拓扑图：公网设备 → ECS nginx → frp 隧道 → NAS 内网容器">
+          <div class="arch-shot">
+            <img src="assets/arch/network-topology.png" alt="瑞历网络拓扑图：公网设备 → ECS nginx → frp 隧道 → NAS 内网容器" loading="lazy" decoding="async" width="1760" height="990" />
+            <span class="zoom"><svg><use href="#i-zoom"/></svg>看大图</span>
+          </div>
+          <figcaption><span class="t">网络拓扑图</span><span class="d">公网设备 → ECS nginx → frp 隧道 → NAS 内网容器 · 流量从公网一路走进内网容器的路径</span></figcaption>
+        </figure>
+        <figure class="arch-pane" id="arch-pane-2" data-full="assets/arch/system-architecture.png" data-cap="系统架构图：客户端层 · 边缘接入层 · 核心层 · 唯一存储">
+          <div class="arch-shot">
+            <img src="assets/arch/system-architecture.png" alt="瑞历系统架构图：客户端层 · 边缘接入层 · 核心层 · 唯一存储" loading="lazy" decoding="async" width="1760" height="990" />
+            <span class="zoom"><svg><use href="#i-zoom"/></svg>看大图</span>
+          </div>
+          <figcaption><span class="t">系统架构图</span><span class="d">客户端层 · 边缘接入层 · 核心层 · 唯一存储 · 四层各管什么，Baikal 是唯一数据存储</span></figcaption>
+        </figure>
+        <figure class="arch-pane" id="arch-pane-3" data-full="assets/arch/tech-architecture.png" data-cap="技术架构图：表现层 / 接入层 / 服务层 / 协议层">
+          <div class="arch-shot">
+            <img src="assets/arch/tech-architecture.png" alt="瑞历技术架构图：表现层 / 接入层 / 服务层 / 协议层" loading="lazy" decoding="async" width="1760" height="990" />
+            <span class="zoom"><svg><use href="#i-zoom"/></svg>看大图</span>
+          </div>
+          <figcaption><span class="t">技术架构图</span><span class="d">表现层 / 接入层 / 服务层 / 协议层 · 每一层具体用了哪些技术和标准</span></figcaption>
+        </figure>
+        <figure class="arch-pane" id="arch-pane-4" data-full="assets/arch/device-topology.png" data-cap="设备互联图：iPhone · iPad · Android · Windows · AI">
+          <div class="arch-shot">
+            <img src="assets/arch/device-topology.png" alt="瑞历设备互联图：iPhone · iPad · Android · Windows · AI" loading="lazy" decoding="async" width="1760" height="990" />
+            <span class="zoom"><svg><use href="#i-zoom"/></svg>看大图</span>
+          </div>
+          <figcaption><span class="t">设备互联图</span><span class="d">iPhone · iPad · Android · Windows · AI · 每台设备怎么接进来，连到同一份数据</span></figcaption>
+        </figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section class="section" id="clients">
     <div class="wrap">
       <div class="section-head reveal">
@@ -736,6 +882,12 @@
       </div>
     </div>
   </section>
+<dialog id="lightbox" aria-label="架构图大图">
+  <div class="lb-close" role="button" tabindex="0" aria-label="关闭">×</div>
+  <img src="" alt="" />
+  <p class="lb-cap"></p>
+</dialog>
+
 </main>
 
 <footer>
@@ -868,6 +1020,27 @@
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
+  })();
+</script>
+  <script>
+  // 架构图：点开看大图（原生 dialog，无第三方库）
+  (function () {
+    const lb = document.getElementById('lightbox');
+    if (!lb || typeof lb.showModal !== 'function') return;
+    const im = lb.querySelector('img');
+    const cap = lb.querySelector('.lb-cap');
+    document.querySelectorAll('.arch-pane').forEach((fig) => {
+      fig.addEventListener('click', () => {
+        im.src = fig.dataset.full;
+        im.alt = fig.dataset.cap || '';
+        cap.textContent = fig.dataset.cap || '';
+        lb.showModal();
+      });
+    });
+    function close() { lb.close(); }
+    lb.querySelector('.lb-close').addEventListener('click', close);
+    lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
+    lb.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') close(); });
   })();
 </script>
 </body>
