@@ -3,55 +3,58 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Rui Calendar（瑞历）— 自托管开源日历</title>
+<title>瑞历 Rui Calendar · 日历，自己说了算</title>
 <link rel="icon" type="image/png" href="favicon.png" />
-<meta name="description" content="Rui Calendar（瑞历）是一套开源自托管日历系统：网页、iPhone、Android、Windows 桌面五端同步，日历与联系人走标准 CalDAV / CardDAV 协议，数据只落在你自己的服务器上。" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="description" content="瑞历是一套开源自托管日历。网页、iPhone、Android、Windows 桌面读写同一个日历，日程和联系人只存在你自己的设备上。" />
 <meta name="theme-color" content="#2f9e8f" />
-<meta property="og:title" content="Rui Calendar（瑞历）— 自托管开源日历" />
-<meta property="og:description" content="你的时间，不该存在别人的服务器上。网页 + iOS + Android + Windows 五端同步，数据自主。" />
+<meta property="og:title" content="瑞历 Rui Calendar · 日历，自己说了算" />
+<meta property="og:description" content="开源自托管日历：网页 + 手机 + Windows 桌面共用一个日历，数据只在你自己的设备上。" />
 <meta property="og:image" content="og-image.png" />
 <meta property="og:type" content="website" />
 <style>
   :root {
-    --bg: #f3f6f5;
-    --bg-2: #e9f0ed;
-    --card: rgba(255, 255, 255, 0.66);
-    --card-strong: rgba(255, 255, 255, 0.9);
-    --ink: #0e1a16;
-    --ink-2: #35463f;
-    --muted: #5c7067;
-    --line: rgba(18, 42, 34, 0.1);
-    --line-strong: rgba(18, 42, 34, 0.16);
+    --bg: #f4f7f6;
+    --bg-2: #eaf0ee;
+    --card: rgba(255, 255, 255, 0.62);
+    --card-solid: #ffffff;
+    --ink: #101c18;
+    --ink-2: #3a4b45;
+    --muted: #62756d;
+    --line: rgba(16, 40, 32, 0.08);
+    --line-strong: rgba(16, 40, 32, 0.16);
     --brand: #2f9e8f;
     --brand-2: #34aba7;
-    --brand-deep: #1b6b5c;
+    --brand-deep: #1f7a6d;
     --brand-soft: rgba(47, 158, 143, 0.12);
     --sun: #f2a41b;
     --sun-soft: rgba(242, 164, 27, 0.16);
-    --shadow: 0 1px 2px rgba(14, 26, 22, 0.04), 0 12px 32px rgba(14, 26, 22, 0.06);
-    --shadow-lg: 0 2px 8px rgba(14, 26, 22, 0.06), 0 28px 64px rgba(14, 26, 22, 0.12);
-    --radius: 20px;
+    --shadow-sm: 0 1px 2px rgba(16, 28, 24, 0.04), 0 6px 20px rgba(16, 28, 24, 0.05);
+    --shadow-md: 0 2px 6px rgba(16, 28, 24, 0.05), 0 18px 44px rgba(16, 28, 24, 0.09);
+    --shadow-lg: 0 4px 12px rgba(16, 28, 24, 0.08), 0 32px 72px rgba(16, 28, 24, 0.14);
+    --radius: 18px;
   }
 
   @media (prefers-color-scheme: dark) {
     :root {
       --bg: #0b1210;
       --bg-2: #0e1714;
-      --card: rgba(22, 34, 30, 0.55);
-      --card-strong: rgba(24, 38, 33, 0.82);
-      --ink: #e9f2ee;
-      --ink-2: #b9c9c2;
-      --muted: #8ba099;
-      --line: rgba(210, 235, 226, 0.1);
-      --line-strong: rgba(210, 235, 226, 0.18);
-      --brand: #4fc0ae;
-      --brand-2: #55cdc7;
-      --brand-deep: #66d0bf;
-      --brand-soft: rgba(79, 192, 174, 0.14);
+      --card: rgba(20, 32, 28, 0.55);
+      --card-solid: #14201c;
+      --ink: #eaf3ef;
+      --ink-2: #b7c8c1;
+      --muted: #8aa199;
+      --line: rgba(214, 238, 228, 0.09);
+      --line-strong: rgba(214, 238, 228, 0.18);
+      --brand: #4ec2b0;
+      --brand-2: #56d0c8;
+      --brand-deep: #6cd6c4;
+      --brand-soft: rgba(78, 194, 176, 0.14);
       --sun: #f6b83d;
       --sun-soft: rgba(246, 184, 61, 0.16);
-      --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 14px 36px rgba(0, 0, 0, 0.35);
-      --shadow-lg: 0 2px 8px rgba(0, 0, 0, 0.5), 0 30px 70px rgba(0, 0, 0, 0.5);
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4), 0 6px 20px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.45), 0 18px 44px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.55), 0 32px 72px rgba(0, 0, 0, 0.5);
     }
   }
 
@@ -62,45 +65,39 @@
       "Hiragino Sans GB", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
     background: var(--bg);
     color: var(--ink);
-    line-height: 1.65;
+    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
     transition: background 0.4s ease, color 0.4s ease;
   }
   a { color: inherit; text-decoration: none; }
   svg { display: block; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 3; }
 
-  /* 背景光晕层（固定，缓慢漂移） */
-  .bg-orbs {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-  }
-  .orb {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(70px);
-    opacity: 0.55;
-    will-change: transform;
-  }
+  /* 背景光晕层 */
+  .bg-orbs { position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+  .orb { position: absolute; border-radius: 50%; filter: blur(72px); opacity: 0.5; will-change: transform; }
   .orb-a { width: 620px; height: 620px; left: -160px; top: -180px;
-    background: radial-gradient(circle at center, rgba(47,158,143,0.5), transparent 70%);
+    background: radial-gradient(circle, rgba(47,158,143,0.45), transparent 70%);
     animation: drift-a 26s ease-in-out infinite alternate; }
-  .orb-b { width: 540px; height: 540px; right: -140px; top: 8%;
-    background: radial-gradient(circle at center, rgba(242,164,27,0.34), transparent 70%);
+  .orb-b { width: 540px; height: 540px; right: -140px; top: 6%;
+    background: radial-gradient(circle, rgba(242,164,27,0.3), transparent 70%);
     animation: drift-b 32s ease-in-out infinite alternate; }
-  .orb-c { width: 700px; height: 700px; left: 30%; bottom: -320px;
-    background: radial-gradient(circle at center, rgba(52,171,167,0.3), transparent 70%);
+  .orb-c { width: 720px; height: 720px; left: 28%; bottom: -340px;
+    background: radial-gradient(circle, rgba(52,171,167,0.28), transparent 70%);
     animation: drift-c 38s ease-in-out infinite alternate; }
   @keyframes drift-a { to { transform: translate(120px, 80px) scale(1.08); } }
   @keyframes drift-b { to { transform: translate(-100px, 120px) scale(1.12); } }
   @keyframes drift-c { to { transform: translate(60px, -80px) scale(1.05); } }
 
-  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 28px; position: relative; z-index: 2; }
+  /* 全局鼠标柔光 */
+  .spotlight {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(620px circle at var(--sx, 50%) var(--sy, 20%),
+      rgba(47,158,143,0.07), transparent 62%);
+  }
 
-  /* 导航（毛玻璃） */
+  /* 导航 */
   header {
     position: sticky; top: 0; z-index: 50;
     background: var(--card);
@@ -109,16 +106,10 @@
     border-bottom: 1px solid var(--line);
   }
   .nav { display: flex; align-items: center; justify-content: space-between; height: 62px; }
-  .nav-brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-size: 16px; letter-spacing: 0.2px; }
-  .nav-brand .mark {
-    width: 30px; height: 30px; border-radius: 9px;
-    background: linear-gradient(135deg, var(--brand), var(--brand-2));
-    display: inline-flex; align-items: center; justify-content: center;
-    color: #fff; font-size: 15px; font-weight: 700;
-    box-shadow: 0 4px 12px rgba(47,158,143,0.4);
-  }
-  .nav-links { display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--ink-2); }
-  .nav-links a { position: relative; transition: color 0.15s; }
+  .nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: 0.2px; }
+  .nav-brand img { width: 30px; height: 30px; border-radius: 8px; box-shadow: 0 3px 10px rgba(47,158,143,0.32); }
+  .nav-links { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--ink-2); }
+  .nav-links a { transition: color 0.15s; }
   .nav-links a:hover { color: var(--brand); }
   .nav-cta {
     background: var(--brand); color: #fff; padding: 8px 18px; border-radius: 10px;
@@ -127,40 +118,96 @@
   .nav-cta:hover { background: var(--brand-deep); transform: translateY(-1px); }
 
   /* Hero */
-  .hero { position: relative; text-align: center; padding: 76px 0 60px; }
-  .hero-glow {
-    position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(560px circle at var(--mx, 50%) var(--my, 30%),
-      rgba(47,158,143,0.14), transparent 65%);
-    transition: background 0.2s linear;
+  .hero { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 44px; align-items: center;
+    padding: 72px 0 56px; }
+  .hero-copy h1 {
+    font-size: clamp(34px, 5.2vw, 56px); font-weight: 800; letter-spacing: -1.5px;
+    line-height: 1.12; margin-bottom: 20px;
   }
-  .hero .logo { width: 320px; max-width: 72%; height: auto; margin: 0 auto 30px; display: block; }
-  .hero h1 {
-    font-size: clamp(32px, 5.4vw, 52px); font-weight: 800; letter-spacing: -1px;
-    line-height: 1.14; margin-bottom: 18px;
-  }
-  .hero h1 .grad {
-    background: linear-gradient(120deg, var(--brand), var(--brand-2) 55%, var(--sun));
+  .hero-copy h1 .grad {
+    background: linear-gradient(120deg, var(--brand), var(--brand-2) 52%, var(--sun));
     -webkit-background-clip: text; background-clip: text; color: transparent;
+    background-size: 200% 100%;
+    animation: grad-flow 7s ease-in-out infinite;
   }
-  .hero .tag { font-size: clamp(16px, 2.3vw, 18px); color: var(--ink-2); max-width: 660px; margin: 0 auto 32px; }
-  .hero .cta-row { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; align-items: center; }
+  @keyframes grad-flow { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+  .hero-copy .tag { font-size: clamp(15px, 2vw, 17px); color: var(--ink-2); max-width: 520px; margin-bottom: 30px; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
   .btn {
     display: inline-flex; align-items: center; gap: 9px;
     padding: 13px 24px; border-radius: 12px; font-size: 15px; font-weight: 600;
     transition: transform 0.14s, box-shadow 0.14s, background 0.15s, border-color 0.15s;
-    will-change: transform;
   }
   .btn:hover { transform: translateY(-2px); }
   .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 22px rgba(47,158,143,0.34); }
   .btn-primary:hover { background: var(--brand-deep); box-shadow: 0 12px 30px rgba(47,158,143,0.42); }
-  .btn-ghost { background: var(--card-strong); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow); }
+  .btn-ghost { background: var(--card-solid); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow-sm); }
   .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
-  .hero .hint { margin-top: 18px; font-size: 13px; color: var(--muted); }
+  .hero-copy .hint { margin-top: 20px; font-size: 13px; color: var(--muted); }
+
+  /* CSS 日历窗口（hero 视觉） */
+  .cal-mock {
+    position: relative; perspective: 1200px;
+  }
+  .cal-window {
+    position: relative;
+    background: var(--card-solid);
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    box-shadow: var(--shadow-lg);
+    padding: 22px;
+    transform: rotateY(-6deg) rotateX(3deg);
+    transition: transform 0.4s ease;
+    overflow: hidden;
+  }
+  .cal-window::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, var(--brand), var(--brand-2), var(--sun));
+  }
+  .cal-mock:hover .cal-window { transform: rotateY(-1deg) rotateX(1deg); }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .cal-head .month { font-weight: 700; font-size: 15px; }
+  .cal-head .navs { display: flex; gap: 6px; }
+  .cal-head .navs span {
+    width: 26px; height: 26px; border-radius: 7px; display: inline-flex; align-items: center;
+    justify-content: center; background: var(--brand-soft); color: var(--brand); font-size: 13px;
+  }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
+  .cal-grid .dow { font-size: 11px; color: var(--muted); padding: 4px 0; font-weight: 500; }
+  .cal-grid .day {
+    position: relative; aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; border-radius: 9px; color: var(--ink-2); transition: background 0.15s, color 0.15s;
+  }
+  .cal-grid .day.empty { opacity: 0; }
+  .cal-grid .day:hover { background: var(--brand-soft); }
+  .cal-grid .day.today { background: var(--brand); color: #fff; font-weight: 700; box-shadow: 0 4px 12px rgba(47,158,143,0.4); }
+  .cal-grid .day.has::after {
+    content: ""; position: absolute; bottom: 4px; width: 4px; height: 4px; border-radius: 50%;
+    background: var(--sun);
+  }
+  .cal-grid .day.today.has::after { background: #fff; }
+  .cal-events { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 14px; display: grid; gap: 9px; }
+  .cal-events .ev { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .cal-events .ev .t { color: var(--brand); font-weight: 600; font-variant-numeric: tabular-nums; width: 44px; }
+  .cal-events .ev .bar { width: 3px; height: 16px; border-radius: 2px; background: var(--brand); }
+  .cal-events .ev:nth-child(2) .bar { background: var(--sun); }
+  .cal-events .ev .txt { color: var(--ink-2); }
+
+  /* 统计条 */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 16px 0 8px; }
+  .stat {
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 26px 20px; text-align: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-sm);
+  }
+  .stat .num { font-size: 34px; font-weight: 800; letter-spacing: -1px;
+    background: linear-gradient(120deg, var(--brand), var(--brand-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .stat .lbl { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* 区块 */
-  .section { padding: 58px 0; }
-  .section-head { text-align: center; max-width: 660px; margin: 0 auto 46px; }
+  .section { padding: 56px 0; }
+  .section-head { text-align: center; max-width: 640px; margin: 0 auto 44px; }
   .kicker {
     display: inline-flex; align-items: center; gap: 7px;
     font-size: 12.5px; font-weight: 600; letter-spacing: 0.5px;
@@ -171,27 +218,36 @@
   .section-head h2 { font-size: clamp(25px, 3.8vw, 34px); font-weight: 750; letter-spacing: -0.4px; margin-bottom: 12px; }
   .section-head p { color: var(--ink-2); font-size: 15.5px; }
 
-  /* 特性卡片 */
-  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  /* 统一卡片系统 */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
   .card {
     position: relative; overflow: hidden;
     background: var(--card);
     border: 1px solid var(--line);
     border-radius: var(--radius);
     padding: 28px 26px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    box-shadow: var(--shadow);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-sm);
+    transform-style: preserve-3d;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
   }
   .card::before {
-    content: ""; position: absolute; inset: 0; border-radius: var(--radius);
-    background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%),
-      rgba(47,158,143,0.08), transparent 55%);
+    content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+    background: linear-gradient(140deg, var(--brand), rgba(128,128,128,0.05) 40%, var(--sun));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
     opacity: 0; transition: opacity 0.25s ease; pointer-events: none;
   }
-  .card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--line-strong); }
-  .card:hover::before { opacity: 1; }
+  .card::after {
+    content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+    background: radial-gradient(360px circle at var(--mx, 50%) var(--my, 50%),
+      rgba(47,158,143,0.1), transparent 60%);
+    opacity: 0; transition: opacity 0.25s ease;
+  }
+  .card:hover { border-color: transparent; box-shadow: var(--shadow-md); }
+  .card:hover::before, .card:hover::after { opacity: 1; }
   .card .icon {
     width: 46px; height: 46px; border-radius: 13px; display: flex; align-items: center;
     justify-content: center; margin-bottom: 16px;
@@ -201,16 +257,30 @@
   .card h3 { font-size: 16.5px; font-weight: 700; margin-bottom: 7px; }
   .card p { font-size: 14px; color: var(--muted); }
 
+  /* 数据流向 */
+  .flow { display: flex; align-items: stretch; justify-content: center; gap: 10px; flex-wrap: wrap; }
+  .flow-node {
+    flex: 1; min-width: 150px; max-width: 210px;
+    background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 24px 18px; text-align: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-sm);
+  }
+  .flow-node .icon { width: 40px; height: 40px; margin: 0 auto 10px; border-radius: 11px;
+    display: flex; align-items: center; justify-content: center; background: var(--brand-soft); color: var(--brand); }
+  .flow-node .icon svg { width: 20px; height: 20px; }
+  .flow-node .t { font-weight: 700; font-size: 14px; }
+  .flow-node .d { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .flow-arrow { align-self: center; color: var(--brand); flex-shrink: 0; }
+
   /* 多端 */
   .clients { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
   .client {
     background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
-    padding: 30px 16px; text-align: center; box-shadow: var(--shadow);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    padding: 30px 16px; text-align: center; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
   }
-  .client:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); border-color: var(--line-strong); }
+  .client:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--line-strong); }
   .client .icon { width: 52px; height: 52px; margin: 0 auto 12px; border-radius: 15px;
     display: flex; align-items: center; justify-content: center;
     background: var(--brand-soft); color: var(--brand); }
@@ -218,22 +288,20 @@
   .client .name { font-weight: 700; font-size: 15px; }
   .client .desc { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
 
-  /* 下载区 */
+  /* 下载 */
   .download-panel {
-    background: linear-gradient(160deg, #12251f 0%, #0c1c17 100%);
-    border-radius: 26px; padding: 56px 48px; color: #e6f0ec;
+    background: linear-gradient(160deg, #12251f 0%, #0b1a15 100%);
+    border-radius: 26px; padding: 54px 48px; color: #e6f0ec;
     box-shadow: 0 30px 80px rgba(10, 20, 16, 0.35);
     position: relative; overflow: hidden;
   }
   .download-panel::before {
     content: ""; position: absolute; top: -120px; right: -80px; width: 420px; height: 420px;
-    background: radial-gradient(circle, rgba(47,158,143,0.28), transparent 70%);
-    border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(47,158,143,0.28), transparent 70%); border-radius: 50%;
   }
   .download-panel::after {
     content: ""; position: absolute; bottom: -160px; left: -60px; width: 400px; height: 400px;
-    background: radial-gradient(circle, rgba(242,164,27,0.18), transparent 70%);
-    border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle, rgba(242,164,27,0.16), transparent 70%); border-radius: 50%;
   }
   .download-panel > * { position: relative; z-index: 1; }
   .download-panel h2 { color: #fff; font-size: clamp(24px, 3.6vw, 32px); font-weight: 750; letter-spacing: -0.3px; margin-bottom: 10px; }
@@ -243,7 +311,7 @@
     background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
     border-radius: 18px; padding: 24px; transition: border-color 0.2s, background 0.2s;
   }
-  .dl-card:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.22); }
+  .dl-card:hover { background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.24); }
   .dl-card .tag { font-size: 12px; color: #f6c24e; font-weight: 600; letter-spacing: 0.5px; }
   .dl-card .title { font-size: 17px; font-weight: 700; color: #fff; margin: 6px 0 5px; }
   .dl-card .desc { font-size: 13px; color: #a7c0b6; margin-bottom: 18px; }
@@ -261,11 +329,10 @@
   .tech span {
     background: var(--card); border: 1px solid var(--line); border-radius: 11px;
     padding: 9px 18px; font-size: 13.5px; color: var(--ink-2); font-weight: 500;
-    box-shadow: var(--shadow); backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    transition: border-color 0.15s, color 0.15s;
+    box-shadow: var(--shadow-sm); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    transition: border-color 0.15s, color 0.15s, transform 0.15s;
   }
-  .tech span:hover { border-color: var(--brand); color: var(--brand); }
+  .tech span:hover { border-color: var(--brand); color: var(--brand); transform: translateY(-2px); }
 
   footer {
     border-top: 1px solid var(--line); padding: 38px 0 46px; margin-top: 24px;
@@ -274,15 +341,18 @@
   footer a { color: var(--brand); font-weight: 600; }
   footer .sep { margin: 0 9px; color: var(--line-strong); }
 
-  /* 滚动渐入 */
   .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.6s ease, transform 0.6s ease; }
   .reveal.in { opacity: 1; transform: none; }
 
-  /* 响应式 */
   @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .cal-mock { max-width: 460px; margin: 0 auto; }
     .grid { grid-template-columns: repeat(2, 1fr); }
     .clients { grid-template-columns: repeat(2, 1fr); }
+    .stats { grid-template-columns: repeat(2, 1fr); }
     .dl-cards { grid-template-columns: 1fr; }
+    .flow { flex-direction: column; align-items: center; }
+    .flow-arrow { transform: rotate(90deg); }
   }
   @media (max-width: 540px) {
     .grid { grid-template-columns: 1fr; }
@@ -322,8 +392,7 @@
     <path d="M12 3l2.2 5.6L20 10.8l-5.8 2.2L12 18.6l-2.2-5.6L4 10.8l5.8-2.2z"/>
   </symbol>
   <symbol id="i-globe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/>
-    <path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+    <circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
   </symbol>
   <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
     <rect x="7" y="2.5" width="10" height="19" rx="2.4"/><path d="M11 18h2"/>
@@ -339,6 +408,12 @@
   <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
     <path d="M12 4v11M7 11l5 5 5-5"/><path d="M4 19h16"/>
   </symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="4.5" y="11" width="15" height="10" rx="2.2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+  </symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12h14M13 6l6 6-6 6"/>
+  </symbol>
 </svg>
 
 <div class="bg-orbs" aria-hidden="true">
@@ -346,15 +421,19 @@
   <div class="orb orb-b"></div>
   <div class="orb orb-c"></div>
 </div>
+<div class="spotlight" aria-hidden="true"></div>
 
 <header>
   <div class="wrap nav">
-    <a class="nav-brand" href="#top"><span class="mark">瑞</span>Rui Calendar</a>
+    <a class="nav-brand" href="#top">
+      <img src="og-image.png" alt="瑞历" width="30" height="30" />
+      Rui Calendar
+    </a>
     <div class="nav-links">
-      <a href="#features">特性</a>
+      <a href="#features">能做什么</a>
+      <a href="#flow">数据怎么走</a>
       <a href="#clients">多端</a>
       <a href="#download">下载</a>
-      <a href="#tech">技术栈</a>
       <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">源码</a>
       <a class="nav-cta" href="#download">下载桌面版</a>
     </div>
@@ -363,59 +442,122 @@
 
 <main id="top">
   <section class="hero wrap" id="hero">
-    <div class="hero-glow" aria-hidden="true"></div>
-    <img class="logo" src="trademark.png" alt="Rui Calendar 商标" width="320" height="162" />
-    <h1>你的时间，<br /><span class="grad">不该存在别人的服务器上</span></h1>
-    <p class="tag">
-      Rui Calendar（瑞历）是一套开源自托管日历系统——网页、iPhone、Android、Windows 桌面五端同步，
-      日历与联系人走标准 CalDAV / CardDAV 协议，数据只落在你自己的机器上。
-    </p>
-    <div class="cta-row">
-      <a class="btn btn-primary" href="#download">
-        <svg width="17" height="17"><use href="#i-download"/></svg>下载 Windows 桌面版
-      </a>
-      <a class="btn btn-ghost" href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">查看源码</a>
+    <div class="hero-copy">
+      <h1>日历，<br /><span class="grad">自己说了算</span></h1>
+      <p class="tag">
+        瑞历是一套开源自托管日历。网页、iPhone、Android、Windows 桌面读写同一个日历，
+        你的日程和联系人只存在自己的设备上，不经手任何第三方。
+      </p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="#download">
+          <svg width="17" height="17"><use href="#i-download"/></svg>下载 Windows 桌面版
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">查看源码</a>
+      </div>
+      <p class="hint">开源 · MIT 协议 · 无需注册任何账号</p>
     </div>
-    <p class="hint">开源 · MIT 协议 · 无需第三方账号</p>
+    <div class="cal-mock reveal in">
+      <div class="cal-window">
+        <div class="cal-head">
+          <span class="month">2026年10月</span>
+          <span class="navs"><span>‹</span><span>›</span></span>
+        </div>
+        <div class="cal-grid">
+          <span class="dow">一</span><span class="dow">二</span><span class="dow">三</span><span class="dow">四</span><span class="dow">五</span><span class="dow">六</span><span class="dow">日</span>
+          <span class="day empty">0</span><span class="day empty">0</span><span class="day empty">0</span>
+          <span class="day">1</span><span class="day">2</span><span class="day">3</span><span class="day">4</span>
+          <span class="day">5</span><span class="day">6</span><span class="day">7</span><span class="day">8</span><span class="day has">9</span><span class="day">10</span><span class="day">11</span>
+          <span class="day">12</span><span class="day">13</span><span class="day">14</span><span class="day has">15</span><span class="day">16</span><span class="day">17</span><span class="day">18</span>
+          <span class="day">19</span><span class="day">20</span><span class="day">21</span><span class="day">22</span><span class="day today has">23</span><span class="day">24</span><span class="day">25</span>
+          <span class="day">26</span><span class="day">27</span><span class="day">28</span><span class="day">29</span><span class="day">30</span><span class="day">31</span><span class="day empty">0</span>
+        </div>
+        <div class="cal-events">
+          <div class="ev"><span class="t">09:00</span><span class="bar"></span><span class="txt">晨会</span></div>
+          <div class="ev"><span class="t">15:00</span><span class="bar"></span><span class="txt">给爸爸打电话</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap stats reveal">
+    <div class="stat"><div class="num" data-target="5">0</div><div class="lbl">端共用一个日历</div></div>
+    <div class="stat"><div class="num" data-target="100">0</div><div class="lbl">% 数据自主</div></div>
+    <div class="stat"><div class="num" data-target="0">0</div><div class="lbl">条记录交给别人</div></div>
+    <div class="stat"><div class="num" data-target="2">0</div><div class="lbl">套开放协议 CalDAV / CardDAV</div></div>
   </section>
 
   <section class="section" id="features">
     <div class="wrap">
       <div class="section-head reveal">
-        <span class="kicker"><span class="dot"></span>为什么用瑞历</span>
-        <h2>它到底能做什么</h2>
-        <p>不是另一个「日历 App」，而是一套你能完全掌控的日历基础设施。</p>
+        <span class="kicker"><span class="dot"></span>能做什么</span>
+        <h2>一个日历，管住你的时间和人脉</h2>
+        <p>日程、待办、联系人，都装进一套你能完全掌控的系统里。</p>
       </div>
       <div class="grid">
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-sync"/></svg></div>
-          <h3>五端一个数据源</h3>
-          <p>网页、iPhone、Android、Windows 桌面悬浮窗，读写同一个日历库，改一处处处同步。</p>
+          <h3>一处改动，处处同步</h3>
+          <p>网页、iPhone、Android、Windows 桌面悬浮窗，读写同一个日历库，手机记一条，电脑立刻看得见。</p>
         </div>
         <div class="card reveal">
-          <div class="icon"><svg><use href="#i-server"/></svg></div>
-          <h3>数据完全自主</h3>
-          <p>部署在你自己的 NAS 或 VPS 上，事件与联系人不经过任何第三方云，隐私自己说了算。</p>
+          <div class="icon"><svg><use href="#i-lock"/></svg></div>
+          <h3>数据留在自己手里</h3>
+          <p>部署在你自己的 NAS 或服务器上，日程和联系人不经过任何云厂商，谁也翻不走你的隐私。</p>
         </div>
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-cal"/></svg></div>
           <h3>日历 + 通讯录</h3>
-          <p>CalDAV 管日程、CardDAV 管联系人，用开放标准，任意兼容客户端都能接进来。</p>
+          <p>CalDAV 管日程、CardDAV 管联系人，全用开放标准，任何兼容客户端都能接进来，不被一家锁死。</p>
         </div>
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-lang"/></svg></div>
           <h3>中文优先</h3>
-          <p>中文界面、中文品牌、本地化日期格式（2026年10月23日），不是英文版的生硬翻译。</p>
+          <p>中文界面、本地化日期（2026年10月23日这样写），不是英文版的生硬翻译，用起来不别扭。</p>
         </div>
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-rss"/></svg></div>
-          <h3>订阅源聚合</h3>
-          <p>内置节假日、老黄历、天气等中文订阅，与自己的日程叠在一起看，互不干扰。</p>
+          <h3>订阅源叠着看</h3>
+          <p>节假日、老黄历、天气这些中文订阅，和你的日程叠在一起显示，互不干扰。</p>
         </div>
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-spark"/></svg></div>
-          <h3>AI 助手直写</h3>
-          <p>接 AI 助手，说一句「周五下午三点提醒我开会」，日程自动落进你的日历。</p>
+          <h3>AI 帮你记</h3>
+          <p>接 AI 助手，说一句「周五下午三点提醒我开会」，日程自动落进日历，不用手动点。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="flow">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <span class="kicker"><span class="dot"></span>数据怎么走</span>
+        <h2>你的数据，只在你手里流转</h2>
+        <p>从任意一端写入，经标准协议，落到你自己的服务器，全程不经过别人。</p>
+      </div>
+      <div class="flow reveal">
+        <div class="flow-node">
+          <div class="icon"><svg><use href="#i-globe"/></svg></div>
+          <div class="t">网页 / 桌面 / 手机</div>
+          <div class="d">任意一端随手记</div>
+        </div>
+        <div class="flow-arrow"><svg width="20" height="20"><use href="#i-arrow"/></svg></div>
+        <div class="flow-node">
+          <div class="icon"><svg><use href="#i-cal"/></svg></div>
+          <div class="t">CalDAV · CardDAV</div>
+          <div class="d">开放标准协议</div>
+        </div>
+        <div class="flow-arrow"><svg width="20" height="20"><use href="#i-arrow"/></svg></div>
+        <div class="flow-node">
+          <div class="icon"><svg><use href="#i-server"/></svg></div>
+          <div class="t">你自己的服务器</div>
+          <div class="d">NAS 或 VPS 上</div>
+        </div>
+        <div class="flow-arrow"><svg width="20" height="20"><use href="#i-arrow"/></svg></div>
+        <div class="flow-node">
+          <div class="icon"><svg><use href="#i-lock"/></svg></div>
+          <div class="t">数据在你手里</div>
+          <div class="d">随时导出、随时迁移</div>
         </div>
       </div>
     </div>
@@ -428,7 +570,7 @@
         <h2>一个账号，处处可用</h2>
       </div>
       <div class="clients">
-        <div class="client reveal"><div class="icon"><svg><use href="#i-globe"/></svg></div><div class="name">网页</div><div class="desc">PWA，任意浏览器</div></div>
+        <div class="client reveal"><div class="icon"><svg><use href="#i-globe"/></svg></div><div class="name">网页</div><div class="desc">PWA，任意浏览器打开即用</div></div>
         <div class="client reveal"><div class="icon"><svg><use href="#i-phone"/></svg></div><div class="name">iPhone / iPad</div><div class="desc">系统日历原生接入</div></div>
         <div class="client reveal"><div class="icon"><svg><use href="#i-android"/></svg></div><div class="name">Android</div><div class="desc">Capacitor 原生包</div></div>
         <div class="client reveal"><div class="icon"><svg><use href="#i-window"/></svg></div><div class="name">Windows 桌面</div><div class="desc">悬浮 / 置顶小组件</div></div>
@@ -440,12 +582,12 @@
     <div class="wrap">
       <div class="download-panel reveal">
         <h2>下载 Windows 桌面版</h2>
-        <p class="sub">悬浮日历小组件，常驻桌面，随时看、随时记。</p>
+        <p class="sub">一个悬浮在桌面上的日历，随时看、随手记，和手机网页共用一份数据。</p>
         <div class="dl-cards">
           <div class="dl-card">
             <div class="tag">免安装 · 推荐</div>
             <div class="title">便携版</div>
-            <div class="desc">双击即用，无需安装，不写注册表，适合放进 U 盘随身带。</div>
+            <div class="desc">双击即用，不写注册表，放 U 盘里随身带着走。</div>
             <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe">
               <svg><use href="#i-download"/></svg>下载便携版
             </a>
@@ -453,13 +595,13 @@
           <div class="dl-card">
             <div class="tag">安装版</div>
             <div class="title">Setup 安装包</div>
-            <div class="desc">标准安装向导，可创建桌面与开始菜单快捷方式，支持卸载。</div>
+            <div class="desc">标准安装向导，自动创建桌面和开始菜单快捷方式，支持卸载。</div>
             <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe">
               <svg><use href="#i-download"/></svg>下载安装版
             </a>
           </div>
         </div>
-        <p class="note">首次运行请在「设置」里填写你的日历服务器地址。若浏览器提示「无法验证发布者」，点「更多信息 → 仍要运行」即可（未签名的开源应用正常提示）。</p>
+        <p class="note">首次运行请在「设置」里填你的日历服务器地址。浏览器若提示「无法验证发布者」，点「更多信息 → 仍要运行」即可，未签名的开源应用会有这个正常提示。</p>
       </div>
     </div>
   </section>
@@ -468,7 +610,7 @@
     <div class="wrap">
       <div class="section-head reveal">
         <span class="kicker"><span class="dot"></span>技术栈</span>
-        <h2>基于成熟开源组件</h2>
+        <h2>站在成熟组件之上</h2>
       </div>
       <div class="tech reveal">
         <span>React 19</span><span>TypeScript</span><span>Vite</span>
@@ -481,39 +623,58 @@
 
 <footer>
   <div class="wrap">
-    Rui Calendar（瑞历）· 一套开源自托管日历系统（网页前端基于 Calino 定制）
+    Rui Calendar（瑞历）· 一套开源自托管日历系统
     <span class="sep">·</span> MIT License
     <span class="sep">·</span> <a href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">GitHub</a>
   </div>
 </footer>
 
 <script>
+  // 全局鼠标柔光
+  const spot = document.querySelector('.spotlight');
+  if (window.matchMedia('(pointer: fine)').matches) {
+    window.addEventListener('mousemove', e => {
+      spot.style.setProperty('--sx', (e.clientX / window.innerWidth * 100) + '%');
+      spot.style.setProperty('--sy', (e.clientY / window.innerHeight * 100) + '%');
+    });
+  }
+
   // 滚动渐入
   const io = new IntersectionObserver((entries) => {
-    entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
-    });
-  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
-  // 卡片鼠标跟随聚光灯
+  // 卡片 3D tilt + 内聚光灯
   if (window.matchMedia('(pointer: fine)').matches) {
     document.querySelectorAll('.card').forEach(card => {
       card.addEventListener('mousemove', e => {
         const r = card.getBoundingClientRect();
+        const px = (e.clientX - r.left) / r.width - 0.5;
+        const py = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = 'perspective(900px) rotateX(' + (-py * 5).toFixed(2) + 'deg) rotateY(' + (px * 7).toFixed(2) + 'deg) translateY(-3px)';
         card.style.setProperty('--mx', (e.clientX - r.left) + 'px');
         card.style.setProperty('--my', (e.clientY - r.top) + 'px');
       });
-    });
-
-    // Hero 光晕跟随
-    const hero = document.getElementById('hero');
-    hero.addEventListener('mousemove', e => {
-      const r = hero.getBoundingClientRect();
-      hero.style.setProperty('--mx', (e.clientX - r.left) + 'px');
-      hero.style.setProperty('--my', (e.clientY - r.top) + 'px');
+      card.addEventListener('mouseleave', () => { card.style.transform = ''; });
     });
   }
+
+  // 统计数字滚动
+  const easeOut = p => 1 - Math.pow(1 - p, 3);
+  const count = el => {
+    const target = +el.dataset.target, dur = 1200, start = performance.now();
+    const step = now => {
+      const p = Math.min((now - start) / dur, 1);
+      el.textContent = Math.round(target * easeOut(p));
+      if (p < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const cio = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { count(e.target); cio.unobserve(e.target); } });
+  }, { threshold: 0.4 });
+  document.querySelectorAll('.num[data-target]').forEach(el => cio.observe(el));
 </script>
 </body>
 </html>
