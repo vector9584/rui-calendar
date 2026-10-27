@@ -81,7 +81,7 @@
     color: var(--ink);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
     transition: background 0.4s ease, color 0.4s ease;
   }
   a { color: inherit; text-decoration: none; }
@@ -233,7 +233,7 @@
   .stat .lbl { font-size: 13px; color: var(--muted); margin-top: 4px; }
 
   /* 区块 */
-  .section { padding: 56px 0; }
+  .section { padding: 56px 0; scroll-margin-top: 78px; }
   #tech { padding-top: 30px; padding-bottom: 34px; }
   .section-head { text-align: center; max-width: 640px; margin: 0 auto 44px; }
   #tech .section-head { margin-bottom: 10px; }
@@ -647,6 +647,7 @@
       <a href="#flow">数据怎么走</a>
       <a href="#arch">架构</a>
       <a href="#clients">多端</a>
+      <a href="#tech">技术栈</a>
       <a href="#download">下载</a>
     </div>
   </div>
