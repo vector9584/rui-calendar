@@ -550,7 +550,24 @@
   }
   @media (max-width: 540px) {
     .grid { grid-template-columns: 1fr; }
-    .nav-links { display: none; }
+    /* 手机上不再隐藏导航：改为一行紧凑可横滑的链接，保证「技术栈」等锚点仍可点 */
+    .nav { gap: 10px; }
+    .nav-brand .brand-en { display: none; }
+    .nav-brand .brand-zh { font-size: 21px; }
+    .nav-links {
+      display: flex;
+      gap: 13px;
+      font-size: 12.5px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 2px;
+      mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
+      -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
+    }
+    .nav-links::-webkit-scrollbar { display: none; }
+    .nav-links a { white-space: nowrap; flex: 0 0 auto; }
     .download-panel { padding: 36px 22px; }
     .hero { padding-top: 52px; padding-bottom: 44px; }
   }
