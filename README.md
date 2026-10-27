@@ -1,127 +1,132 @@
-# 瑞历 · Ruili Calendar
+# 瑞历 · 自托管日历系统
 
-> 一个运行在浏览器里的 CalDAV / CardDAV 日历客户端，中文定制版自托管方案。
+> 一套完整的自托管日历方案：**Baikal 存储 + 瑞历（Calino 中文定制版）前端 + CORS 代理 + nginx/frp 公网发布 + iOS 原生直连 + AI 助手集成**。
 
-瑞历是基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发的自托管日历前端：**中文化界面 + 品牌化「瑞历」+ 中文日期格式 + 内置日历订阅源 + 外网资源全本地化**，配合自托管的 [Baikal](https://sabre.io/baikal/) 后端，实现网页端编辑、iOS / Android 原生日历 App 直连读写，三端数据一致。
+这不是一个单独的日历应用，而是一整套「自己完全掌控」的日历基础设施——日历和联系人的数据存在你自己的服务器上，网页端、iOS/Android 原生日历 App、以及（规划中的）桌面客户端读写同一份数据，三端实时一致。
 
 ## 为什么做这个
 
-原生的 Calino 是个很好的 local-first CalDAV 客户端，但对中国用户有几个硬伤：没有中文界面、日期格式是洋式的（`23 10月 2026`）、品牌和引导文案是英文、依赖 Google Fonts 等外网资源（断网环境无法使用）、也没有内置中文日历订阅源（老黄历、节假日等）。这个仓库把这些坑一个个填平，做成开箱即用的中文自托管日历。
+需求很朴素：想要一个「自己完全掌控的日历中枢」——能订阅别人的日历、能把自己建的日程整合发布、支持多用户、能穿透内网在公网用、手机和电脑同步。
 
-## 与上游的差异（改造清单）
+最初用的是 NAS 上的 **Y日历**（一个 Go + Vue3 的自托管日历），功能面很全，但撞上了三个无法绕过的硬伤（详见 [JOURNEY.md](./JOURNEY.md)）：
 
-### 中文化
-- 新增完整 `zh` 语言包（`src/locales/zh/`），覆盖日历、设置、引导、弹窗等全部界面文案。
-- i18next 语言注册打通（`types` → `languages` → `locales` → `i18nHeadless` 四处），中文浏览器自动识别为中文，英文兜底。
+1. **CalDAV 时区 bug**：iOS 往里写带时间的日程，会被归零成全天事件，而它的源码不公开，没法自己修。
+2. **删日历缺失**：OpenAPI 只有 GET/POST calendars，没有 DELETE。
+3. **订阅不能回写**：它是 CalDAV 服务器不是客户端，订阅别人只拉只读快照。
 
-### 品牌化「瑞历」
-- 品牌名改为「瑞历」，替换商标图标（`public/trademark.png`）、favicon、PWA 图标。
-- 标题字体采用开源毛笔书法字体 **马善政（Ma Shan Zheng，OFL 开源协议）**，子集化后本地 `@font-face` 引入，桌面顶栏与移动端侧栏统一。
-
-### 中文日期格式
-- 天视图标题 `周一|10月26日`、周视图 `10月28日 – 11月3日`。
-- 日程详情弹窗日期改为 `2026年10月23日`（原 `23 10月 2026`）。
-
-### 外网资源全本地化
-- 移除 Google Fonts（Newsreader）依赖，字体文件下载到本地 `@font-face` 引入。
-- 移除 jsdelivr 的 Web Worker 依赖（`browser-image-compression` 关闭 worker）。
-- 全站 CSP 收紧到 `'self'`，断网/内网环境可完整使用。
-
-### 内置日历订阅源
-- 设置里新增「内置订阅源」区块，开箱即用 6 个中文订阅：老黄历（宜/忌）、法定节假日、节日节气、星座运势、天气。
-- 星座带下拉选择、天气支持全国省市县三级中文联动下拉（不用手写英文 location 串）。
-- 默认全开、首次自动订阅、不可删除（写死预设）。
-
-### 交互优化
-- 月视图单击某天 = 打开「天」视图，双击 = 创建日程（防误触）。
-- 年月下拉框互斥（点月份关年份、点年份关月份）。
-
-### 其他
-- 重写引导弹框文案、删除隐私政策里的外链、精简页脚链接。
-- 内置一个通用 CORS 代理（`proxy/server.mjs`），支持 base64url 编码的 target URL，用于绕过 CalDAV 服务器 / 外部 ICS 订阅源的 CORS 限制。
-
-## 技术栈
-
-- React 19 + TypeScript + Vite
-- Zustand（localStorage 持久化）+ IndexedDB（大附件/联系人照片）
-- tsdav（CalDAV/CardDAV 客户端）、ical.js、rrule、date-fns
-- i18next（多语言）
-- pnpm 10（构建）
+于是拆成「存储 + 前端」两层，用两个成熟的标准协议组件拼出同样能力、却更可控的方案。
 
 ## 架构
 
 ```
-┌─────────────┐      CalDAV/CardDAV      ┌─────────────┐
-│  瑞历（本仓库） │ ────────────────────────▶ │   Baikal    │
-│  浏览器前端     │   （Basic auth / HTTPS）  │  存储后端    │
-│  local-first │ ◀──────────────────────── │  SQLite     │
-└─────────────┘                          └─────────────┘
-      ▲  ▲  ▲
-      │  │  └── iOS / Android 原生日历 App 直连（同一 Baikal，三端一致）
-      │  └───── 桌面浏览器
-      └──────── CORS 代理（绕过无 CORS 头的 CalDAV / ICS 源）
+                      ┌─────────────────────────────────────────────┐
+                      │  ECS 公网服务器（nginx 7086 ssl 入口）        │
+                      │                                              │
+   iOS 原生日历 ──CalDAV──▶ /dav.php  ─┐                            │
+   桌面浏览器 ──瑞历网页──▶ /          ─┤                            │
+                       │  /admin+/res ─┤  反代到 frps 隧道端口        │
+   外部 ICS 订阅 ──CORS──▶ /proxy/    ─┘                            │
+                      └──────────────────┬──────────────────────────┘
+                                         │ frp 隧道（NAS 主动出站）
+                      ┌──────────────────▼──────────────────────────┐
+                      │  NAS（飞牛，内网）                            │
+                      │   frpc ──┬─ 7031 ─▶ Baikal(5232)  存储后端   │
+                      │           ├─ 7032 ─▶ 瑞历 Calino(5233) 前端  │
+                      │           └─ 7033 ─▶ calino-proxy(5234) 代理 │
+                      └─────────────────────────────────────────────┘
 ```
 
-- **瑞历（本仓库）** 是纯前端，无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
-- **Baikal** 是独立的 CalDAV/CardDAV 服务器（Docker 部署），负责存储与多用户/多日历/地址簿。
-- **iOS/Android** 通过系统日历账户直接连 Baikal，与网页端读写同一份数据。
+一句话：**Baikal 是唯一存储（日历 + 联系人），瑞历是漂亮的网页前端，iOS 原生 App 直连 Baikal，三端数据一致。** 瑞历是纯前端、无自有后端，所有数据通过 CalDAV / CardDAV 协议读写 Baikal。
+
+### 组件清单
+
+| 组件 | 职责 | 说明 |
+|---|---|---|
+| **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
+| **瑞历（Calino 定制版）** | 网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
+| **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
+| **frpc** | 内网穿透客户端 | 跑在 NAS，主动出站连公网 frps，映射 3 条隧道 |
+| **nginx（ECS）** | 公网 HTTPS 入口 | 7086 独立 ssl 端口，反代 + 证书终止 |
+| **iOS/Android 原生日历** | 移动端读写 | 系统日历账户直连 Baikal，与网页端同一份数据 |
+| **Hermes / AI 助手** | 程序化操作日历 | 通过 `deploy/hermes/baikal_calendar.py` 直写 Baikal |
+
+## 从 Y日历 到这里（演进）
+
+整个方案不是一步到位，而是调研 → 撞墙 → 换架构 → 逐层定制的五段演进，完整决策史见 [JOURNEY.md](./JOURNEY.md)。梗概：
+
+1. **调研 Y日历**：确认它能订阅、能整合打包、CalDAV 可读写、多用户、可脱钩飞牛。
+2. **全量接入 Y日历**：开端口、建 Token、接 MCP、迁移弄文笔记日程。
+3. **撞墙**：撞上上面的三个硬伤（时区 bug 是致命的），且源码不公开无法修。
+4. **换架构**：Baikal（存储）+ Calino（前端），标准 CalDAV 协议随意组合。
+5. **定制 + 打通**：中文化、品牌化、内置订阅源、CORS 代理、nginx/frp 公网、iOS 接入。
+
+## 瑞历前端（本仓库核心）
+
+基于 Calino 二次开发的中文定制版，与上游的差异：
+
+### 中文化
+- 完整 `zh` 语言包（`src/locales/zh/`），覆盖日历、设置、引导、弹窗全部界面文案。
+- i18next 语言注册打通四处（types / languages / locales / i18nHeadless），中文浏览器自动识别，英文兜底。
+
+### 品牌化「瑞历」
+- 品牌名改「瑞历」，替换商标图标、favicon、PWA 图标。
+- 标题字体采用开源毛笔书法 **马善政（Ma Shan Zheng，OFL）**，5.8MB ttf 子集化成 1.5KB woff2 本地引入。
+
+### 中文日期格式
+- 天视图「周一|10月26日」、周视图「10月28日 – 11月3日」、详情弹窗「2026年10月23日」。
+
+### 外网资源全本地化
+- 移除 Google Fonts（Newsreader）和 jsdelivr（Web Worker）依赖，全站 CSP 收紧到 `'self'`，断网/内网可用。
+
+### 内置中文订阅源
+- 开箱即用 6 个订阅：老黄历（宜/忌）、法定节假日、节日节气、星座运势、天气。
+- 天气支持全国省市县三级中文联动下拉。
+
+### 交互优化
+- 月视图单击 = 开「天」视图、双击 = 创建日程（防误触）；年月下拉框互斥。
+
+完整改造清单见部署总纲笔记（私库），本仓库代码即最终实现。
+
+## 目录结构
+
+```
+ruili-calendar/
+├── src/                    # 瑞历前端源码（Calino 定制）
+├── proxy/                  # 通用 CORS 代理（零依赖 Node，base64url 编码）
+├── deploy/                 # 部署资产（脱敏）
+│   ├── nginx/calino.example.conf   # ECS 7086 站点反代配置
+│   ├── frpc/frpc.example.toml      # frp 隧道配置
+│   ├── hermes/baikal_calendar.py   # AI 助手日历写入 helper
+│   └── README.md                   # 部署手册
+├── android/                # Calino 上游的 Android（Capacitor）包装
+├── docs/                   # 上游文档（Docker/发布检查清单等）
+├── README.md               # 本文档
+└── JOURNEY.md              # 完整决策演进与心路历程
+```
 
 ## 快速开始
 
+前端开发：
+
 ```bash
 pnpm install
-pnpm dev        # 本地开发
-pnpm build      # 产物在 dist/
+pnpm dev          # 本地开发
+pnpm build        # 产物在 dist/
 ```
 
-构建需要 pnpm 10。生产构建产物是纯静态文件，用任意静态服务器 / nginx / Docker 托管即可（见 `Dockerfile`、`docs/DOCKER.md`）。
+完整部署（Baikal + 瑞历 + proxy + frp + nginx + iOS）见 [deploy/README.md](./deploy/README.md)。
 
-### 环境变量
+## 桌面客户端
 
-复制 `.env.example` 为 `.env.local`：
-
-| 变量 | 说明 | 默认 |
-|---|---|---|
-| `VITE_SITE_URL` | 公网访问地址（SEO/OG 用，不带尾斜杠） | `https://calino.io` |
-| `CALINO_GITHUB_REPO` | 页脚关于链接的仓库地址 | `ivan-malinovski/Calino` |
-| `CALINO_CONTACT_EMAIL` | 联系邮箱 | `calendar@malinov.ski` |
-| `CALINO_ENABLE_SW` | 启用 Service Worker 离线 | `false` |
-| `CALINO_SELF_HOSTED` | 自托管静态构建（允许连明文 HTTP DAV） | `false` |
-
-> 首次使用会弹出引导弹框，填写你的 CalDAV 服务器地址（形如 `https://your-dav.example.com/dav.php/`）、用户名、密码即可。
-
-## 配置说明（订阅源与代理）
-
-### 内置订阅源
-
-内置订阅源列表在 `src/features/webcal/presetSubscriptions.ts`，默认指向 `your-feed.example.com`（占位符）。接入你自己的 ICS 订阅源时，改 `feedBase()` 返回的域名即可。订阅源通过本仓库自带的 CORS 代理（`/proxy` 路径）绕过 CORS。
-
-### CORS 代理
-
-`proxy/` 目录是一个零依赖的 Node CORS 代理（Node 18+），用于：
-
-1. CalDAV 服务器没发 CORS 头时，代理转发 CalDAV 请求并补 CORS 头（含 MKCOL/MKCALENDAR 等 WebDAV 方法）。
-2. 订阅外部 ICS 源时的 CORS 绕过。
-
-运行：
-
-```bash
-cd proxy && node server.mjs          # 默认 8081 端口
-# 或 docker compose up -d             # 见 proxy/docker-compose.yml
-```
-
-安全相关环境变量：`ALLOWED_ORIGINS`（限制来源）、`ALLOWED_TARGETS`（限制可访问的主机后缀，强烈建议公网部署时设置）、`MAX_BODY_BYTES`、`FETCH_TIMEOUT_MS`。代理内置 SSRF 防护：默认阻断环回/内网/链路本地/云元数据地址。
+规划中：后续会补充一个桌面客户端（Windows 可执行文件），同样通过 CalDAV 连 Baikal，与网页端 / iOS 读写同一份数据。落地后会在此仓库补充对应说明。
 
 ## 脱敏说明
 
-本仓库由作者的私有部署脱敏而来：
+本仓库由作者的私有部署脱敏而来，不含任何真实域名、IP、密钥或凭据：
 
-- 引导弹框里预填的私有 CalDAV 服务器地址已替换为 `your-caldav.example.com`。
-- 内置订阅源指向的私有订阅服务已替换为 `your-feed.example.com`。
-- 代理的 target URL 采用 base64url 编码，仓库中不含任何真实域名、IP、密钥或凭据。
-
-克隆后按需替换为你的地址即可。
+- 引导弹框预填的 CalDAV 服务器地址、订阅源域名、代理路径等已替换为占位符。
+- 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，clone 后替换成你的地址即可。
 
 ## 许可证
 
-本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino) 二次开发，上游代码版权归 Ivan Malinovski 所有，遵循 [MIT License](./LICENSE)。中文化、品牌化等新增改动同样遵循 MIT License 发布。
+本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发。上游代码版权归 Ivan Malinovski 所有，中文化、品牌化及部署资产等新增部分遵循 [MIT License](./LICENSE) 发布。

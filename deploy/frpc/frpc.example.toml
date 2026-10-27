@@ -1,0 +1,37 @@
+# =============================================================================
+# 瑞历自托管日历系统 — frpc 隧道配置示例（NAS 出站 → ECS frps）
+# =============================================================================
+# 脱敏说明：serverAddr / serverPort / auth.token 为占位符，替换成你的 frps 地址。
+# 本文件只含本系统的 3 条隧道；其他无关隧道（如笔记/推送服务）不在此列。
+#
+# ⚠️ 改完 toml 必须 reload 才生效（frpc 0.71 用 GET /api/reload，不是 PUT/POST）：
+#   curl http://127.0.0.1:7400/api/reload
+# =============================================================================
+
+serverAddr = "your-ecs.example.com"
+serverPort = 7000
+auth.token = "your-frps-token"
+
+# ---- Baikal：CalDAV/CardDAV 存储后端（NAS 5232 → ECS 7031）----
+[[proxies]]
+name = "baikal"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 5232
+remotePort = 7031
+
+# ---- Calino：网页日历前端（NAS 5233 → ECS 7032）----
+[[proxies]]
+name = "calino"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 5233
+remotePort = 7032
+
+# ---- Calino-proxy：通用 CORS 代理（NAS 5234 → ECS 7033）----
+[[proxies]]
+name = "calino-proxy"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 5234
+remotePort = 7033
