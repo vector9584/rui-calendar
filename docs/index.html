@@ -494,6 +494,9 @@
   .arch-pane figcaption { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; padding: 14px 4px 0; }
   .arch-pane figcaption .t { font-weight: 700; font-size: 15px; }
   .arch-pane figcaption .d { font-size: 13px; color: var(--muted); }
+  .arch-pane.is-loading .arch-shot { background: linear-gradient(100deg, #f3f6f5 30%, #e9efed 50%, #f3f6f5 70%) #f3f6f5; background-size: 220% 100%; animation: archShimmer 1.2s linear infinite; }
+  .arch-pane.is-loading .arch-shot img { opacity: 0; }
+  @keyframes archShimmer { from { background-position: 140% 0; } to { background-position: -40% 0; } }
   @media (hover: none) { .arch-shot .zoom { opacity: 1; transform: none; } }
   @media (max-width: 560px) {
     .arch-tabs { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
@@ -1023,6 +1026,35 @@
   })();
 </script>
   <script>
+  // 架构图：空闲预加载，切标签不空白
+  (function () {
+    const panes = document.querySelectorAll('.arch-pane');
+    panes.forEach((fig) => {
+      const img = fig.querySelector('img');
+      if (!img) return;
+      const full = img.getAttribute('src');
+      const warm = () => { const probe = new Image(); probe.decoding = 'async'; probe.src = full; };
+      if ('requestIdleCallback' in window) requestIdleCallback(warm, { timeout: 2500 });
+      else setTimeout(warm, 1200);
+    });
+    document.querySelectorAll('.arch-viewer > input').forEach((radio) => {
+      const pane = document.getElementById(radio.id.replace('arch-tab-', 'arch-pane-'));
+      if (!pane) return;
+      const img = pane.querySelector('img');
+      const sync = () => {
+        if (img && !img.complete) {
+          pane.classList.add('is-loading');
+          img.addEventListener('load', () => pane.classList.remove('is-loading'), { once: true });
+        } else {
+          pane.classList.remove('is-loading');
+        }
+      };
+      radio.addEventListener('change', sync);
+      const lbl = document.querySelector('label[for="' + radio.id + '"]');
+      if (lbl) lbl.addEventListener('pointerenter', () => { if (img && !img.complete) { const p = new Image(); p.src = img.getAttribute('src'); } });
+    });
+  })();
+
   // 架构图：点开看大图（原生 dialog，无第三方库）
   (function () {
     const lb = document.getElementById('lightbox');
