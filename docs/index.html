@@ -373,6 +373,10 @@
   /* 技术栈 · 聚合气泡：黄金角紧密堆叠，容器贴合内容 */
   .bubble-cloud { position: relative; width: 100%; max-width: 680px; margin: 0 auto; height: 460px; }
   .bwrap { position: absolute; left: 50%; top: 50%; width: 0; height: 0; }
+  /* 每个 .bwrap 被脚本赋了 transform，各自形成独立的层叠上下文，
+     所以 .bubble 内部的 z-index 出不了自己这一层；悬停时被后面的气泡盖住。
+     解决：悬停时把整个 .bwrap 提到最上层（兄弟 bwrap 的 z-index 都是 auto）。 */
+  .bwrap:hover, .bwrap:focus-within { z-index: 9; }
   .bubble {
     position: absolute; left: 0; top: 0;
     width: calc(2 * var(--r, 40px)); height: calc(2 * var(--r, 40px));
