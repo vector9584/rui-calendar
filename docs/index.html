@@ -127,6 +127,22 @@
   .nav-links { display: flex; align-items: center; gap: 26px; font-size: 14px; color: var(--ink-2); }
   .nav-links a { transition: color 0.15s; }
   .nav-links a:hover { color: var(--brand); }
+  .nav-toggle {
+    display: none; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 11px;
+    background: var(--brand-soft); color: var(--brand-deep); cursor: pointer; flex: 0 0 auto;
+    position: relative; -webkit-tap-highlight-color: transparent;
+  }
+  .nav-toggle span {
+    position: absolute; left: 50%; width: 17px; height: 2px; border-radius: 2px;
+    background: currentColor; transform: translateX(-50%);
+    transition: transform 0.22s ease, opacity 0.16s ease;
+  }
+  .nav-toggle span:nth-child(1) { top: 13px; }
+  .nav-toggle span:nth-child(2) { top: 19px; }
+  .nav-toggle span:nth-child(3) { top: 25px; }
+  .nav-toggle.open span:nth-child(1) { transform: translateX(-50%) translateY(6px) rotate(45deg); }
+  .nav-toggle.open span:nth-child(2) { opacity: 0; }
+  .nav-toggle.open span:nth-child(3) { transform: translateX(-50%) translateY(-6px) rotate(-45deg); }
   .nav-cta {
     background: var(--brand); color: #fff; padding: 8px 18px; border-radius: 10px;
     font-weight: 600; font-size: 14px; transition: background 0.15s, transform 0.12s;
@@ -548,26 +564,27 @@
     .flow { flex-direction: column; align-items: center; }
     .flow-arrow { transform: rotate(90deg); }
   }
-  @media (max-width: 540px) {
+  @media (max-width: 640px) {
     .grid { grid-template-columns: 1fr; }
-    /* 手机上不再隐藏导航：改为一行紧凑可横滑的链接，保证「技术栈」等锚点仍可点 */
+    /* 手机端：导航收进汉堡菜单，避免汉字挤成一行或折行 */
     .nav { gap: 10px; }
     .nav-brand .brand-en { display: none; }
     .nav-brand .brand-zh { font-size: 21px; }
+    .nav-toggle { display: inline-block; }
     .nav-links {
-      display: flex;
-      gap: 13px;
-      font-size: 12.5px;
-      overflow-x: auto;
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-      -webkit-overflow-scrolling: touch;
-      padding-bottom: 2px;
-      mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
-      -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent 100%);
+      position: absolute; top: 62px; left: 0; right: 0;
+      flex-direction: column; align-items: stretch; gap: 0;
+      background: var(--card-solid);
+      border-bottom: 1px solid var(--line);
+      box-shadow: var(--shadow-md);
+      padding: 4px 22px 12px;
+      font-size: 15.5px;
+      opacity: 0; visibility: hidden; transform: translateY(-6px);
+      transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
     }
-    .nav-links::-webkit-scrollbar { display: none; }
-    .nav-links a { white-space: nowrap; flex: 0 0 auto; }
+    .nav-links.open { opacity: 1; visibility: visible; transform: none; }
+    .nav-links a { padding: 14px 2px; border-bottom: 1px solid var(--line); }
+    .nav-links a:last-child { border-bottom: 0; }
     .download-panel { padding: 36px 22px; }
     .hero { padding-top: 52px; padding-bottom: 44px; }
   }
@@ -659,7 +676,10 @@
       <span class="brand-zh">瑞历</span>
       <span class="brand-en">Rui Calendar</span>
     </a>
-    <div class="nav-links">
+    <button class="nav-toggle" type="button" aria-label="打开目录" aria-expanded="false" aria-controls="nav-links">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="nav-links" id="nav-links">
       <a href="#features">能做什么</a>
       <a href="#flow">数据怎么走</a>
       <a href="#arch">架构</a>
@@ -864,34 +884,6 @@
     </div>
   </section>
 
-  <section class="section" id="download">
-    <div class="wrap">
-      <div class="download-panel reveal">
-        <h2>Windows 桌面版</h2>
-        <p class="sub">一个悬浮在桌面上的日历，随时看、随手记，和手机网页共用一份数据。</p>
-        <div class="dl-cards">
-          <div class="dl-card">
-            <div class="tag">免安装 · 推荐</div>
-            <div class="title">便携版</div>
-            <div class="desc">双击即用，不写注册表，放 U 盘里随身带着走。</div>
-            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe">
-              <svg><use href="#i-download"/></svg>下载便携版
-            </a>
-          </div>
-          <div class="dl-card">
-            <div class="tag">安装版</div>
-            <div class="title">Setup 安装包</div>
-            <div class="desc">标准安装向导，自动创建桌面和开始菜单快捷方式，支持卸载。</div>
-            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe">
-              <svg><use href="#i-download"/></svg>下载安装版
-            </a>
-          </div>
-        </div>
-        <p class="note">首次运行请在「设置」里填你的日历服务器地址。浏览器若提示「无法验证发布者」，点「更多信息 → 仍要运行」即可，未签名的开源应用会有这个正常提示。</p>
-      </div>
-    </div>
-  </section>
-
   <section class="section" id="tech">
     <div class="wrap">
       <div class="section-head reveal">
@@ -916,6 +908,34 @@
           <div class="bwrap" data-r="38" style="--c:#8b6bc4; --fd:-0.2s"><div class="bubble"><svg viewBox="0 0 24 24" fill="none" stroke="#8b6bc4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><span class="tip">CalDAV · CardDAV<i>开放协议</i></span></div></div>
           <div class="bwrap" data-r="34" style="--c:#5FA04E; --fd:-1.4s"><div class="bubble"><svg viewBox="0 0 24 24" fill="#5FA04E"><path d="M11.998,24c-0.321,0-0.641-0.084-0.922-0.247l-2.936-1.737c-0.438-0.245-0.224-0.332-0.08-0.383 c0.585-0.203,0.703-0.25,1.328-0.604c0.065-0.037,0.151-0.023,0.218,0.017l2.256,1.339c0.082,0.045,0.197,0.045,0.272,0l8.795-5.076 c0.082-0.047,0.134-0.141,0.134-0.238V6.921c0-0.099-0.053-0.192-0.137-0.242l-8.791-5.072c-0.081-0.047-0.189-0.047-0.271,0 L3.075,6.68C2.99,6.729,2.936,6.825,2.936,6.921v10.15c0,0.097,0.054,0.189,0.139,0.235l2.409,1.392 c1.307,0.654,2.108-0.116,2.108-0.89V7.787c0-0.142,0.114-0.253,0.256-0.253h1.115c0.139,0,0.255,0.112,0.255,0.253v10.021 c0,1.745-0.95,2.745-2.604,2.745c-0.508,0-0.909,0-2.026-0.551L2.28,18.675c-0.57-0.329-0.922-0.945-0.922-1.604V6.921 c0-0.659,0.353-1.275,0.922-1.603l8.795-5.082c0.557-0.315,1.296-0.315,1.848,0l8.794,5.082c0.57,0.329,0.924,0.944,0.924,1.603 v10.15c0,0.659-0.354,1.273-0.924,1.604l-8.794,5.078C12.643,23.916,12.324,24,11.998,24z M19.099,13.993 c0-1.9-1.284-2.406-3.987-2.763c-2.731-0.361-3.009-0.548-3.009-1.187c0-0.528,0.235-1.233,2.258-1.233 c1.807,0,2.473,0.389,2.747,1.607c0.024,0.115,0.129,0.199,0.247,0.199h1.141c0.071,0,0.138-0.031,0.186-0.081 c0.048-0.054,0.074-0.123,0.067-0.196c-0.177-2.098-1.571-3.076-4.388-3.076c-2.508,0-4.004,1.058-4.004,2.833 c0,1.925,1.488,2.457,3.895,2.695c2.88,0.282,3.103,0.703,3.103,1.269c0,0.983-0.789,1.402-2.642,1.402 c-2.327,0-2.839-0.584-3.011-1.742c-0.02-0.124-0.126-0.215-0.253-0.215h-1.137c-0.141,0-0.254,0.112-0.254,0.253 c0,1.482,0.806,3.248,4.655,3.248C17.501,17.007,19.099,15.91,19.099,13.993z"/></svg><span class="tip">Node.js<i>CORS 代理</i></span></div></div>
         </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="download">
+    <div class="wrap">
+      <div class="download-panel reveal">
+        <h2>Windows 桌面版</h2>
+        <p class="sub">一个悬浮在桌面上的日历，随时看、随手记，和手机网页共用一份数据。</p>
+        <div class="dl-cards">
+          <div class="dl-card">
+            <div class="tag">免安装 · 推荐</div>
+            <div class="title">便携版</div>
+            <div class="desc">双击即用，不写注册表，放 U 盘里随身带着走。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe">
+              <svg><use href="#i-download"/></svg>下载便携版
+            </a>
+          </div>
+          <div class="dl-card">
+            <div class="tag">安装版</div>
+            <div class="title">Setup 安装包</div>
+            <div class="desc">标准安装向导，自动创建桌面和开始菜单快捷方式，支持卸载。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe">
+              <svg><use href="#i-download"/></svg>下载安装版
+            </a>
+          </div>
+        </div>
+        <p class="note">首次运行请在「设置」里填你的日历服务器地址。浏览器若提示「无法验证发布者」，点「更多信息 → 仍要运行」即可，未签名的开源应用会有这个正常提示。</p>
       </div>
     </div>
   </section>
@@ -1120,6 +1140,36 @@
     lb.addEventListener('click', (e) => { if (e.target === lb) close(); });
     lb.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') close(); });
   })();
+</script>
+<script>
+/* 手机端目录开关 */
+(function () {
+  var toggle = document.querySelector('.nav-toggle');
+  var menu = document.getElementById('nav-links');
+  if (!toggle || !menu) return;
+  function setOpen(open) {
+    menu.classList.toggle('open', open);
+    toggle.classList.toggle('open', open);
+    toggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+    toggle.setAttribute('aria-label', open ? '收起目录' : '打开目录');
+  }
+  toggle.addEventListener('click', function (e) {
+    e.stopPropagation();
+    setOpen(!menu.classList.contains('open'));
+  });
+  menu.addEventListener('click', function (e) {
+    if (e.target.closest('a')) setOpen(false);
+  });
+  document.addEventListener('click', function (e) {
+    if (!toggle.contains(e.target) && !menu.contains(e.target)) setOpen(false);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') setOpen(false);
+  });
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 640) setOpen(false);
+  });
+})();
 </script>
 </body>
 </html>
