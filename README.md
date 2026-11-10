@@ -332,7 +332,8 @@ pnpm build        # 产物在 dist/
 
 本仓库由作者的私有部署脱敏而来，不含任何真实域名、IP、端口、密钥或凭据：
 
-- 引导弹框预填的 CalDAV 服务器地址、订阅源域名、代理路径等已替换为占位符。
+- 引导弹框预填的 CalDAV 服务器地址、代理路径等已替换为占位符。
+- 内置订阅源（老黄历 / 法定节假日 / 节日节气 / 星座 / 天气）的源站域名不写进仓库：在 `.env.local`（`.gitignore` 已忽略）里写 `VITE_FEED_BASE=https://你的源站`，`pnpm build` 时自动注入；不写则沿用占位符 `your-feed.example.com`，订阅会因域名不存在而全部失败。填源站**裸域**，别加 `www.`——上游会把 `www.` 301 到裸域，而 CORS 代理拉取订阅时不跟随重定向。
 - 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，端口为示例值，clone 后替换成你的真实地址即可。
 - `desktop/main.js` 的日历地址为占位符，构建前替换。
 - `deploy/hermes/SKILL.md` 中的真实域名、内网 IP、用户名、姓名均已脱敏。
