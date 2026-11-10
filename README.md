@@ -10,6 +10,7 @@
 </p>
 
 <p align="center">
+  👀 <a href="https://mstsc.ruibing.wang:7086/">在线体验</a> ·
   🌐 <a href="https://vector9584.github.io/rui-calendar/">应用主页</a> ·
   ⬇️ <a href="https://github.com/vector9584/rui-calendar/releases/latest">下载安装包</a> ·
   <a href="#能做什么">能做什么</a> ·
