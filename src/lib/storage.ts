@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 import { toast as sonnerToast } from 'sonner'
 import i18n from '@/lib/i18n'
 
@@ -21,10 +22,10 @@ function handleStorageError(key: string, e: unknown): void {
       e instanceof DOMException && e.name === 'QuotaExceededError'
         ? i18n.t('errors:toast.storage.full')
         : i18n.t('errors:toast.storage.error')
-    console.error(`Storage error for key "${key}":`, e)
+    runtimeLogger.error(`Storage error for key "${key}":`, e)
     sonnerToast.error(message)
   } else {
-    console.error(`Storage error for key "${key}":`, e)
+    runtimeLogger.error(`Storage error for key "${key}":`, e)
   }
 }
 

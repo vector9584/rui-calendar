@@ -3,6 +3,20 @@ import { buildMasterTruncation, getFutureOverrideIds, isFirstOccurrence } from '
 import { deleteEventWithUndo } from './deleteWithUndo'
 import { showToast } from './toast'
 import i18n from './i18n'
+import { parseOccurrenceInstant } from './occurrenceExpansion'
+
+function occurrencesMatch(
+  left: string | undefined,
+  right: string | undefined,
+  master: CalendarEvent
+): boolean {
+  if (!left || !right) return false
+  if (master.isAllDay) return left.split('T')[0] === right.split('T')[0]
+  return (
+    parseOccurrenceInstant(left, master.timezone).getTime() ===
+    parseOccurrenceInstant(right, master.timezone).getTime()
+  )
+}
 
 /**
  * Resolves the ISO start of the occurrence the user acted on.
@@ -70,13 +84,42 @@ export async function deleteRecurringOccurrence({
   createCalDAVEvent,
   deleteCalDAVEvent,
 }: DeleteRecurringOccurrenceOptions): Promise<boolean> {
-  const recurringMasterId = originalEventId || clickedEventId
   const clickedEvent = events.find((e) => e.id === clickedEventId)
-  const masterEvent = events.find((e) => e.id === recurringMasterId)
+  // A CalDAV round-trip gives detached overrides their own resource id while
+  // retaining recurrenceMasterId. Use that relationship when the popup is
+  // opened directly on the imported override; synthetic expanded occurrences
+  // still use the explicit originalEventId path.
+  const recurringMasterId = originalEventId || clickedEvent?.recurrenceMasterId || clickedEventId
+  const masterEvent =
+    events.find((e) => e.id === recurringMasterId) ||
+    (clickedEvent?.recurrenceId && clickedEvent.uid
+      ? events.find(
+          (event) =>
+            !event.recurrenceId && (event.uid === clickedEvent.uid || event.id === clickedEvent.uid)
+        )
+      : undefined)
+  const resolvedClickedEvent =
+    clickedEvent ||
+    (masterEvent && getOccurrenceStart(undefined, clickedEventId, masterEvent.id)
+      ? events.find(
+          (event) =>
+            Boolean(event.recurrenceId) &&
+            event.recurrenceMasterId === masterEvent.id &&
+            occurrencesMatch(
+              getOccurrenceStart(event, event.id, masterEvent.id),
+              getOccurrenceStart(undefined, clickedEventId, masterEvent.id),
+              masterEvent
+            )
+        )
+      : undefined)
 
   if (mode === 'this') {
     // Exclude this occurrence's date on the master; the series itself stays.
-    const occurrenceStart = getOccurrenceStart(clickedEvent, clickedEventId, originalEventId)
+    const occurrenceStart = getOccurrenceStart(
+      resolvedClickedEvent,
+      clickedEventId,
+      originalEventId
+    )
     if (!occurrenceStart || !masterEvent) return false
 
     const occurrenceDate = occurrenceStart.split('T')[0]
@@ -91,7 +134,7 @@ export async function deleteRecurringOccurrence({
         masterEvent.calendarId,
         { ...masterEvent, excludedDates: updatedExcludedDates },
         null,
-        clickedEvent?.recurrenceId ? [clickedEvent.id] : []
+        resolvedClickedEvent?.recurrenceId ? [resolvedClickedEvent.id] : []
       )
     } catch {
       showToast(i18n.t('errors:sync.occurrenceDeleteFailed'))

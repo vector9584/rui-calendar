@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../lib/runtimeLogger'
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { safeLocalStorage } from '@/lib/storage'
@@ -565,7 +566,7 @@ export const useCalendarStore = create<CalendarStore>()(
         // Capture events with invalid date ranges as broken instead of dropping them
         if (event.start > event.end && !event.isAllDay) {
           const reason = `start (${event.start}) > end (${event.end})`
-          console.warn(
+          runtimeLogger.warn(
             `[Calendar] Broken event detected:\n` +
               `  id: ${event.id}\n` +
               `  title: ${event.title}\n` +
@@ -673,7 +674,7 @@ export const useCalendarStore = create<CalendarStore>()(
 
             if (event.start > event.end && !event.isAllDay) {
               const reason = `start (${event.start}) > end (${event.end})`
-              console.warn(
+              runtimeLogger.warn(
                 `[Calendar] Broken event detected:\n` +
                   `  id: ${event.id}\n` +
                   `  title: ${event.title}\n` +
@@ -769,7 +770,7 @@ export const useCalendarStore = create<CalendarStore>()(
         if (safeUpdates.start !== undefined && safeUpdates.end !== undefined) {
           if (safeUpdates.start > safeUpdates.end && !safeUpdates.isAllDay) {
             const reason = `start (${safeUpdates.start}) > end (${safeUpdates.end})`
-            console.warn('[Calendar] Broken event update:', id)
+            runtimeLogger.warn('[Calendar] Broken event update:', id)
             const existingEvent = get().events.find((e) => e.id === id)
             if (existingEvent) {
               const mergedEvent = { ...existingEvent, ...safeUpdates }
@@ -793,7 +794,7 @@ export const useCalendarStore = create<CalendarStore>()(
             const end = safeUpdates.end ?? existingEvent.end
             if (start > end && !existingEvent.isAllDay) {
               const reason = `start (${start}) > end (${end})`
-              console.warn('[Calendar] Broken event update:', id)
+              runtimeLogger.warn('[Calendar] Broken event update:', id)
               const mergedEvent = { ...existingEvent, ...safeUpdates }
               const existingBroken = get().brokenEvents.find((be) => be.event.id === id)
               if (!existingBroken) {
@@ -1171,7 +1172,7 @@ export const useCalendarStore = create<CalendarStore>()(
             (c) => c.id !== id && c.name.toLowerCase() === newName.toLowerCase()
           )
           if (nameCollision) {
-            console.warn(`[Calendar] Category name '${newName}' already exists. Rename rejected.`)
+            runtimeLogger.warn(`[Calendar] Category name '${newName}' already exists. Rename rejected.`)
             return
           }
         }

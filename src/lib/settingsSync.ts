@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 import { normalizeCategoryStyleRules } from './categoryStyles'
 /**
  * CalDAV Settings Sync
@@ -140,11 +141,11 @@ export function deserializeSettings(json: string): {
   try {
     const payload = JSON.parse(json) as SettingsSyncPayload
     if (payload.version !== SYNC_FORMAT_VERSION) {
-      console.warn(`[SettingsSync] Unknown sync format version: ${payload.version}`)
+      runtimeLogger.warn(`[SettingsSync] Unknown sync format version: ${payload.version}`)
       return null
     }
     if (!payload.settings || typeof payload.settings !== 'object') {
-      console.warn('[SettingsSync] Invalid settings payload')
+      runtimeLogger.warn('[SettingsSync] Invalid settings payload')
       return null
     }
     return {
@@ -157,7 +158,7 @@ export function deserializeSettings(json: string): {
         : {}),
     }
   } catch (error) {
-    console.warn('[SettingsSync] Failed to parse settings JSON:', error)
+    runtimeLogger.warn('[SettingsSync] Failed to parse settings JSON:', error)
     return null
   }
 }

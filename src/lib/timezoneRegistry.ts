@@ -4,7 +4,7 @@ import ICAL from 'ical.js'
 // assets below; only zones requested through the registration path are parsed
 // into ICAL.Timezone instances.
 //
-import zoneIndex from '@touch4it/ical-timezones/zones.js'
+import zoneIndex from '@/config/timezoneIndex'
 
 // Raw zone texts keyed by Vite's glob path (absolute); matched by suffix.
 // Synchronous recurrence expansion and export paths need a zone to be

@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 import { parseISO } from 'date-fns'
 import { fromZonedTime, formatInTimeZone } from 'date-fns-tz'
 import { RRule } from 'rrule'
@@ -266,7 +267,7 @@ let warnedUnknownDeviceZone = false
 function warnUnknownDeviceZone(deviceTz: string): void {
   if (warnedUnknownDeviceZone) return
   warnedUnknownDeviceZone = true
-  console.warn(
+  runtimeLogger.warn(
     `[Calendar] Device timezone "${deviceTz}" cannot be resolved for recurrence ` +
       'expansion; falling back to UTC-weekday expansion. Timed events created ' +
       'locally may repeat on the wrong weekdays (issue #126).'

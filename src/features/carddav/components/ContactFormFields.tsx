@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { JSX } from 'react'
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { Trans, useTranslation } from 'react-i18next'
@@ -245,7 +246,7 @@ export function ContactFormFields({ value, onChange }: ContactFormFieldsProps): 
         const dataUri = await imageCompression.getDataUrlFromFile(compressed)
         update({ photo: dataUri })
       } catch (err) {
-        console.error('Failed to process photo:', err)
+        runtimeLogger.error('Failed to process photo:', err)
       } finally {
         setPhotoUploading(false)
         if (fileInputRef.current) fileInputRef.current.value = ''

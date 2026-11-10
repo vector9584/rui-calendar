@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { CalDAVCredentials } from '../types'
 import { createUuid } from '@/lib/uuid'
 import { validateCustomHeaders } from './customHeaders'
@@ -61,7 +62,7 @@ function getAllStoredCredentials(): StoredCredential[] {
   try {
     return JSON.parse(stored) as StoredCredential[]
   } catch {
-    console.warn('[CalDAV] Failed to parse stored credentials from localStorage.')
+    runtimeLogger.warn('[CalDAV] Failed to parse stored credentials from localStorage.')
     return []
   }
 }
@@ -88,7 +89,7 @@ export async function getAllCredentials(): Promise<CalDAVCredentials[]> {
       cred.password = await encryptPassword(cred.password)
       migrated = true
     } else {
-      console.warn('[CalDAV] Unknown password format for credential', cred.id)
+      runtimeLogger.warn('[CalDAV] Unknown password format for credential', cred.id)
       continue
     }
 

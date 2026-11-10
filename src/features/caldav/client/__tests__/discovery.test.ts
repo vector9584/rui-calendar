@@ -167,7 +167,7 @@ describe('discovery', () => {
       const fetchSpy = vi.fn().mockResolvedValue({
         ok: true,
         status: 200,
-        url: 'https://proxy.example.com/https%3A%2F%2Fcaldav.example.com/.well-known/caldav',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9jYWxkYXYuZXhhbXBsZS5jb20/.well-known/caldav',
         headers: new Headers({
           'X-Target-URL': 'https://caldav.example.com/dav.php',
         }),
@@ -190,7 +190,7 @@ describe('discovery', () => {
       const mockResponse = {
         ok: false,
         status: 207,
-        url: 'https://proxy.example.com/https%3A%2F%2Fcaldav.example.com%2Fdav.php',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9jYWxkYXYuZXhhbXBsZS5jb20%2Fdav.php',
         headers: new Headers({
           'X-Target-URL': 'https://caldav.example.com/dav.php',
         }),
@@ -218,7 +218,7 @@ describe('discovery', () => {
       const mockResponse = {
         ok: false,
         status: 404,
-        url: 'https://proxy.example.com/https%3A%2F%2Fradicale.example.com%2F.web%2F',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9yYWRpY2FsZS5leGFtcGxlLmNvbQ%2F.web%2F',
         headers: new Headers({
           'X-Target-URL': 'https://radicale.example.com/.web/',
         }),
@@ -240,7 +240,7 @@ describe('discovery', () => {
       const mockResponse = {
         ok: false,
         status: 301,
-        url: 'https://proxy.example.com/https%3A%2F%2Fcaldav.example.com%2F.well-known%2Fcaldav',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9jYWxkYXYuZXhhbXBsZS5jb20%2F.well-known%2Fcaldav',
         headers: new Headers({
           Location: '/remote.php/dav',
         }),
@@ -259,7 +259,7 @@ describe('discovery', () => {
       const mockResponse = {
         ok: false,
         status: 207,
-        url: 'https://proxy.example.com/https%3A%2F%2Fdavis.example.com%2Fdav%2F',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9kYXZpcy5leGFtcGxlLmNvbQ%2Fdav%2F',
         headers: new Headers({
           'X-Target-URL': 'https://davis.example.com/dav/',
         }),
@@ -282,7 +282,7 @@ describe('discovery', () => {
       const mockResponse = {
         status: 200,
         ok: true,
-        url: 'https://proxy.example.com/https%3A%2F%2Fradicale.example.com%2F.well-known%2Fcaldav',
+        url: 'https://proxy.example.com/aHR0cHM6Ly9yYWRpY2FsZS5leGFtcGxlLmNvbQ%2F.well-known%2Fcaldav',
         headers: new Headers(),
       } as unknown as Response
       vi.stubGlobal('fetch', vi.fn().mockResolvedValue(mockResponse))

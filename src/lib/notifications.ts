@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 import { format, addMinutes, addDays, isSameDay, parseISO } from 'date-fns'
 import { toEventInstant, formatTime } from '@/lib/datetime'
 import { useSettingsStore } from '@/store/settingsStore'
@@ -85,7 +86,7 @@ export function reminderBody(event: CalendarEvent, referenceTime = new Date()): 
 
 export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
   if (!('Notification' in window)) {
-    console.warn('Notifications not supported')
+    runtimeLogger.warn('Notifications not supported')
     return 'denied'
   }
 

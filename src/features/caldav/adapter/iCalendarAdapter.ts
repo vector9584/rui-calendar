@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import ICAL from 'ical.js'
 import { ensureZoneRegistered, preloadTimezones } from '@/lib/timezoneRegistry'
 import type { CalendarEvent } from '@/types'
@@ -134,9 +135,8 @@ function parseEventsFromComponents(
       for (const vevent of comp.getAllSubcomponents('vevent')) {
         try {
           events.push(icalEventToCalendarEvent(vevent, calendarId))
-        } catch (e) {
+        } catch {
           hadComponentParseFailures = true
-          console.error('Failed to parse vevent:', e)
         }
       }
 
@@ -145,9 +145,8 @@ function parseEventsFromComponents(
       for (const vtodo of comp.getAllSubcomponents('vtodo')) {
         try {
           resourceTasks.push(icalVtodoToCalendarEvent(vtodo, calendarId))
-        } catch (e) {
+        } catch {
           hadComponentParseFailures = true
-          console.error('Failed to parse vtodo:', e)
         }
       }
       inheritMasterSortOrder(resourceTasks)
@@ -158,9 +157,8 @@ function parseEventsFromComponents(
       for (const vjournal of comp.getAllSubcomponents('vjournal')) {
         try {
           journals.push(icalVjournalToCalendarEvent(vjournal, calendarId))
-        } catch (e) {
+        } catch {
           hadComponentParseFailures = true
-          console.error('Failed to parse vjournal:', e)
         }
       }
   }
@@ -201,8 +199,10 @@ function parseICALDataComponents(
     const hadParseFailures =
       components.length === 0 || components.some((component) => component.name !== 'vcalendar')
     return { components, hadParseFailures }
-  } catch (e) {
-    console.error('ICAL.parse failed:', e)
+  } catch {
+    // Invalid remote resources are reported through the sync status UI. Keep
+    // parser details out of the console so expected unreadable resources do
+    // not appear as uncaught application errors.
     return { components: [], hadParseFailures: true }
   }
 }
@@ -232,8 +232,7 @@ function parseICALDataWithStatus(iCalData: string, calendarId: string): ParsedIC
       events: userEventsFromParsed(parsed),
       hadParseFailures: parsed.hadComponentParseFailures,
     }
-  } catch (e) {
-    console.error('ICAL component parse failed:', e)
+  } catch {
     return { events: [], hadParseFailures: true }
   }
 }
@@ -258,8 +257,7 @@ export async function parseICALDataAsyncWithStatus(
       events: userEventsFromParsed(parsed),
       hadParseFailures: parsed.hadComponentParseFailures,
     }
-  } catch (e) {
-    console.error('ICAL component parse failed:', e)
+  } catch {
     return { events: [], hadParseFailures: true }
   }
 }
@@ -379,7 +377,7 @@ export function parseICALJournal(iCalData: string, calendarId: string): Calendar
   try {
     comps = parseComponentsForData(iCalData)
   } catch (e) {
-    console.error('ICAL.parse failed for journals:', e)
+    runtimeLogger.error('ICAL.parse failed for journals:', e)
     return []
   }
 

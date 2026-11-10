@@ -1,9 +1,11 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { useState, useCallback, useEffect } from 'react'
 import type { AddressBook, Contact, CardDAVSyncState, PendingContactChange } from '../types'
 import type { PendingDeleteSnapshot } from '@/lib/deleteContactWithUndo'
 import type { ContactsBackend } from '../client/ContactsBackend'
 import { createContactsBackend } from '../client/createBackend'
 import { useContactStore } from '@/store/contactStore'
+import { useSettingsStore } from '@/store/settingsStore'
 import { getCredentialById } from '@/features/caldav/client/credentials'
 import * as storage from '@/features/caldav/sync/accountStorage'
 import { showToast } from '@/lib/toast'
@@ -143,7 +145,7 @@ export function useCardDAV(): UseCardDAVReturn {
 
       if (changes.length === 0) return []
 
-      console.log(`[CardDAV] Replaying ${changes.length} pending changes`)
+      runtimeLogger.debug(`[CardDAV] Replaying ${changes.length} pending changes`)
 
       const replayedIds: string[] = []
 
@@ -196,7 +198,7 @@ export function useCardDAV(): UseCardDAVReturn {
 
           replayedIds.push(change.id)
         } catch (err) {
-          console.warn(`[CardDAV] Failed to replay change ${change.id}:`, err)
+          runtimeLogger.warn(`[CardDAV] Failed to replay change ${change.id}:`, err)
           useContactStore.getState().updateContact(change.contactId, { syncStatus: 'failed' })
           useContactStore.getState().incrementRetryCount(change.id)
 
@@ -343,12 +345,12 @@ export function useCardDAV(): UseCardDAVReturn {
                   })
                 }
 
-                console.log(
+                runtimeLogger.debug(
                   `[CardDAV] sync-collection for ${addressBook.name}: ${syncResult.changes.length} changes`
                 )
               } else if (syncResult.tokenInvalidated) {
                 // Token invalidated - fall back to full fetch
-                console.log(
+                runtimeLogger.debug(
                   `[CardDAV] sync-token invalidated for ${addressBook.name}, falling back to full fetch`
                 )
                 const contacts = await client.fetchContacts(addressBook)
@@ -370,7 +372,7 @@ export function useCardDAV(): UseCardDAVReturn {
               allContacts.push(...contacts)
             }
           } catch (err) {
-            console.warn(`[CardDAV] Failed to sync ${addressBook.name}:`, err)
+            runtimeLogger.warn(`[CardDAV] Failed to sync ${addressBook.name}:`, err)
             // A full fetch is a complete listing again, so it may prune by absence.
             deltaSyncedBookIds.delete(addressBook.id)
             // Fall back to full fetch on error
@@ -378,7 +380,7 @@ export function useCardDAV(): UseCardDAVReturn {
               const contacts = await client.fetchContacts(addressBook)
               allContacts.push(...contacts)
             } catch (fallbackErr) {
-              console.warn(
+              runtimeLogger.warn(
                 `[CardDAV] Fallback fetch also failed for ${addressBook.name}:`,
                 fallbackErr
               )
@@ -445,7 +447,7 @@ export function useCardDAV(): UseCardDAVReturn {
                 const serverModified = new Date(newContact.lastModified).getTime()
 
                 if (localModified > serverModified) {
-                  console.warn(
+                  runtimeLogger.warn(
                     `[CardDAV] Conflict on contact ${existing.id}: local modified after server. Server wins.`
                   )
                   conflicts.push(existing.displayName)
@@ -500,11 +502,11 @@ export function useCardDAV(): UseCardDAVReturn {
         }))
 
         const skippedMsg = skippedBooks > 0 ? ` (${skippedBooks} unchanged)` : ''
-        console.log(
+        runtimeLogger.debug(
           `[CardDAV] Synced ${allContacts.length} contacts from ${newAddressBooks.length - skippedBooks} address books${skippedMsg}`
         )
       } catch (error) {
-        console.error('[CardDAV] syncAccount failed:', error)
+        runtimeLogger.error('[CardDAV] syncAccount failed:', error)
         const msg = error instanceof Error ? error.message : i18n.t('errors:toast.sync.failed')
         setSyncState((prev) => ({
           ...prev,
@@ -561,13 +563,14 @@ export function useCardDAV(): UseCardDAVReturn {
 
   // Auto-sync contacts from all accounts on mount
   useEffect(() => {
+    if (!useSettingsStore.getState().contactsEnabled) return
     const syncAllAccounts = async () => {
       const accounts = storage.getAllAccounts()
       for (const account of accounts) {
         try {
           await syncAccount(account.id)
         } catch (err) {
-          console.warn('[CardDAV] Failed to sync account:', account.name, err)
+          runtimeLogger.warn('[CardDAV] Failed to sync account:', account.name, err)
         }
       }
     }

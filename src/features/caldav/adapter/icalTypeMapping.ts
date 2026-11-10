@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import ICAL from 'ical.js'
 import { createUuid } from '@/lib/uuid'
 import type {
@@ -1414,7 +1415,7 @@ export function icalVtodoToCalendarEvent(vtodo: ICAL.Component, calendarId: stri
   if (hasThisAndFuture) {
     // We apply the override to its single instance only. Saying so beats
     // silently mis-applying a range we don't implement.
-    console.warn(
+    runtimeLogger.warn(
       'VTODO RECURRENCE-ID;RANGE=THISANDFUTURE is not supported; treating as a single instance'
     )
   }
@@ -1651,7 +1652,7 @@ export function calendarEventToIcalVtodo(
     vtodo.removeAllProperties('recurrence-id')
     // Without a DTSTART there is no anchor, so an RRULE would be meaningless.
     if (hasRecurrence && !dtstartIso) {
-      console.warn('Dropping RRULE from a VTODO with no DTSTART/DUE to anchor it')
+      runtimeLogger.warn('Dropping RRULE from a VTODO with no DTSTART/DUE to anchor it')
       vtodo.removeAllProperties('rrule')
       vtodo.removeAllProperties('exdate')
     } else {
@@ -1783,7 +1784,7 @@ export function icalVjournalToCalendarEvent(
   // DTSTART — date only for journal entries
   let startDate = toLocalDateString(new Date())
   if (!dtstartProp) {
-    console.warn('VJOURNAL missing DTSTART, defaulting to today:', uidProp?.getFirstValue())
+    runtimeLogger.warn('VJOURNAL missing DTSTART, defaulting to today:', uidProp?.getFirstValue())
   }
   if (dtstartProp) {
     const raw = dtstartProp.getFirstValue()

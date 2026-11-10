@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import Fuse, { type IFuseOptions } from 'fuse.js'
 import type { Contact } from '../types'
 
@@ -44,7 +45,7 @@ export function searchContacts(
   filters?: { addressBookIds?: string[]; tags?: string[] }
 ): Contact[] {
   if (!fuseInstance) {
-    console.warn('[ContactSearch] Index not initialized.')
+    runtimeLogger.warn('[ContactSearch] Index not initialized.')
     return []
   }
 

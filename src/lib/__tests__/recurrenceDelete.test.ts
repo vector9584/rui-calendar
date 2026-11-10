@@ -109,6 +109,34 @@ describe('deleteRecurringOccurrence', () => {
       expect(deps.saveRecurrenceOverride.mock.calls[0][3]).toEqual(['ex1'])
     })
 
+    it('removes a TZID override when deleting its synthetic master occurrence', async () => {
+      const zonedMaster = {
+        ...master,
+        timezone: 'America/New_York',
+      }
+      const override = makeEvent({
+        id: 'override-1',
+        recurrenceId: '2024-03-15T09:00:00',
+        recurrenceMasterId: zonedMaster.id,
+        uid: zonedMaster.uid,
+        timezone: 'America/New_York',
+        start: '2024-03-15T09:00:00',
+      })
+      const deps = makeDeps([zonedMaster, override])
+
+      await deleteRecurringOccurrence({
+        mode: 'this',
+        clickedEventId: 'master1-2024-03-15T13:00:00.000Z',
+        originalEventId: zonedMaster.id,
+        ...deps,
+      })
+
+      expect(deps.saveRecurrenceOverride.mock.calls[0][3]).toEqual(['override-1'])
+      expect(deps.saveRecurrenceOverride.mock.calls[0][1].excludedDates).toEqual([
+        '2024-03-15T09:00:00',
+      ])
+    })
+
     it('reports failure and keeps the event when the override save throws', async () => {
       const deps = makeDeps([master])
       deps.saveRecurrenceOverride.mockRejectedValue(new Error('offline'))

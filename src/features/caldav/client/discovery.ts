@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { createDAVClient } from 'tsdav'
 import { webFetch } from '@/lib/webFetch'
 import { createDirectDavFetch, validateCustomHeaders, type CustomHeaders } from './customHeaders'
@@ -128,16 +129,16 @@ export async function discoverServerUrl(baseUrl: string, proxyUrl?: string): Pro
       // the real Location header — discard and fall back to the base URL.
       const wellKnownPath = '/.well-known/caldav'
       if (discovered.endsWith(wellKnownPath) || discovered.endsWith(wellKnownPath + '/')) {
-        console.log(
+        runtimeLogger.debug(
           '[CalDAV] Discovery: probe returned .well-known/caldav as base — proxy likely followed redirect. Falling back.'
         )
       } else {
-        console.log('[CalDAV] Discovery: well-known probe succeeded:', discovered)
+        runtimeLogger.debug('[CalDAV] Discovery: well-known probe succeeded:', discovered)
         return discovered
       }
     }
   } catch (error) {
-    console.warn(
+    runtimeLogger.warn(
       '[CalDAV] Discovery: well-known probe failed:',
       error instanceof Error ? error.message : String(error)
     )
@@ -153,7 +154,7 @@ export async function discoverServerUrl(baseUrl: string, proxyUrl?: string): Pro
       const caldavBase = `${parsed.protocol}//caldav.${bareDomain}${parsed.port ? `:${parsed.port}` : ''}`
       const caldavDiscovered = await probeWellKnown(caldavBase, proxyUrl)
       if (caldavDiscovered) {
-        console.log('[CalDAV] Discovery: caldav. subdomain probe succeeded:', caldavDiscovered)
+        runtimeLogger.debug('[CalDAV] Discovery: caldav. subdomain probe succeeded:', caldavDiscovered)
         return caldavDiscovered
       }
     }
@@ -161,7 +162,7 @@ export async function discoverServerUrl(baseUrl: string, proxyUrl?: string): Pro
     // caldav. subdomain probe failed — fall through to base URL
   }
 
-  console.log('[CalDAV] Discovery: falling back to base URL:', normalizedUrl)
+  runtimeLogger.debug('[CalDAV] Discovery: falling back to base URL:', normalizedUrl)
   return normalizedUrl.replace(/\/$/, '')
 }
 
@@ -480,7 +481,7 @@ export async function probeConnection(
     if (!result.ok) {
       const normalizedBase = serverUrl.replace(/\/$/, '')
       if (baseUrl !== normalizedBase) {
-        console.log(
+        runtimeLogger.debug(
           '[CalDAV] Probe: discovered URL failed (' + result.status + '), trying base URL:',
           normalizedBase
         )

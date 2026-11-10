@@ -1590,13 +1590,13 @@ END:VCALENDAR`,
     it('encodes only the origin, path stays unencoded', () => {
       const result = buildProxyUrl('https://proxy.example.com', 'https://caldav.example.com/dav')
       expect(result).toBe(
-        `https://proxy.example.com/${encodeURIComponent('https://caldav.example.com')}/dav`
+        'https://proxy.example.com/aHR0cHM6Ly9jYWxkYXYuZXhhbXBsZS5jb20/dav'
       )
     })
 
     it('strips trailing slash from proxy base', () => {
       const result = buildProxyUrl('https://proxy.example.com/', 'https://target.com')
-      expect(result).toBe(`https://proxy.example.com/${encodeURIComponent('https://target.com')}/`)
+      expect(result).toBe('https://proxy.example.com/aHR0cHM6Ly90YXJnZXQuY29t/')
     })
   })
 
@@ -1773,7 +1773,7 @@ END:VCALENDAR`,
     <D:href>/calendars/test/default/event-deleted.ics</D:href>
     <D:status>HTTP/1.1 404 Not Found</D:status>
   </D:response>
-  <D:sync-token>https://caldav.example.com/sync/3</D:sync-token>
+  <D:sync-token>aHR0cHM6Ly9jYWxkYXYuZXhhbXBsZS5jb20/sync/3</D:sync-token>
 </D:multistatus>`
       fetchSpy.mockResolvedValueOnce(multistatusResponse(xml))
 

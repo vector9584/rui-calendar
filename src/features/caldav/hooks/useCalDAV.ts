@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { useState, useCallback, useContext, useEffect, useMemo } from 'react'
 import { addDays } from 'date-fns'
 import type { CalendarEvent } from '@/types'
@@ -470,7 +471,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       if (changes.length === 0) return
 
       if (caldavDebugMode) {
-        console.log(`[CalDAV] Processing ${changes.length} pending changes...`)
+        runtimeLogger.debug(`[CalDAV] Processing ${changes.length} pending changes...`)
       }
 
       const allCalendars = storage.getAllCalendars()
@@ -482,7 +483,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       for (const change of changes) {
         // Bug 18 fix: enforce retry limit
         if (change.retryCount >= MAX_RETRIES) {
-          console.warn(
+          runtimeLogger.warn(
             `[CalDAV] Dropping pending change ${change.id} after ${MAX_RETRIES} retries (type=${change.type}, eventId=${change.eventId})`
           )
           if (change.type === 'delete-href') {
@@ -793,7 +794,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
                 etag = eventInStore?.etag || ''
               }
               if (caldavDebugMode) {
-                console.log('[CalDAV] Deleting event from server:', eventUrl, 'etag:', etag)
+                runtimeLogger.debug('[CalDAV] Deleting event from server:', eventUrl, 'etag:', etag)
               }
               try {
                 await engine.deleteEvent(eventUrl, etag)
@@ -886,7 +887,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       const remaining = storage.getPendingChanges()
       setSyncState((prev) => ({ ...prev, pendingChanges: remaining.length }))
 
-      console.log(
+      runtimeLogger.debug(
         `[CalDAV] Pending changes processed: ${succeeded} succeeded, ${failed} failed, ${remaining.length} remaining`
       )
     } finally {
@@ -978,12 +979,16 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             }
             const { contactsEnabled, updateSettings } = useSettingsStore.getState()
             if (!contactsEnabled && hasContacts) {
-              console.log('[CalDAV] Enabling contacts (found contacts in address books)')
+              runtimeLogger.debug('[CalDAV] Enabling contacts (found contacts in address books)')
               updateSettings({ contactsEnabled: true })
             }
           }
-        } catch (err) {
-          console.warn('[CalDAV] CardDAV check failed:', err)
+        } catch {
+          // CardDAV is optional. Servers that expose CalDAV without an
+          // address-book home are a normal capability result, not a sync
+          // failure; keep the status UI quiet unless the user enables debug.
+          if (useSettingsStore.getState().caldavDebugMode)
+            console.debug('[CalDAV] CardDAV capability unavailable')
         }
       }
     }
@@ -1011,7 +1016,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         useProgressStore.getState().update(progressId, patch)
 
       try {
-        console.log('[CalDAV] addAccount: probing server...', serverUrl)
+        runtimeLogger.debug('[CalDAV] addAccount: probing server...', serverUrl)
         // probeConnection handles discovery, the PROPFIND, and the base-URL
         // fallback in one pass, and reports *why* a failure happened.
         const probe = await probeConnection(
@@ -1023,7 +1028,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
           customHeaders,
           options
         )
-        console.log('[CalDAV] addAccount: probe result:', probe.ok, probe.status ?? '')
+        runtimeLogger.debug('[CalDAV] addAccount: probe result:', probe.ok, probe.status ?? '')
 
         if (!probe.ok) {
           throw new CalDAVConnectionError(
@@ -1044,7 +1049,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
 
         const detectedProtocol: CalendarProtocol = probe.protocol ?? 'caldav'
         options.onProtocolDetected?.(detectedProtocol)
-        console.log('[CalDAV] addAccount: creating client...')
+        runtimeLogger.debug('[CalDAV] addAccount: creating client...')
         const client = await createCalendarBackend(
           discoveredUrl,
           credential,
@@ -1052,9 +1057,9 @@ export function useCalDAVInstance(): UseCalDAVReturn {
           detectedProtocol
         )
         reportProgress({ label: i18n.t('caldav:progress.lookingForCalendars') })
-        console.log('[CalDAV] addAccount: fetching calendars...')
+        runtimeLogger.debug('[CalDAV] addAccount: fetching calendars...')
         const serverCalendars = await client.fetchCalendars()
-        console.log('[CalDAV] addAccount: found', serverCalendars.length, 'calendars')
+        runtimeLogger.debug('[CalDAV] addAccount: found', serverCalendars.length, 'calendars')
 
         const newAccount = storage.saveAccount({
           name,
@@ -1165,11 +1170,11 @@ export function useCalDAVInstance(): UseCalDAVReturn {
           serverCalendars,
           CALDAV_FETCH_CONCURRENCY,
           async (cal) => {
-            console.log('[CalDAV] addAccount: fetching events for', cal.name, cal.url)
+            runtimeLogger.debug('[CalDAV] addAccount: fetching events for', cal.name, cal.url)
             const fetched = unwrapFetchEvents(await client.fetchEvents(cal.url, start, end))
             progressDone++
             reportProgress({ done: progressDone })
-            console.log(
+            runtimeLogger.debug(
               '[CalDAV] addAccount: got',
               fetched.objects.length,
               'event objects for',
@@ -1246,7 +1251,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         }))
         applyEventChanges({ upserts: pendingUpserts, deleteIds: [], categories: categoriesToAdd })
 
-        console.log(`[CalDAV] addAccount: done — ${eventsAdded} events added`)
+        runtimeLogger.debug(`[CalDAV] addAccount: done — ${eventsAdded} events added`)
 
         // The import succeeded, so the cursors captured *before* it are now a
         // truthful description of what we hold, and the next sync can go
@@ -1259,7 +1264,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             // fully read. Keep the server cursors unset so the next sync
             // retries the missing component/resource instead of skipping past
             // it.
-            console.warn(
+            runtimeLogger.warn(
               `[CalDAV] addAccount: leaving cursors unset for ${cal.id}; the initial listing was incomplete.`
             )
             continue
@@ -1276,7 +1281,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         if (hasJournalEntries) {
           const { journalEnabled, updateSettings } = useSettingsStore.getState()
           if (!journalEnabled) {
-            console.log('[CalDAV] Enabling journaling after addAccount (found journal entries)')
+            runtimeLogger.debug('[CalDAV] Enabling journaling after addAccount (found journal entries)')
             updateSettings({ journalEnabled: true })
           }
         }
@@ -1304,7 +1309,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               for (const book of addressBooks) {
                 try {
                   const contacts = await carddavClient.fetchContacts(book)
-                  console.log(
+                  runtimeLogger.debug(
                     `[CalDAV] Address book "${book.name}" has ${contacts.length} contacts`
                   )
                   if (contacts.length > 0) {
@@ -1312,17 +1317,20 @@ export function useCalDAVInstance(): UseCalDAVReturn {
                     break
                   }
                 } catch (err) {
-                  console.warn(`[CalDAV] Failed to fetch contacts from "${book.name}":`, err)
+                  runtimeLogger.warn(`[CalDAV] Failed to fetch contacts from "${book.name}":`, err)
                 }
               }
               const { contactsEnabled, updateSettings } = useSettingsStore.getState()
               if (!contactsEnabled && hasContacts) {
-                console.log('[CalDAV] Enabling contacts (found contacts in address books)')
+                runtimeLogger.debug('[CalDAV] Enabling contacts (found contacts in address books)')
                 updateSettings({ contactsEnabled: true })
               }
             }
-          } catch (err) {
-            console.warn('[CalDAV] CardDAV check failed:', err)
+          } catch {
+            // A CalDAV-only server may not expose CardDAV; that is expected
+            // and does not make the calendar sync unhealthy.
+            if (useSettingsStore.getState().caldavDebugMode)
+              console.debug('[CalDAV] CardDAV capability unavailable')
           }
         }
 
@@ -1401,10 +1409,9 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             }
           }
         } catch (err) {
-          console.warn('[CalDAV] Settings auto-discovery failed:', err)
+          runtimeLogger.warn('[CalDAV] Settings auto-discovery failed:', err)
         }
       } catch (error) {
-        console.error('[CalDAV] addAccount failed:', error)
         setSyncState((prev) => ({
           ...prev,
           status: 'error',
@@ -1450,7 +1457,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         )
         if (alreadyConnected) continue
 
-        console.log(`[CalDAV] Auto-connecting to preconfigured account: ${accountName}`)
+        runtimeLogger.debug(`[CalDAV] Auto-connecting to preconfigured account: ${accountName}`)
         try {
           await addAccount(
             credential.url,
@@ -1461,8 +1468,9 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             credential.customHeaders
           )
           connected++
-        } catch (err) {
-          console.error(`[CalDAV] Failed to auto-connect ${accountName}:`, err)
+        } catch {
+          // addAccount preserves the connection failure in sync state so the
+          // settings and status UI can explain it without console noise.
         }
       }
 
@@ -1621,7 +1629,8 @@ export function useCalDAVInstance(): UseCalDAVReturn {
           calendarsToSync = discoveredCalendars
           setCalendars(storage.getAllCalendars())
         } catch (error) {
-          console.warn('[CalDAV] Could not refresh calendar collections:', error)
+          if (navigator.onLine)
+            runtimeLogger.warn('[CalDAV] Could not refresh calendar collections:', error)
         }
 
         const start = '1970-01-01T00:00:00.000Z'
@@ -1668,7 +1677,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               // Logged, because "skipped" and "silently did nothing" are
               // otherwise indistinguishable from the console — the whole
               // point of this branch is that it emits no network traffic.
-              console.log(`[CalDAV] ${calendarLabel(cal)}: skipped, ctag unchanged`)
+              runtimeLogger.debug(`[CalDAV] ${calendarLabel(cal)}: skipped, ctag unchanged`)
               continue
             }
 
@@ -1681,7 +1690,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               if (report.tokenInvalidated) {
                 // RFC 6578 §3.2 — the cursor is dead. Fall back to a full
                 // listing and re-establish a token from this cycle's PROPFIND.
-                console.warn(
+                runtimeLogger.warn(
                   `[CalDAV] Sync token rejected for calendar ${cal.name || cal.id}; falling back to a full sync.`
                 )
               } else {
@@ -1717,7 +1726,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               // duplicate resolution, store writes — stays deterministic and
               // serial.
               const changed = changes.filter((change) => change.status === 'changed')
-              console.log(
+              runtimeLogger.debug(
                 `[CalDAV] ${calendarLabel(cal)}: incremental sync, ${changed.length} changed, ${
                   changes.length - changed.length
                 } removed`
@@ -1752,7 +1761,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
                 continue
               }
             } else {
-              console.log(
+              runtimeLogger.debug(
                 `[CalDAV] ${calendarLabel(cal)}: full listing${
                   storedToken ? ' (sync token unusable)' : ' (no stored sync token)'
                 }`
@@ -1886,7 +1895,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
                     ...prev,
                     conflicts: [...prev.conflicts, conflict],
                   }))
-                  console.log(
+                  runtimeLogger.debug(
                     `[CalDAV] Conflict detected for event ${parsedEvent.id} (local seq ${localSeq} vs server seq ${serverSeq}). Awaiting user resolution.`
                   )
                   continue
@@ -1935,7 +1944,13 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               for (const localEvent of deletionCandidates) {
                 if (
                   !serverEventIds.has(localEvent.id) &&
-                  !pendingLocalChangeIds.has(localEvent.id)
+                  !pendingLocalChangeIds.has(localEvent.id) &&
+                  // A locally-created item has no server href until its first
+                  // successful PUT. A complete remote listing cannot prove
+                  // that such an offline draft was deleted, so preserve it
+                  // for the pending queue to upload instead of dropping it
+                  // during the initial/background sync race.
+                  !(localEvent.type === 'journal' && localEvent.syncStatus === 'pending')
                 ) {
                   pendingDeleteIds.push(localEvent.id)
                   // Drop the cached original too, but only when the resource
@@ -1959,13 +1974,8 @@ export function useCalDAVInstance(): UseCalDAVReturn {
               // is retried next cycle. Holding them is safe for the deletions
               // applied above — they are idempotent, so the next cycle simply
               // finds nothing left to remove.
-              console.warn(
-                `[CalDAV] Calendar ${cal.id} not fully reconciled this cycle: ${
-                  hadComponentFailures
-                    ? 'one or more component queries failed, so remote deletions were skipped.'
-                    : `${failedHrefs.length} resource(s) failed to parse and were left as they are.`
-                }`
-              )
+              // Unreadable resources are surfaced by the sync status UI below.
+              // Keep expected remote-data failures out of the console.
             }
 
             const categoriesToAdd = newCategoryNames.map((catName) => ({
@@ -1982,7 +1992,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             // One calendar failing must not stop the rest from syncing: log,
             // accumulate, and let the account sync finish — the pending queue
             // still drains (see the finally below).
-            console.warn(`[CalDAV] Sync failed for calendar ${cal.id}:`, err)
+            // The accumulated sync error is shown in the calendar status UI.
             syncErrors.push(
               `calendar ${cal.name || cal.id}: ${err instanceof Error ? err.message : String(err)}`
             )
@@ -2023,16 +2033,16 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         // After sync, check if any journal entries exist and enable journaling if so
         const allEvents = useCalendarStore.getState().events
         const hasJournalEntries = allEvents.some((e) => e.type === 'journal')
-        console.log('[CalDAV] Journal check after sync:', {
+        runtimeLogger.debug('[CalDAV] Journal check after sync:', {
           totalEvents: allEvents.length,
           journalEntries: allEvents.filter((e) => e.type === 'journal').length,
           hasJournalEntries,
         })
         if (hasJournalEntries) {
           const { journalEnabled, updateSettings } = useSettingsStore.getState()
-          console.log('[CalDAV] Journal enabled status:', journalEnabled)
+          runtimeLogger.debug('[CalDAV] Journal enabled status:', journalEnabled)
           if (!journalEnabled) {
-            console.log('[CalDAV] Enabling journaling...')
+            runtimeLogger.debug('[CalDAV] Enabling journaling...')
             updateSettings({ journalEnabled: true })
           }
         }
@@ -2091,7 +2101,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
             }
           }
         } catch (err) {
-          console.warn('[CalDAV] Settings pull after sync failed:', err)
+          runtimeLogger.warn('[CalDAV] Settings pull after sync failed:', err)
         }
       } catch (error) {
         setSyncState((prev) => ({
@@ -2304,7 +2314,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       try {
         await syncAccount(account.id)
       } catch (err) {
-        console.warn(`[CalDAV] Sync failed for account ${account.id}:`, err)
+        if (navigator.onLine) runtimeLogger.warn(`[CalDAV] Sync failed for account ${account.id}:`, err)
         errors.push(err instanceof Error ? err.message : String(err))
       }
     }
@@ -2316,7 +2326,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
   const createEvent = useCallback(
     async (calendarId: string, event: CalendarEvent): Promise<void> => {
       if (caldavDebugMode) {
-        console.log('[CalDAV] createEvent called:', {
+        runtimeLogger.debug('[CalDAV] createEvent called:', {
           calendarId,
           eventId: event.id,
           eventTitle: event.title,
@@ -2329,31 +2339,32 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       const account = allAccounts.find((a) => a.id === calendar?.accountId)
 
       if (caldavDebugMode) {
-        console.log('[CalDAV] Looking up calendar:', {
+        runtimeLogger.debug('[CalDAV] Looking up calendar:', {
           calendarId,
           foundCalendar: !!calendar,
           calendar,
           accountId: calendar?.accountId,
         })
-        console.log(
+        runtimeLogger.debug(
           '[CalDAV] Available calendars:',
           allCalendars.map((c) => ({ id: c.id, accountId: c.accountId, name: c.name }))
         )
-        console.log(
+        runtimeLogger.debug(
           '[CalDAV] Available accounts:',
           allAccounts.map((a) => ({ id: a.id, name: a.name }))
         )
       }
 
       if (!calendar || !account) {
-        console.warn('[CalDAV] createEvent: No calendar or account found', {
+        // Local/sample calendars work without a configured sync account.
+        if (calendarId === 'default' || allAccounts.length === 0) return
+        runtimeLogger.warn('[CalDAV] createEvent: No calendar or account found', {
           calendarId,
           calendarFound: !!calendar,
           accountFound: !!account,
         })
         // Offline / sample-data mode: no CalDAV accounts configured, so there is
         // nothing to sync. Skip silently instead of surfacing a sync error.
-        if (allAccounts.length === 0) return
         showToast(i18n.t('errors:sync.eventSyncRetry'))
         return
       }
@@ -2378,13 +2389,13 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         }
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Pushing event to server...')
+          runtimeLogger.debug('[CalDAV] Pushing event to server...')
         }
 
         const { url, etag } = await engine.pushEvent(eventWithSequence)
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Event pushed successfully!')
+          runtimeLogger.debug('[CalDAV] Event pushed successfully!')
         }
 
         // Capture the server-assigned etag so the next sync round-trip
@@ -2397,7 +2408,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         processPendingChanges()
       } catch (error) {
         if (caldavDebugMode) {
-          console.log('[CalDAV] createEvent failed, adding to pending changes:', error)
+          runtimeLogger.debug('[CalDAV] createEvent failed, adding to pending changes:', error)
         }
         storage.addPendingChange({
           type: 'create',
@@ -2606,7 +2617,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
   const updateEventFn = useCallback(
     async (calendarId: string, event: CalendarEvent): Promise<void> => {
       if (caldavDebugMode) {
-        console.log('[CalDAV] updateEvent called:', {
+        runtimeLogger.debug('[CalDAV] updateEvent called:', {
           calendarId,
           eventId: event.id,
           eventTitle: event.title,
@@ -2640,14 +2651,15 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       const account = allAccounts.find((a) => a.id === calendar?.accountId)
 
       if (!calendar || !account) {
-        console.warn('[CalDAV] updateEvent: No calendar or account found', {
+        // Local/sample calendars work without a configured sync account.
+        if (calendarId === 'default' || allAccounts.length === 0) return
+        runtimeLogger.warn('[CalDAV] updateEvent: No calendar or account found', {
           calendarId,
           calendarFound: !!calendar,
           accountFound: !!account,
         })
         // Offline / sample-data mode: no CalDAV accounts configured, so there is
         // nothing to sync. Skip silently instead of surfacing a sync error.
-        if (allAccounts.length === 0) return
         showToast(i18n.t('errors:sync.eventSyncRetry'))
         return
       }
@@ -2704,7 +2716,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         }
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Updating event on server...')
+          runtimeLogger.debug('[CalDAV] Updating event on server...')
         }
 
         // Which collection does this event live in RIGHT NOW? It cannot be read
@@ -2792,7 +2804,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         }
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Event updated successfully!')
+          runtimeLogger.debug('[CalDAV] Event updated successfully!')
         }
 
         // Capture the new etag returned by the server so the next update
@@ -2810,7 +2822,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         processPendingChanges()
       } catch (error) {
         if (caldavDebugMode) {
-          console.log('[CalDAV] updateEvent failed, adding to pending changes:', error)
+          runtimeLogger.debug('[CalDAV] updateEvent failed, adding to pending changes:', error)
         }
         const sourceCalendarForRetry = event.resourceHref
           ? storage
@@ -2875,7 +2887,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
   const deleteEventFn = useCallback(
     async (calendarId: string, eventId: string): Promise<void> => {
       if (caldavDebugMode) {
-        console.log('[CalDAV] deleteEvent called:', { calendarId, eventId })
+        runtimeLogger.debug('[CalDAV] deleteEvent called:', { calendarId, eventId })
       }
 
       // Capture the event data before it might be deleted from the store
@@ -2905,14 +2917,15 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       const account = allAccounts.find((a) => a.id === calendar?.accountId)
 
       if (!calendar || !account) {
-        console.warn('[CalDAV] deleteEvent: No calendar or account found', {
+        // Local/sample calendars work without a configured sync account.
+        if (calendarId === 'default' || allAccounts.length === 0) return
+        runtimeLogger.warn('[CalDAV] deleteEvent: No calendar or account found', {
           calendarId,
           calendarFound: !!calendar,
           accountFound: !!account,
         })
         // Offline / sample-data mode: no CalDAV accounts configured, so there is
         // nothing to sync. Skip silently instead of surfacing a sync error.
-        if (allAccounts.length === 0) return
         showToast(i18n.t('errors:sync.eventSyncRetry'))
         // Re-add to store so the user can see the failure
         if (eventData) {
@@ -2940,7 +2953,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         const engine = new SyncEngine(client, calendarId)
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Deleting event from server...')
+          runtimeLogger.debug('[CalDAV] Deleting event from server...')
         }
 
         const eventUrl =
@@ -2956,14 +2969,14 @@ export function useCalDAVInstance(): UseCalDAVReturn {
         }
 
         if (caldavDebugMode) {
-          console.log('[CalDAV] Event deleted successfully!')
+          runtimeLogger.debug('[CalDAV] Event deleted successfully!')
         }
 
         storage.updateAccountLastSync(account.id)
         processPendingChanges()
       } catch (error) {
         if (caldavDebugMode) {
-          console.log('[CalDAV] deleteEvent failed, adding to pending changes:', error)
+          runtimeLogger.debug('[CalDAV] deleteEvent failed, adding to pending changes:', error)
         }
         storage.addPendingChange({
           type: 'delete',
@@ -2971,9 +2984,10 @@ export function useCalDAVInstance(): UseCalDAVReturn {
           calendarId,
           data: effectiveData ? JSON.stringify(effectiveData) : undefined,
         })
-        // Re-add the event to the store with syncStatus='failed' so the user
-        // can see it and retry the deletion
-        if (eventData) {
+        // A disconnected client has already applied the delete locally. Keep
+        // it removed and let the persisted tombstone replay when connectivity
+        // returns; restoring it here would make offline deletion appear to fail.
+        if (eventData && navigator.onLine) {
           storeAddEvent({ ...eventData, syncStatus: 'failed' })
         }
         setSyncState((prev) => ({
@@ -3026,17 +3040,17 @@ export function useCalDAVInstance(): UseCalDAVReturn {
     failed: number
   }> => {
     if (caldavDebugMode) {
-      console.log('[CalDAV] Retrying all failed syncs...')
+      runtimeLogger.debug('[CalDAV] Retrying all failed syncs...')
     }
 
     const failedEvents = useCalendarStore.getState().events.filter((e) => e.syncStatus === 'failed')
 
     if (failedEvents.length === 0) {
-      console.log('[CalDAV] No failed events to retry')
+      runtimeLogger.debug('[CalDAV] No failed events to retry')
       return { succeeded: 0, failed: 0 }
     }
 
-    console.log(`[CalDAV] Retrying ${failedEvents.length} failed events...`)
+    runtimeLogger.debug(`[CalDAV] Retrying ${failedEvents.length} failed events...`)
 
     let succeeded = 0
     let failed = 0
@@ -3060,7 +3074,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
       const account = allAccounts.find((a) => a.id === calendar?.accountId)
 
       if (!calendar || !account) {
-        console.warn(`[CalDAV] Cannot retry event ${event.id}: no calendar or account`)
+        runtimeLogger.warn(`[CalDAV] Cannot retry event ${event.id}: no calendar or account`)
         continue
       }
 
@@ -3107,7 +3121,7 @@ export function useCalDAVInstance(): UseCalDAVReturn {
     const remaining = storage.getPendingChanges()
     setSyncState((prev) => ({ ...prev, pendingChanges: remaining.length }))
 
-    console.log(
+    runtimeLogger.debug(
       `[CalDAV] RetryAll: ${succeeded} succeeded, ${failed} failed, ${remaining.length} pending remaining`
     )
 

@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { createDAVClient } from 'tsdav'
 import type {
   CalDAVCredentials,
@@ -204,9 +205,9 @@ export function buildProxyUrl(proxyBase: string, targetUrl: string): string {
   // with the rest of the path as unencoded segments.
   // e.g. proxy.calino.io/https%3A%2F%2Fdav.example.com/principals/user
   const parsed = new URL(targetUrl)
-  // base64url-encode the origin instead of encodeURIComponent: URL-encoding
-  // emits %2F which reverse proxies (nginx) normalize/decode, corrupting the
-  // first path segment. base64url only uses [A-Za-z0-9-_] and survives intact.
+  // Base64url keeps the origin in one path segment. URI-encoding is decoded by
+  // common reverse proxies before the request reaches the gateway and can
+  // therefore split the target origin into multiple segments.
   const encodedOrigin = btoa(parsed.origin)
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
@@ -535,7 +536,7 @@ export class CalDAVClient implements CalendarBackend {
     }
 
     if (rejected.length > 0) {
-      console.warn(
+      runtimeLogger.warn(
         '[CalDAV] Component query failed; calendar listing is incomplete',
         rejected.map((result) => result.reason)
       )
@@ -1491,13 +1492,13 @@ export class CalDAVClient implements CalendarBackend {
     // Match ATTACH;ENCODING=BASE64;FMTTYPE=app/json:<base64>
     const attachMatch = unfolded.match(/ATTACH[^:]*:([A-Za-z0-9+/=]+)/)
     if (!attachMatch?.[1]) {
-      console.warn('[SettingsSync] No ATTACH found in VEVENT')
+      runtimeLogger.warn('[SettingsSync] No ATTACH found in VEVENT')
       return null
     }
     try {
       return decodeBase64(attachMatch[1])
     } catch {
-      console.warn('[CalDAV] Failed to decode base64 settings from ATTACH')
+      runtimeLogger.warn('[CalDAV] Failed to decode base64 settings from ATTACH')
       return null
     }
   }
@@ -1558,10 +1559,10 @@ export class CalDAVClient implements CalendarBackend {
     let existing: { href: string; etag: string } | null | undefined = existingEvent
     if (existing === undefined) {
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: fetching existing event...')
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: fetching existing event...')
       existing = await this.fetchSettingsEvent(settingsCalendarUrl)
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: existing =', existing?.href ?? 'null')
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: existing =', existing?.href ?? 'null')
     }
 
     if (existing?.href) {
@@ -1571,7 +1572,7 @@ export class CalDAVClient implements CalendarBackend {
         throw new Error('Cannot update settings event: no ETag available')
       }
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log(
+        runtimeLogger.debug(
           '[SettingsSync] putSettingsEvent: updating existing at',
           existing.href,
           'etag =',
@@ -1587,7 +1588,7 @@ export class CalDAVClient implements CalendarBackend {
       })
       await this.assertResponseOk(result, 'PUT', existing.href)
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: update result status =', result.status)
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: update result status =', result.status)
       return result.headers?.get('etag') || useEtag
     }
 
@@ -1595,7 +1596,7 @@ export class CalDAVClient implements CalendarBackend {
     // If we have a stored ETag, the event exists but REPORT failed — try update anyway
     if (etag) {
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log(
+        runtimeLogger.debug(
           '[SettingsSync] putSettingsEvent: no existing found, trying stored etag at constructed href'
         )
       // Reconstruct the likely href from the calendar URL + filename
@@ -1619,12 +1620,12 @@ export class CalDAVClient implements CalendarBackend {
     // Create new
     {
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: creating new event')
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: creating new event')
       const client = this.getClient()
       // Find the settings calendar object for tsdav
       const calendars = await client.fetchCalendars()
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: found', calendars.length, 'calendars')
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: found', calendars.length, 'calendars')
       const settingsCal = calendars.find((c) => {
         const calUrl = c.url || ''
         return (
@@ -1635,7 +1636,7 @@ export class CalDAVClient implements CalendarBackend {
         throw new Error('Settings calendar not found')
       }
       if (useSettingsStore.getState().caldavDebugMode)
-        console.log('[SettingsSync] putSettingsEvent: creating calendar object in', settingsCal.url)
+        runtimeLogger.debug('[SettingsSync] putSettingsEvent: creating calendar object in', settingsCal.url)
       const result = await client.createCalendarObject({
         calendar: settingsCal,
         filename,

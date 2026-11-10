@@ -263,11 +263,26 @@ function TagDropdown({ tags, selectedTags, onToggle, onClear }: TagFilterProps):
 
   useEffect(() => {
     if (!open) return
-    const onPointerDown = (e: globalThis.PointerEvent): void => {
+    const onPointerDown = (e: Event): void => {
       if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
     }
+    const onKeyDown = (e: globalThis.KeyboardEvent): void => {
+      if (e.key !== 'Escape') return
+      e.stopPropagation()
+      setOpen(false)
+      triggerRef.current?.focus()
+    }
+    // Safari WebKit automation and some assistive input paths synthesize a
+    // click without PointerEvents. Observe both event families so outside
+    // dismissal remains reliable for mouse, touch, and keyboard activation.
     document.addEventListener('pointerdown', onPointerDown)
-    return () => document.removeEventListener('pointerdown', onPointerDown)
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown, true)
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown)
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown, true)
+    }
   }, [open])
 
   const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>): void => {
