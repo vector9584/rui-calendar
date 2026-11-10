@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config'
 import base from './vite.config'
 
-const defaults = ['**/node_modules/**', '**/dist/**', '**/.idea/**', '**/.git/**', '**/.cache/**']
+const defaults = ['**/node_modules/**', '**/dist/**', '**/.idea/**', '**/.git/**', '**/.cache/**', '**/desktop-app/**']
 
 export default defineConfig({
   ...base,
