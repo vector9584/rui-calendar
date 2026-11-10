@@ -60,7 +60,8 @@
       "viewJournalEntriesFor": "Visualizza le voci del diario per {{date}}",
       "resizeCalendarAgenda": "Ridimensiona il calendario e l’agenda. Fai doppio clic per ripristinare le dimensioni",
       "dragToResize": "Trascina per ridimensionare · Fai doppio clic per ripristinare le dimensioni",
-      "newJournalEntry": "Nuova voce del diario"
+      "newJournalEntry": "Nuova voce del diario",
+      "weekColumnHeader": "Sett."
     },
     "sidebar": {
       "previousMonth": "Mese precedente",

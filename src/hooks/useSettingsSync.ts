@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../lib/runtimeLogger'
 /**
  * useSettingsSync — React hook for CalDAV settings sync.
  *
@@ -164,21 +165,21 @@ export function useSettingsSync(): UseSettingsSyncReturn {
 
       if (!remote) {
         if (useSettingsStore.getState().caldavDebugMode)
-          console.warn('[SettingsSync] No remote settings event found — nothing to pull')
+          runtimeLogger.warn('[SettingsSync] No remote settings event found — nothing to pull')
         return false
       }
 
       const json = client.extractSettingsFromVEVENT(remote.data)
       if (!json) {
         if (useSettingsStore.getState().caldavDebugMode)
-          console.warn('[SettingsSync] Could not extract settings from remote VEVENT')
+          runtimeLogger.warn('[SettingsSync] Could not extract settings from remote VEVENT')
         return false
       }
 
       const parsed = deserializeSettings(json)
       if (!parsed) {
         if (useSettingsStore.getState().caldavDebugMode)
-          console.warn('[SettingsSync] Remote settings payload invalid or unsupported version')
+          runtimeLogger.warn('[SettingsSync] Remote settings payload invalid or unsupported version')
         return false
       }
 
@@ -194,7 +195,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
       return true
     } catch (err) {
       const msg = err instanceof Error ? err.message : i18n.t('errors:settingsSync.pullFailed')
-      console.error('[SettingsSync] Pull failed:', err)
+      runtimeLogger.error('[SettingsSync] Pull failed:', err)
       if (isMountedRef.current) setError(msg)
       return false
     } finally {
@@ -207,7 +208,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
     async (retryDepth = 0): Promise<void> => {
       if (inFlightRef.current) {
         if (useSettingsStore.getState().caldavDebugMode)
-          console.warn('[SettingsSync] Push skipped — already in flight')
+          runtimeLogger.warn('[SettingsSync] Push skipped — already in flight')
         return
       }
       const accountId = getPrimaryAccountId()
@@ -221,7 +222,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
       setError(null)
       try {
         if (useSettingsStore.getState().caldavDebugMode)
-          console.log('[SettingsSync] Push: resolving calendar URL...')
+          runtimeLogger.debug('[SettingsSync] Push: resolving calendar URL...')
         const calUrl = await resolveSettingsCalendarUrl(accountId)
         if (!calUrl) {
           setError(i18n.t('errors:settingsSync.calendarNotFound'))
@@ -229,7 +230,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
           return
         }
         if (useSettingsStore.getState().caldavDebugMode)
-          console.log('[SettingsSync] Push: calendar URL =', calUrl)
+          runtimeLogger.debug('[SettingsSync] Push: calendar URL =', calUrl)
 
         const account = accountStorage.getAccountById(accountId)
         if (!account) {
@@ -254,10 +255,10 @@ export function useSettingsSync(): UseSettingsSyncReturn {
         const base64 = encodeBase64(json)
         const storedEtag = getEtag()
         if (useSettingsStore.getState().caldavDebugMode)
-          console.log('[SettingsSync] Push: putting settings event, etag =', storedEtag)
+          runtimeLogger.debug('[SettingsSync] Push: putting settings event, etag =', storedEtag)
         const newEtag = await client.putSettingsEvent(calUrl, base64, storedEtag ?? undefined)
         if (useSettingsStore.getState().caldavDebugMode)
-          console.log('[SettingsSync] Push: success, new etag =', newEtag)
+          runtimeLogger.debug('[SettingsSync] Push: success, new etag =', newEtag)
         if (newEtag) setEtag(newEtag)
         touchLastModified()
         setLastSyncedAt(new Date().toISOString())
@@ -267,14 +268,14 @@ export function useSettingsSync(): UseSettingsSyncReturn {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : i18n.t('errors:settingsSync.pushFailed')
-        console.error('[SettingsSync] Push failed:', err)
+        runtimeLogger.error('[SettingsSync] Push failed:', err)
         if (isMountedRef.current) setError(msg)
         const is412 =
           msg.includes('412') || msg.includes('If-Match') || msg.includes('Precondition')
         let recovered = false
         if (retryDepth < 1 && is412) {
           if (useSettingsStore.getState().caldavDebugMode)
-            console.log('[SettingsSync] Push: 412 detected, pulling then retrying...')
+            runtimeLogger.debug('[SettingsSync] Push: 412 detected, pulling then retrying...')
           // Temporarily release inFlightRef so pull() can run
           inFlightRef.current = false
           await pull()
@@ -377,7 +378,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
         if (isMountedRef.current) forceRender((n) => n + 1)
       } catch (err) {
         const msg = err instanceof Error ? err.message : i18n.t('errors:settingsSync.enableFailed')
-        console.error('[SettingsSync] Enable failed:', err)
+        runtimeLogger.error('[SettingsSync] Enable failed:', err)
         if (isMountedRef.current) setError(msg)
         clearSyncKeys()
         throw err
@@ -408,7 +409,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
           }
         }
       } catch (err) {
-        console.warn('[SettingsSync] Failed to delete remote calendar:', err)
+        runtimeLogger.warn('[SettingsSync] Failed to delete remote calendar:', err)
       }
     }
 
@@ -461,7 +462,7 @@ export function useSettingsSync(): UseSettingsSyncReturn {
         // console — the user had zero signal that auto-discovery broke.
         const msg =
           err instanceof Error ? err.message : i18n.t('errors:settingsSync.autoDiscoveryFailed')
-        console.warn('[SettingsSync] Auto-discovery failed:', err)
+        runtimeLogger.warn('[SettingsSync] Auto-discovery failed:', err)
         if (isMountedRef.current) showErrorToast(msg)
       }
     },

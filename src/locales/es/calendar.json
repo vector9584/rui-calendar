@@ -60,7 +60,8 @@
       "viewJournalEntriesFor": "Ver entradas de diario para {{date}}",
       "resizeCalendarAgenda": "Cambiar el tamaño del calendario y la agenda. Haz doble clic para restablecer.",
       "dragToResize": "Arrastra para cambiar el tamaño · Haz doble clic para restablecer",
-      "newJournalEntry": "Nueva entrada de diario"
+      "newJournalEntry": "Nueva entrada de diario",
+      "weekColumnHeader": "Sem"
     },
     "sidebar": {
       "previousMonth": "Mes anterior",

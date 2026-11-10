@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { JSX } from 'react'
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -207,7 +208,7 @@ export function CategoriesSettings({
     }
 
     if (changesMade > 0) {
-      console.log(`[AutoCategory] Applied rules to ${changesMade} events`)
+      runtimeLogger.debug(`[AutoCategory] Applied rules to ${changesMade} events`)
     }
   }
 

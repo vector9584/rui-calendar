@@ -338,12 +338,12 @@ describe('JmapClient', () => {
       json(
         session({ apiUrl: 'api' }),
         { headers: { 'X-Target-URL': 'https://calendar.test/jmap/session' } },
-        'https://proxy.test/https%3A%2F%2Fcalendar.test/.well-known/jmap'
+        'https://proxy.test/aHR0cHM6Ly9jYWxlbmRhci50ZXN0/.well-known/jmap'
       )
     )
     const client = new JmapClient({ ...options, proxyUrl })
     await client.connect()
-    expect(client.apiUrl).toBe('https://proxy.test/https%3A%2F%2Fcalendar.test/jmap/api')
+    expect(client.apiUrl).toBe('https://proxy.test/aHR0cHM6Ly9jYWxlbmRhci50ZXN0/jmap/api')
     expect(new Headers(fetchMock.mock.calls[0][1]?.headers).get('X-Follow-Redirects')).toBe('1')
     fetchMock.mockResolvedValueOnce(
       json({ methodResponses: [['Core/echo', {}, 'e']], sessionState: 's1' })
@@ -353,7 +353,7 @@ describe('JmapClient', () => {
     fetchMock.mockResolvedValueOnce(json({ blobId: 'blob', size: 1, type: 'text/plain' }))
     await client.upload(new Uint8Array([65]).buffer, 'text/plain')
     expect(fetchMock.mock.calls[2][0]).toBe(
-      'https://proxy.test/https%3A%2F%2Fcalendar.test/upload/a'
+      'https://proxy.test/aHR0cHM6Ly9jYWxlbmRhci50ZXN0/upload/a'
     )
   })
 

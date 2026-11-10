@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 /**
  * Links into other apps inside markdown text: which apps are configured, which
  * of them a link goes to, and turning bare links of those apps into links.
@@ -37,11 +38,11 @@ export function loadLinkSchemes(
       name.length === 0 ||
       name.length > MAX_NAME_LENGTH
     ) {
-      console.warn('[appLinks] Skipping invalid link scheme entry', key)
+      runtimeLogger.warn('[appLinks] Skipping invalid link scheme entry', key)
       continue
     }
     if (Object.hasOwn(schemes, scheme)) {
-      console.warn('[appLinks] Skipping link scheme listed twice', key)
+      runtimeLogger.warn('[appLinks] Skipping link scheme listed twice', key)
       continue
     }
     schemes[scheme] = name

@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 /**
  * i18next singleton.
  *
@@ -46,7 +47,7 @@ export function initI18n(lng: Language = getBrowserLanguage()): typeof i18n {
     saveMissing: import.meta.env.DEV,
     missingKeyHandler: import.meta.env.DEV
       ? (lngs, ns, key): void => {
-          console.warn(`[i18n] missing key "${ns}:${key}" for ${lngs.join(', ')}`)
+          runtimeLogger.warn(`[i18n] missing key "${ns}:${key}" for ${lngs.join(', ')}`)
         }
       : undefined,
   })

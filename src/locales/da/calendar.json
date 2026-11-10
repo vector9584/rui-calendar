@@ -60,7 +60,8 @@
       "viewJournalEntriesFor": "Vis dagbogsindlæg for {{date}}",
       "resizeCalendarAgenda": "Tilpas størrelse på kalender og dagsorden. Dobbeltklik for at nulstille",
       "dragToResize": "Træk for at ændre størrelse · Dobbeltklik for at nulstille",
-      "newJournalEntry": "Nyt dagbogsindlæg"
+      "newJournalEntry": "Nyt dagbogsindlæg",
+      "weekColumnHeader": "Uge"
     },
     "sidebar": {
       "previousMonth": "Forrige måned",

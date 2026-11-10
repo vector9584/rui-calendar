@@ -1,12 +1,13 @@
 /**
  * Theme loader.
  *
- * Themes are loaded at build time via `import.meta.glob('/public/themes/*.css', { query: '?raw' })`.
+ * Themes are loaded at build time from the public theme catalog module.
  * Custom themes require a rebuild — runtime theme loading is not supported.
  * The set of available themes is frozen at the time Vite produces the bundle.
  */
 
 import type { ThemeInfo } from './types'
+import themeFiles from 'virtual:calino-theme-catalog'
 
 const BUILT_IN_THEME_ID = 'built-in'
 const BUILT_IN_DARK_THEME_ID = 'built-in-dark'
@@ -99,14 +100,8 @@ export async function loadThemes(): Promise<ThemeInfo[]> {
     },
   ]
 
-  const themeFiles = import.meta.glob('/public/themes/*.css', {
-    query: '?raw',
-    import: 'default',
-    eager: true,
-  })
-
   for (const path in themeFiles) {
-    const css = themeFiles[path] as string
+    const css = themeFiles[path]
     const filename = path.split('/').pop() || ''
     const themeId = filename.replace(/\.css$/, '')
     const { name, isDark, isBoth } = extractThemeName(css, filename)

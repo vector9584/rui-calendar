@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 /**
  * Wires the persisted `language` setting to i18next.
  *
@@ -26,7 +27,7 @@ export async function startI18n(): Promise<void> {
   useSettingsStore.subscribe((state, prev) => {
     if (state.language !== prev.language) {
       void setLanguage(state.language).catch((error: unknown) => {
-        console.error('[i18n] failed to switch language:', error)
+        runtimeLogger.error('[i18n] failed to switch language:', error)
       })
     }
   })

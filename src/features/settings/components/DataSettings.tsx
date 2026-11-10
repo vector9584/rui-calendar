@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { JSX } from 'react'
 import { Capacitor } from '@capacitor/core'
 import { useTranslation } from 'react-i18next'
@@ -123,7 +124,7 @@ export function DataSettings({ searchControl }: { searchControl?: JSX.Element })
                 await caldav.deleteEventByHref(purgeCalendar.id, href)
                 group.forEach((e) => deleteEvent(e.id))
               } catch (err) {
-                console.warn('[DataSettings] Purge failed for', href, err)
+                runtimeLogger.warn('[DataSettings] Purge failed for', href, err)
                 failed += group.length
               }
             })

@@ -60,7 +60,8 @@
       "viewJournalEntriesFor": "Dagboeknotities voor {{date}} bekijken",
       "resizeCalendarAgenda": "De grootte van kalender en agenda wijzigen. Dubbelklik om te herstellen.",
       "dragToResize": "Sleep om de grootte te wijzigen · Dubbelklik om te herstellen",
-      "newJournalEntry": "Nieuwe dagboeknotitie"
+      "newJournalEntry": "Nieuwe dagboeknotitie",
+      "weekColumnHeader": "Wk"
     },
     "sidebar": {
       "previousMonth": "Vorige maand",

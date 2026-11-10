@@ -568,7 +568,14 @@
     "confirmRemoveSubscription": "Supprimer cet abonnement au calendrier ? Ses événements seront supprimés localement.",
     "confirmRemoveAccount": "Voulez-vous vraiment supprimer ce compte ? Les données du calendrier seront conservées localement.",
     "credentialsNotFound": "Identifiants introuvables",
-    "accountProtocol": "Protocole du compte"
+    "accountProtocol": "Protocole du compte",
+    "presetSubscriptions": "Built-in subscriptions",
+    "presetAstroAria": "Select zodiac sign",
+    "presetWeatherAria": "Enter location (Province_City_District)",
+    "presetWeatherProvinceAria": "Select province",
+    "presetWeatherCityAria": "Select city",
+    "presetWeatherDistrictAria": "Select district",
+    "presetHint": "Feeds come from your-feed.example.com — browse https://your-feed.example.com for more"
   },
   "data": {
     "webmcp": {

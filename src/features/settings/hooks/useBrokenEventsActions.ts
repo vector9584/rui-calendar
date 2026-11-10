@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { useCallback } from 'react'
 import type { CalendarEvent, BrokenEvent } from '@/types'
 import { useCalendarStore } from '@/store/calendarStore'
@@ -47,7 +48,7 @@ export function useBrokenEventsActions(
         })
       } else if (strategy === 'caldav' && caldav) {
         return caldav.updateEvent(fixedEvent.calendarId, fixedEvent).catch((err) => {
-          console.warn('[useBrokenEventsActions] Fix sync failed:', err)
+          runtimeLogger.warn('[useBrokenEventsActions] Fix sync failed:', err)
         })
       }
     },
@@ -71,7 +72,7 @@ export function useBrokenEventsActions(
           .deleteEvent(event.calendarId, event.id)
           .then(() => removeBrokenEvent(event.id))
           .catch((err) => {
-            console.warn('[useBrokenEventsActions] Delete sync failed:', err)
+            runtimeLogger.warn('[useBrokenEventsActions] Delete sync failed:', err)
           })
       }
     },

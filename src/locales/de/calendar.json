@@ -60,7 +60,8 @@
       "viewJournalEntriesFor": "Journaleinträge für {{date}} anzeigen",
       "resizeCalendarAgenda": "Kalender und Agenda skalieren. Doppelklicken zum Zurücksetzen",
       "dragToResize": "Ziehen zum Skalieren · Doppelklicken zum Zurücksetzen",
-      "newJournalEntry": "Neuen Journaleintrag erstellen"
+      "newJournalEntry": "Neuen Journaleintrag erstellen",
+      "weekColumnHeader": "Wo"
     },
     "sidebar": {
       "previousMonth": "Vorheriger Monat",

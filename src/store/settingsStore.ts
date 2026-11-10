@@ -261,10 +261,10 @@ export const useSettingsStore = create<SettingsStore>()(
         return {
           ...currentState,
           ...persisted,
-          // Force the language to follow the browser on every load. A stale
-          // 'en' persisted by the stock build (which shipped no zh locale)
-          // would otherwise pin the UI to English even for zh-CN browsers.
-          language: currentState.language,
+          // Keep an explicit user choice across reloads. First-run state is
+          // seeded from the browser language, but persisted settings remain
+          // authoritative after the user selects a language.
+          language: persisted.language ?? currentState.language,
           categoryStyleRules: normalizeCategoryStyleRules(persisted.categoryStyleRules),
           // The original shared preference seeds the sidebar only until it
           // has its own saved value. Subsequent toggles stay independent.

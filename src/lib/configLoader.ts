@@ -1,3 +1,4 @@
+import { runtimeLogger } from './runtimeLogger'
 import { z } from 'zod'
 import { isMasterEncryptedData, type MasterEncryptedData } from './crypto'
 
@@ -80,7 +81,7 @@ export async function loadConfig(): Promise<CalinoConfig | null> {
   const envelope = CalinoConfigEnvelopeSchema.safeParse(__CALINO_CONFIG__)
 
   if (!envelope.success) {
-    console.warn('[configLoader] Invalid config, ignoring', envelope.error.issues)
+    runtimeLogger.warn('[configLoader] Invalid config, ignoring', envelope.error.issues)
     cachedConfig = null
     return null
   }
@@ -91,7 +92,7 @@ export async function loadConfig(): Promise<CalinoConfig | null> {
     if (parsed.success) {
       accounts.push(parsed.data)
     } else {
-      console.warn('[configLoader] Skipping invalid account entry', parsed.error.issues)
+      runtimeLogger.warn('[configLoader] Skipping invalid account entry', parsed.error.issues)
     }
   }
 
@@ -101,7 +102,7 @@ export async function loadConfig(): Promise<CalinoConfig | null> {
     if (parsed.success) {
       webcalSubscriptions.push(parsed.data)
     } else {
-      console.warn('[configLoader] Skipping invalid webcal subscription entry', parsed.error.issues)
+      runtimeLogger.warn('[configLoader] Skipping invalid webcal subscription entry', parsed.error.issues)
     }
   }
 

@@ -568,7 +568,14 @@
     "confirmRemoveSubscription": "Dit agenda-abonnement verwijderen? De gebeurtenissen worden lokaal verwijderd.",
     "confirmRemoveAccount": "Weet je zeker dat je dit account wilt verwijderen? De agendagegevens blijven lokaal bewaard.",
     "credentialsNotFound": "Aanmeldgegevens niet gevonden",
-    "accountProtocol": "Accountprotocol"
+    "accountProtocol": "Accountprotocol",
+    "presetSubscriptions": "Built-in subscriptions",
+    "presetAstroAria": "Select zodiac sign",
+    "presetWeatherAria": "Enter location (Province_City_District)",
+    "presetWeatherProvinceAria": "Select province",
+    "presetWeatherCityAria": "Select city",
+    "presetWeatherDistrictAria": "Select district",
+    "presetHint": "Feeds come from your-feed.example.com — browse https://your-feed.example.com for more"
   },
   "data": {
     "webmcp": {
