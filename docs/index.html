@@ -179,6 +179,25 @@
   }
   .hero-copy .tag { font-size: clamp(15px, 2vw, 17px); color: var(--ink-2); max-width: 520px; margin-bottom: 30px; }
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
+  .qr-item { position: relative; display: inline-flex; }
+  .qr-pop {
+    position: absolute; left: 0; top: calc(100% + 12px); z-index: 60;
+    width: 196px; padding: 12px; box-sizing: border-box;
+    background: var(--card-solid); border: 1px solid var(--line-strong);
+    border-radius: 16px; box-shadow: 0 18px 44px rgba(15, 61, 56, 0.20);
+    opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97);
+    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    pointer-events: none;
+  }
+  .qr-pop img { display: block; width: 172px; height: 172px; border-radius: 8px; }
+  .qr-pop .qr-tip { margin-top: 9px; font-size: 12px; color: var(--muted); text-align: center; }
+  @media (hover: hover) and (pointer: fine) {
+    .qr-item:hover .qr-pop { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
+    .qr-item:hover .btn-primary {
+      background: var(--brand-deep);
+      box-shadow: 0 14px 34px rgba(47, 158, 143, 0.46), 0 0 0 4px rgba(47, 158, 143, 0.15);
+    }
+  }
   .btn {
     display: inline-flex; align-items: center; justify-content: center; gap: 9px;
     height: 50px; padding: 0 24px; box-sizing: border-box; min-width: 172px;
@@ -358,38 +377,6 @@
   .client .name { font-weight: 700; font-size: 15px; }
   .client .desc { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
 
-  /* 在线体验 */
-  .try-panel {
-    display: flex; align-items: center; justify-content: space-between; gap: 36px;
-    padding: 38px 44px; border-radius: 24px; text-decoration: none;
-    background: linear-gradient(135deg, #2f9e8f 0%, #1b7d70 58%, #12605a 100%);
-    box-shadow: 0 22px 54px rgba(31, 122, 109, 0.26);
-    position: relative; overflow: hidden;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-  }
-  .try-panel::after {
-    content: ""; position: absolute; right: -70px; top: -110px; width: 340px; height: 340px;
-    background: radial-gradient(circle, rgba(255,255,255,0.20), transparent 68%); border-radius: 50%;
-  }
-  .try-panel:hover { transform: translateY(-2px); box-shadow: 0 28px 64px rgba(31, 122, 109, 0.32); }
-  .try-panel > * { position: relative; z-index: 1; }
-  .try-copy { max-width: 640px; }
-  .try-badge {
-    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.6px;
-    color: #eafffb; background: rgba(255, 255, 255, 0.26);
-    padding: 5px 12px; border-radius: 999px; margin-bottom: 13px;
-  }
-  .try-copy h2 { color: #fff; font-size: clamp(21px, 2.7vw, 27px); font-weight: 750; letter-spacing: -0.2px; margin-bottom: 9px; }
-  .try-copy p { color: rgba(255, 255, 255, 0.95); font-size: 14px; line-height: 1.65; text-wrap: pretty; }
-  .try-go {
-    flex: none; display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
-    background: #fff; color: #14655c; font-weight: 750; font-size: 15px;
-    padding: 14px 24px; border-radius: 12px;
-    box-shadow: 0 8px 22px rgba(6, 40, 34, 0.18);
-    transition: transform 0.18s ease;
-  }
-  .try-panel:hover .try-go { transform: translateX(4px); }
-  .try-go svg { width: 16px; height: 16px; }
 
   /* 下载 */
   .download-panel {
@@ -599,9 +586,9 @@
     .clients { grid-template-columns: repeat(2, 1fr); }
     .stats { grid-template-columns: repeat(2, 1fr); }
     .dl-cards { grid-template-columns: 1fr; }
-    .try-panel { flex-direction: column; align-items: flex-start; gap: 24px; padding: 28px 24px; border-radius: 20px; }
-    .try-go { width: 100%; justify-content: center; }
-    .try-copy h2 { font-size: 20px; }
+    .cta-row { gap: 10px; }
+    .cta-row > .btn, .cta-row > .qr-item { flex: 1 1 100%; }
+    .qr-item .btn, .cta-row > .btn { min-width: 0; width: 100%; }
     .flow { flex-direction: column; align-items: center; }
     .flow-arrow { transform: rotate(90deg); }
   }
@@ -742,14 +729,23 @@
         网页、手机、Windows 桌面，处处能看、能记。
       </p>
       <div class="cta-row">
-        <a class="btn btn-primary" href="#download">
+        <span class="qr-item">
+          <a class="btn btn-primary" href="https://mstsc.ruibing.wang:7086/" target="_blank" rel="noopener noreferrer">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.2"/><path d="M8 21h8M12 17v4"/></svg>在线体验
+          </a>
+          <div class="qr-pop" role="tooltip">
+            <img src="qr-online.png" alt="瑞历在线体验二维码" width="172" height="172" loading="lazy" />
+            <div class="qr-tip">移动端扫码使用</div>
+          </div>
+        </span>
+        <a class="btn btn-ghost" href="#download">
           <svg width="17" height="17"><use href="#i-download"/></svg>下载应用
         </a>
         <a class="btn btn-ghost" href="https://github.com/vector9584/rui-calendar" target="_blank" rel="noopener">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 6.5 3 12l5.5 5.5M15.5 6.5 21 12l-5.5 5.5"/></svg>查看源码
         </a>
       </div>
-      <p class="hint">开源 · MIT 协议 · 无需注册任何账号</p>
+      <p class="hint">开源 · MIT 协议 · 在线体验免注册，日程只留在你自己的浏览器里</p>
     </div>
     <div class="cal-mock reveal in">
       <div class="cal-window">
@@ -953,21 +949,6 @@
     </div>
   </section>
 
-  <section class="section" id="try">
-    <div class="wrap">
-      <a class="try-panel reveal" href="https://mstsc.ruibing.wang:7086/" target="_blank" rel="noopener noreferrer">
-        <div class="try-copy">
-          <span class="try-badge">在线体验 · 不用安装</span>
-          <h2>先打开看一眼，再决定装不装</h2>
-          <p>网页版就是它本身。连你自己的日历服务器，日程只留在浏览器里——我们看不到，也存不下。</p>
-        </div>
-        <span class="try-go">
-          打开网页版
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
-        </span>
-      </a>
-    </div>
-  </section>
 
   <section class="section" id="download">
     <div class="wrap">
