@@ -4,9 +4,19 @@ name: Android Release
 # the vX.Y.Z tag and creates the GitHub Release in one motion, so by the
 # time this job reaches the upload step the release already exists and
 # softprops/action-gh-release just attaches the APK to it.
+#
+# workflow_dispatch exists for the case where the release already went out
+# before this workflow was ever in the repo (tags pushed from a repo without
+# it never built anything). Pass the existing tag to backfill its APK.
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to attach the APK to (e.g. v1.2.0)'
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -14,6 +24,8 @@ permissions:
 jobs:
   build-signed-apk:
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -65,10 +77,10 @@ jobs:
         run: ./gradlew assembleRelease
 
       - name: Rename APK with version tag
-        run: cp android/app/build/outputs/apk/release/app-release.apk "calino-${{ github.ref_name }}.apk"
+        run: cp android/app/build/outputs/apk/release/app-release.apk "ruili-${TAG}.apk"
 
       - name: Attach APK to GitHub Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ github.ref_name }}
-          files: calino-*.apk
+          tag_name: ${{ env.TAG }}
+          files: ruili-*.apk
