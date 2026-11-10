@@ -353,6 +353,39 @@
   .client .name { font-weight: 700; font-size: 15px; }
   .client .desc { font-size: 12.5px; color: var(--muted); margin-top: 5px; }
 
+  /* 在线体验 */
+  .try-panel {
+    display: flex; align-items: center; justify-content: space-between; gap: 36px;
+    padding: 38px 44px; border-radius: 24px; text-decoration: none;
+    background: linear-gradient(135deg, #2f9e8f 0%, #1b7d70 58%, #12605a 100%);
+    box-shadow: 0 22px 54px rgba(31, 122, 109, 0.26);
+    position: relative; overflow: hidden;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .try-panel::after {
+    content: ""; position: absolute; right: -70px; top: -110px; width: 340px; height: 340px;
+    background: radial-gradient(circle, rgba(255,255,255,0.20), transparent 68%); border-radius: 50%;
+  }
+  .try-panel:hover { transform: translateY(-2px); box-shadow: 0 28px 64px rgba(31, 122, 109, 0.32); }
+  .try-panel > * { position: relative; z-index: 1; }
+  .try-copy { max-width: 640px; }
+  .try-badge {
+    display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.6px;
+    color: #d8fff6; background: rgba(255, 255, 255, 0.18);
+    padding: 5px 12px; border-radius: 999px; margin-bottom: 13px;
+  }
+  .try-copy h2 { color: #fff; font-size: clamp(21px, 2.7vw, 27px); font-weight: 750; letter-spacing: -0.2px; margin-bottom: 9px; }
+  .try-copy p { color: rgba(255, 255, 255, 0.84); font-size: 14px; line-height: 1.65; }
+  .try-go {
+    flex: none; display: inline-flex; align-items: center; gap: 9px; white-space: nowrap;
+    background: #fff; color: #14655c; font-weight: 750; font-size: 15px;
+    padding: 14px 24px; border-radius: 12px;
+    box-shadow: 0 8px 22px rgba(6, 40, 34, 0.18);
+    transition: transform 0.18s ease;
+  }
+  .try-panel:hover .try-go { transform: translateX(4px); }
+  .try-go svg { width: 16px; height: 16px; }
+
   /* 下载 */
   .download-panel {
     background: linear-gradient(160deg, #12251f 0%, #0b1a15 100%);
@@ -561,6 +594,8 @@
     .clients { grid-template-columns: repeat(2, 1fr); }
     .stats { grid-template-columns: repeat(2, 1fr); }
     .dl-cards { grid-template-columns: 1fr; }
+    .try-panel { flex-direction: column; align-items: flex-start; gap: 24px; padding: 32px 30px; }
+    .try-go { width: 100%; justify-content: center; }
     .flow { flex-direction: column; align-items: center; }
     .flow-arrow { transform: rotate(90deg); }
   }
@@ -909,6 +944,22 @@
           <div class="bwrap" data-r="34" style="--c:#5FA04E; --fd:-1.4s"><div class="bubble"><svg viewBox="0 0 24 24" fill="#5FA04E"><path d="M11.998,24c-0.321,0-0.641-0.084-0.922-0.247l-2.936-1.737c-0.438-0.245-0.224-0.332-0.08-0.383 c0.585-0.203,0.703-0.25,1.328-0.604c0.065-0.037,0.151-0.023,0.218,0.017l2.256,1.339c0.082,0.045,0.197,0.045,0.272,0l8.795-5.076 c0.082-0.047,0.134-0.141,0.134-0.238V6.921c0-0.099-0.053-0.192-0.137-0.242l-8.791-5.072c-0.081-0.047-0.189-0.047-0.271,0 L3.075,6.68C2.99,6.729,2.936,6.825,2.936,6.921v10.15c0,0.097,0.054,0.189,0.139,0.235l2.409,1.392 c1.307,0.654,2.108-0.116,2.108-0.89V7.787c0-0.142,0.114-0.253,0.256-0.253h1.115c0.139,0,0.255,0.112,0.255,0.253v10.021 c0,1.745-0.95,2.745-2.604,2.745c-0.508,0-0.909,0-2.026-0.551L2.28,18.675c-0.57-0.329-0.922-0.945-0.922-1.604V6.921 c0-0.659,0.353-1.275,0.922-1.603l8.795-5.082c0.557-0.315,1.296-0.315,1.848,0l8.794,5.082c0.57,0.329,0.924,0.944,0.924,1.603 v10.15c0,0.659-0.354,1.273-0.924,1.604l-8.794,5.078C12.643,23.916,12.324,24,11.998,24z M19.099,13.993 c0-1.9-1.284-2.406-3.987-2.763c-2.731-0.361-3.009-0.548-3.009-1.187c0-0.528,0.235-1.233,2.258-1.233 c1.807,0,2.473,0.389,2.747,1.607c0.024,0.115,0.129,0.199,0.247,0.199h1.141c0.071,0,0.138-0.031,0.186-0.081 c0.048-0.054,0.074-0.123,0.067-0.196c-0.177-2.098-1.571-3.076-4.388-3.076c-2.508,0-4.004,1.058-4.004,2.833 c0,1.925,1.488,2.457,3.895,2.695c2.88,0.282,3.103,0.703,3.103,1.269c0,0.983-0.789,1.402-2.642,1.402 c-2.327,0-2.839-0.584-3.011-1.742c-0.02-0.124-0.126-0.215-0.253-0.215h-1.137c-0.141,0-0.254,0.112-0.254,0.253 c0,1.482,0.806,3.248,4.655,3.248C17.501,17.007,19.099,15.91,19.099,13.993z"/></svg><span class="tip">Node.js<i>CORS 代理</i></span></div></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <section class="section" id="try">
+    <div class="wrap">
+      <a class="try-panel reveal" href="https://mstsc.ruibing.wang:7086/" target="_blank" rel="noopener noreferrer">
+        <div class="try-copy">
+          <span class="try-badge">在线体验 · 不用安装</span>
+          <h2>先打开看一眼，再决定装不装</h2>
+          <p>这就是网页版本身：连你自己的日历服务器，日程只存在浏览器里。我们看不到，也存不下。</p>
+        </div>
+        <span class="try-go">
+          打开网页版
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </span>
+      </a>
     </div>
   </section>
 
