@@ -11,7 +11,7 @@
 
 <p align="center">
   🌐 <a href="https://vector9584.github.io/rui-calendar/">应用主页</a> ·
-  ⬇️ <a href="https://github.com/vector9584/rui-calendar/releases/latest">下载桌面版</a> ·
+  ⬇️ <a href="https://github.com/vector9584/rui-calendar/releases/latest">下载安装包</a> ·
   <a href="#能做什么">能做什么</a> ·
   <a href="#架构">架构</a> ·
   <a href="#组件清单">组件</a> ·
@@ -256,6 +256,7 @@ flowchart LR
 | **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
 | **网页前端** | 中文网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
 | **瑞历桌面版** | Windows / macOS / Linux 桌面客户端 | 本仓库 [`desktop-app/`](desktop-app/)，TypeScript + Electron，本地优先、离线可用 |
+| **瑞历 Android APK** | Android 手机客户端 | 本仓库 `android/`，Capacitor 打包同一套网页前端，GitHub Actions 构建并用自签证书签名 |
 | **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
 | **frpc / frps** | 内网穿透 | NAS 主动出站连公网 frps，映射 3 条隧道 |
 | **nginx（ECS）** | 公网 HTTPS 入口 | 独立 ssl 端口，反代 + 证书终止 |
@@ -291,8 +292,11 @@ flowchart LR
 | macOS | `Rui-Calendar-1.2.0-universal-mac.zip` | 同上，zip 形式 |
 | Linux | `Rui-Calendar-1.2.0-arm64.AppImage` | AppImage |
 | Linux | `Rui-Calendar_1.2.0_amd64.deb`、`Rui-Calendar_1.2.0_arm64.deb` | Debian / Ubuntu |
+| Android | `ruili-v1.2.0.apk` | Capacitor 打包的网页前端，6.0 MB，minSdk 24（Android 7.0 以上） |
 
 macOS 版未做代码签名，首次打开需在「系统设置 → 隐私与安全性」里放行。
+Windows 会提示「无法验证发布者」。
+Android 用自签证书（`CN=Wang Ruibing, O=Ruili Calendar`），安装时允许「未知来源」即可；如果设备上装过上游 [Calino](https://github.com/Ivan-Malinovski/calino) 官方 APK，必须先卸载——包名相同而签名不同，Android 会拒绝覆盖。
 
 ### 构建
 
