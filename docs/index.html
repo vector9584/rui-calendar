@@ -751,7 +751,7 @@
         <div class="card reveal">
           <div class="icon"><svg><use href="#i-sync"/></svg></div>
           <h3>一处改动，处处同步</h3>
-          <p>网页、iPhone、Android、Windows 桌面悬浮窗，读写同一个日历库，手机记一条，电脑立刻看得见。</p>
+          <p>网页、iPhone、Android、Windows / macOS / Linux 桌面端，读写同一个日历库，手机记一条，电脑立刻看得见。</p>
         </div>
         <div class="card accent-b reveal">
           <div class="icon"><svg><use href="#i-lock"/></svg></div>
@@ -879,7 +879,7 @@
         <div class="client reveal"><div class="icon"><svg><use href="#i-globe"/></svg></div><div class="name">网页</div><div class="desc">PWA，任意浏览器打开即用</div></div>
         <div class="client reveal"><div class="icon"><svg><use href="#i-phone"/></svg></div><div class="name">iPhone / iPad</div><div class="desc">系统日历原生接入</div></div>
         <div class="client reveal"><div class="icon"><svg><use href="#i-android"/></svg></div><div class="name">Android</div><div class="desc">Capacitor 原生包</div></div>
-        <div class="client reveal"><div class="icon"><svg><use href="#i-window"/></svg></div><div class="name">Windows 桌面</div><div class="desc">悬浮 / 置顶小组件</div></div>
+        <div class="client reveal"><div class="icon"><svg><use href="#i-window"/></svg></div><div class="name">桌面端</div><div class="desc">Win · macOS · Linux</div></div>
       </div>
     </div>
   </section>
@@ -915,27 +915,43 @@
   <section class="section" id="download">
     <div class="wrap">
       <div class="download-panel reveal">
-        <h2>Windows 桌面版</h2>
-        <p class="sub">一个悬浮在桌面上的日历，随时看、随手记，和手机网页共用一份数据。</p>
+        <h2>桌面版</h2>
+        <p class="sub">Windows、macOS、Linux 都有。数据存在本机，断网也能看能改，联网后自动同步回你的日历服务器。</p>
         <div class="dl-cards">
           <div class="dl-card">
-            <div class="tag">免安装 · 推荐</div>
+            <div class="tag">Windows · 免安装 · 推荐</div>
             <div class="title">便携版</div>
             <div class="desc">双击即用，不写注册表，放 U 盘里随身带着走。</div>
-            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe">
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.2.0-portable.exe">
               <svg><use href="#i-download"/></svg>下载便携版
             </a>
           </div>
           <div class="dl-card">
-            <div class="tag">安装版</div>
+            <div class="tag">Windows · 安装版</div>
             <div class="title">Setup 安装包</div>
             <div class="desc">标准安装向导，自动创建桌面和开始菜单快捷方式，支持卸载。</div>
-            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe">
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.2.0-setup.exe">
               <svg><use href="#i-download"/></svg>下载安装版
             </a>
           </div>
+          <div class="dl-card">
+            <div class="tag">macOS · Universal</div>
+            <div class="title">macOS 版</div>
+            <div class="desc">Intel 与 Apple Silicon 通用镜像，拖进「应用程序」即可。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.2.0-universal.dmg">
+              <svg><use href="#i-download"/></svg>下载 dmg
+            </a>
+          </div>
+          <div class="dl-card">
+            <div class="tag">Linux · x64 / arm64</div>
+            <div class="title">Linux 版</div>
+            <div class="desc">AppImage 免安装，另有 deb 包，都在 Release 里。</div>
+            <a href="https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.2.0-arm64.AppImage">
+              <svg><use href="#i-download"/></svg>下载 AppImage
+            </a>
+          </div>
         </div>
-        <p class="note">首次运行请在「设置」里填你的日历服务器地址。浏览器若提示「无法验证发布者」，点「更多信息 → 仍要运行」即可，未签名的开源应用会有这个正常提示。</p>
+        <p class="note">首次运行请在「设置」里填你的日历服务器地址。Windows 若提示「无法验证发布者」，点「更多信息 → 仍要运行」；macOS 未做签名，需在「系统设置 → 隐私与安全性」里放行。全部安装包见 <a href="https://github.com/vector9584/rui-calendar/releases/latest" target="_blank" rel="noopener">Releases</a>。</p>
       </div>
     </div>
   </section>

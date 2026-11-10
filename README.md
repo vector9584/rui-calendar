@@ -285,12 +285,12 @@ flowchart LR
 
 | 平台 | 文件 | 说明 |
 |---|---|---|
-| Windows | `ruili-calendar-1.2.0-setup.exe` | 安装版，向导安装，带桌面 / 开始菜单快捷方式 |
-| Windows | `ruili-calendar-1.2.0-portable.exe` | 便携版，双击直接运行，免安装 |
-| macOS | `ruili-calendar-1.2.0-universal.dmg` | Universal（Intel + Apple Silicon） |
-| macOS | `ruili-calendar-1.2.0-universal-mac.zip` | 同上，zip 形式 |
-| Linux | `ruili-calendar-1.2.0-arm64.AppImage` | AppImage |
-| Linux | `ruili-calendar_1.2.0_amd64.deb`、`ruili-calendar_1.2.0_arm64.deb` | Debian / Ubuntu |
+| Windows | `Rui-Calendar-1.2.0-setup.exe` | 安装版，向导安装，带桌面 / 开始菜单快捷方式 |
+| Windows | `Rui-Calendar-1.2.0-portable.exe` | 便携版，双击直接运行，免安装 |
+| macOS | `Rui-Calendar-1.2.0-universal.dmg` | Universal（Intel + Apple Silicon） |
+| macOS | `Rui-Calendar-1.2.0-universal-mac.zip` | 同上，zip 形式 |
+| Linux | `Rui-Calendar-1.2.0-arm64.AppImage` | AppImage |
+| Linux | `Rui-Calendar_1.2.0_amd64.deb`、`Rui-Calendar_1.2.0_arm64.deb` | Debian / Ubuntu |
 
 macOS 版未做代码签名，首次打开需在「系统设置 → 隐私与安全性」里放行。
 
