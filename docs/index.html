@@ -181,21 +181,45 @@
   .cta-row { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
   .qr-item { position: relative; display: inline-flex; }
   .qr-pop {
-    position: absolute; left: 0; top: calc(100% + 12px); z-index: 60;
-    width: 196px; padding: 12px; box-sizing: border-box;
+    position: absolute; left: 50%; top: calc(100% + 14px); z-index: 60;
+    width: 208px; padding: 14px 14px 12px; box-sizing: border-box;
     background: var(--card-solid); border: 1px solid var(--line-strong);
-    border-radius: 16px; box-shadow: 0 18px 44px rgba(15, 61, 56, 0.20);
-    opacity: 0; visibility: hidden; transform: translateY(-6px) scale(0.97);
-    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0.18s;
+    border-radius: 20px; transform-origin: 50% 0;
+    box-shadow: 0 2px 6px rgba(16,40,32,0.05), 0 12px 28px rgba(16,40,32,0.11), 0 30px 64px rgba(16,40,32,0.13);
+    opacity: 0; visibility: hidden;
+    transform: translate(-50%, -8px) scale(0.96);
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.16,1,0.3,1), visibility 0.2s;
     pointer-events: none;
   }
-  .qr-pop img { display: block; width: 172px; height: 172px; border-radius: 8px; }
-  .qr-pop .qr-tip { margin-top: 9px; font-size: 12px; color: var(--muted); text-align: center; }
+  .qr-pop::before {
+    content: ""; position: absolute; top: -6px; left: 50%; margin-left: -6px;
+    width: 12px; height: 12px; transform: rotate(45deg);
+    background: var(--card-solid); border-radius: 2px 0 0 0;
+    border-left: 1px solid var(--line-strong); border-top: 1px solid var(--line-strong);
+  }
+  .qr-head {
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+    margin-bottom: 10px; font-size: 12px; font-weight: 600;
+    color: var(--brand); letter-spacing: 0.02em;
+  }
+  .qr-head svg { flex: none; }
+  .qr-pop img {
+    display: block; width: 180px; height: 180px; box-sizing: border-box;
+    padding: 6px; border-radius: 12px; background: #fff;
+    border: 1px solid var(--line-strong);
+  }
+  .qr-pop .qr-tip {
+    margin-top: 9px; font-size: 11px; line-height: 1.5;
+    color: var(--muted); text-align: center; letter-spacing: 0.01em;
+  }
   @media (hover: hover) and (pointer: fine) {
-    .qr-item:hover .qr-pop { opacity: 1; visibility: visible; transform: translateY(0) scale(1); pointer-events: auto; }
+    .qr-item:hover .qr-pop {
+      opacity: 1; visibility: visible; pointer-events: auto;
+      transform: translate(-50%, 0) scale(1);
+    }
     .qr-item:hover .btn-primary {
-      background: var(--brand-deep);
-      box-shadow: 0 14px 34px rgba(47, 158, 143, 0.46), 0 0 0 4px rgba(47, 158, 143, 0.15);
+      background: var(--brand); color: #fff;
+      box-shadow: 0 10px 26px rgba(47, 158, 143, 0.30);
     }
   }
   .btn {
@@ -206,10 +230,10 @@
     transition: transform 0.14s, box-shadow 0.14s, background 0.15s, border-color 0.15s;
   }
   .btn:hover { transform: translateY(-2px); }
-  .btn-primary { background: var(--brand); color: #fff; box-shadow: 0 8px 22px rgba(47,158,143,0.34); }
-  .btn-primary:hover { background: var(--brand-deep); box-shadow: 0 12px 30px rgba(47,158,143,0.42); }
-  .btn-ghost { background: var(--card-solid); color: var(--ink); border: 1px solid var(--line-strong); box-shadow: var(--shadow-sm); }
-  .btn-ghost:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-primary { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
+  .btn-primary:hover { background: var(--brand); color: #fff; box-shadow: 0 10px 26px rgba(47,158,143,0.30); }
+  .btn-ghost { background: transparent; color: var(--ink-2); border: 1px solid var(--line-strong); }
+  .btn-ghost:hover { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
   .hero-copy .hint { margin-top: 20px; font-size: 13px; color: var(--muted); }
 
   /* CSS 日历窗口（hero 视觉） */
@@ -734,8 +758,12 @@
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="13" rx="2.2"/><path d="M8 21h8M12 17v4"/></svg>在线体验
           </a>
           <div class="qr-pop" role="tooltip">
-            <img src="qr-online.png" alt="瑞历在线体验二维码" width="172" height="172" loading="lazy" />
-            <div class="qr-tip">移动端扫码使用</div>
+            <div class="qr-head">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2.5" width="12" height="19" rx="2.6"/><path d="M11 18.5h2"/></svg>
+              手机扫码打开
+            </div>
+            <img src="qr-online.png" alt="瑞历在线体验二维码" width="180" height="180" loading="lazy" />
+            <div class="qr-tip">免注册，用自己的日历服务器</div>
           </div>
         </span>
         <a class="btn btn-ghost" href="#download">
