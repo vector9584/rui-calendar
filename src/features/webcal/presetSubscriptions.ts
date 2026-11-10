@@ -80,12 +80,21 @@ const DEFAULT_ASTRO_SIGN = 'pisces'
 const DEFAULT_WEATHER_LOCATION = 'Beijing_Beijing_Haidian'
 
 /**
- * Base URL for preset feeds — the real your-feed.example.com origin. The CORS bypass is
- * applied separately through each subscription's proxyUrl field (see
- * proxyBase() below), so the stored URL stays the canonical public feed URL.
+ * Base URL for preset feeds — the real feed provider origin.
+ *
+ * The public repo ships a placeholder (`your-feed.example.com`) because the
+ * upstream provider is a specific third-party service; self-hosters point this
+ * at their own feed provider via `VITE_FEED_BASE` in `.env.local` (gitignored).
+ * The CORS bypass is applied separately through each subscription's proxyUrl
+ * field (see proxyBase() below), so the stored URL stays the canonical public
+ * feed URL.
+ *
+ * Use the apex host, not `www.` — the provider 301s `www.` → apex, and the
+ * CORS proxy does not follow redirects for feed fetches.
  */
 function feedBase(): string {
-  return 'https://your-feed.example.com'
+  const configured = import.meta.env.VITE_FEED_BASE
+  return (configured && configured.trim()) || 'https://your-feed.example.com'
 }
 
 /**

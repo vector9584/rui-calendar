@@ -12,4 +12,6 @@ interface ImportMetaEnv {
   readonly CALINO_GITHUB_REPO?: string
   readonly CALINO_CONTACT_EMAIL?: string
   readonly CALINO_ENABLE_SW?: string
+  /** Built-in preset feed origin (huangli / jieqi / astro / weather). */
+  readonly VITE_FEED_BASE?: string
 }
