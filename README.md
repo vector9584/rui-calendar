@@ -255,7 +255,7 @@ flowchart LR
 |---|---|---|
 | **Baikal** | CalDAV/CardDAV 存储后端 | Docker `ckulka/baikal:0.10.1-nginx`，SQLite，多用户/多日历/地址簿，唯一存储 |
 | **网页前端** | 中文网页日历客户端 | 本仓库核心，基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发 |
-| **瑞历桌面版** | Windows 桌面悬浮日历 | 本仓库 `desktop/`，Electron 打包，便携版 + 安装版 |
+| **瑞历桌面版** | Windows / macOS / Linux 桌面客户端 | 本仓库 [`desktop-app/`](desktop-app/)，TypeScript + Electron，本地优先、离线可用 |
 | **calino-proxy** | 通用 CORS 代理 | 本仓库 `proxy/`，零依赖 Node 服务，绕过外部 ICS 源的 CORS 限制 |
 | **frpc / frps** | 内网穿透 | NAS 主动出站连公网 frps，映射 3 条隧道 |
 | **nginx（ECS）** | 公网 HTTPS 入口 | 独立 ssl 端口，反代 + 证书终止 |
@@ -266,37 +266,47 @@ flowchart LR
 
 ## 桌面客户端
 
-已完成，不再「规划中」。Windows 桌面悬浮日历，把网页前端包成一个桌面小组件，源码在本仓库 [`desktop/`](desktop/)。
+1.2.0 起重写为完整的 TypeScript 桌面应用，不再是「把网页塞进 Electron 壳」的注入方案。源码在 [`desktop-app/`](desktop-app/)，本地优先：日历数据落在本机，断网照样能看能改，联网后走 CalDAV 增量同步。
 
-### 功能
+### 能力
 
-- **悬浮 / 置顶**：可普通悬浮在桌面，或置顶在所有窗口之上。
-- **透明度**：5% ~ 100% 可调。
-- **锁定**：锁定后点击穿透、隐藏顶部栏，只能通过系统托盘菜单解锁。
-- **开机启动**：登录 Windows 后自动运行。
-- **顶部栏**：关闭（隐藏到托盘）、刷新、设置三个按钮。
-- **托盘菜单**：悬浮 / 锁定 / 开机启动（红=关，绿=开）、设置、退出。
-- **主题跟随**：顶部栏颜色随网页明暗主题实时切换。
-- **无滚动条**：页面自适应填满窗口。
+- **三平台**：Windows（NSIS 安装版 / 便携版）、macOS（universal dmg / zip）、Linux（AppImage / deb，x64 + arm64）。
+- **安全边界**：`sandbox` + `contextIsolation` + `nodeIntegration: false`，渲染层拿不到 Node；主进程暴露的 IPC 走 [`channels.json`](desktop-app/desktop/src/shared/channels.json) 白名单校验。
+- **原生托盘**：锁定、置顶、透明度、迷你模式，开机自启；配置走 zod schema，原子写 + 损坏文件回滚。
+- **自动更新与备份**：`electron-updater` 检查新版本，配置与数据可导出备份。
+- **离线可用**：IndexedDB 全量缓存，Service Worker 预缓存应用壳，飞行模式 30 分钟读写后恢复同步已做浏览器长测。
+- **五视图**：月 / 周 / 日 / 议程 / 年，加载、空、错误、离线等状态各有界面。
+
+功能矩阵与实际验收状态见 [`desktop-app/docs/verification/`](desktop-app/docs/verification/)：5 项 ✅ 完整、7 项 ⚠️ 半成品——后者是功能已实现但跨浏览器 / 三平台逐项验收证据未全绿，矩阵里逐条写了缺口，没有粉饰。
 
 ### 下载
 
-两种打包形式，均基于 Electron，已发布到 [GitHub Releases](https://github.com/vector9584/rui-calendar/releases/latest)：
+已发布到 [GitHub Releases](https://github.com/vector9584/rui-calendar/releases/latest)：
 
-- **便携版（免安装）**：[Rui-Calendar-1.1.0-portable.exe](https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-portable.exe)，双击直接运行，免安装。
-- **安装版**：[Rui-Calendar-1.1.0-setup.exe](https://github.com/vector9584/rui-calendar/releases/latest/download/Rui-Calendar-1.1.0-setup.exe)，按向导安装，带桌面/开始菜单快捷方式。
+| 平台 | 文件 | 说明 |
+|---|---|---|
+| Windows | `ruili-calendar-1.2.0-setup.exe` | 安装版，向导安装，带桌面 / 开始菜单快捷方式 |
+| Windows | `ruili-calendar-1.2.0-portable.exe` | 便携版，双击直接运行，免安装 |
+| macOS | `ruili-calendar-1.2.0-universal.dmg` | Universal（Intel + Apple Silicon） |
+| macOS | `ruili-calendar-1.2.0-universal-mac.zip` | 同上，zip 形式 |
+| Linux | `ruili-calendar-1.2.0-arm64.AppImage` | AppImage |
+| Linux | `ruili-calendar_1.2.0_amd64.deb`、`ruili-calendar_1.2.0_arm64.deb` | Debian / Ubuntu |
+
+macOS 版未做代码签名，首次打开需在「系统设置 → 隐私与安全性」里放行。
 
 ### 构建
 
 ```bash
-cd desktop
-npm install
-npm start               # 本地运行
-npm run dist            # 构建安装版 + 便携版（产物在 dist/）
-npm run dist:portable   # 仅构建便携版
+cd desktop-app
+pnpm install
+pnpm build            # 编译主进程 + 打前端产物到 build/
+pnpm build:win        # Windows 安装版 + 便携版
+pnpm build:mac        # macOS universal dmg + zip
+pnpm build:linux      # AppImage + deb
+pnpm test:desktop     # 桌面端单元测试
 ```
 
-默认内嵌的日历地址在 [`desktop/main.js`](desktop/main.js) 顶部的 `CALENDAR_URL`，替换成你自己的网页前端地址后重新构建即可。
+产物在 `desktop-app/release/`。桌面端不内嵌日历地址，首次启动在设置页填你自己的前端地址或 Baikal 地址。
 
 ---
 
@@ -321,7 +331,7 @@ pnpm build        # 产物在 dist/
 | [应用主页](https://vector9584.github.io/rui-calendar/) | 在线介绍页（卡片式，含下载地址） |
 | [JOURNEY.md](JOURNEY.md) | 完整心路历程：从调研 Y日历 到落地这套系统的决策与踩坑 |
 | [deploy/README.md](deploy/README.md) | 部署手册：Baikal → 网页前端 → 代理 → 隧道 → nginx → iOS → AI 集成 |
-| [desktop/README.md](desktop/README.md) | 桌面悬浮客户端：功能、安装、构建 |
+| [desktop-app/README.md](desktop-app/README.md) | 桌面客户端：能力、下载、构建、验收记录 |
 | [deploy/hermes/SKILL.md](deploy/hermes/SKILL.md) | Hermes AI 助手操作手册（可直接作为 Hermes skill 使用） |
 | [deploy/hermes/baikal_calendar.py](deploy/hermes/baikal_calendar.py) | 零依赖 CalDAV 写入 helper |
 | [deploy/hermes/test_baikal_calendar.py](deploy/hermes/test_baikal_calendar.py) | helper 回归测试 |
@@ -335,11 +345,11 @@ pnpm build        # 产物在 dist/
 - 引导弹框预填的 CalDAV 服务器地址、代理路径等已替换为占位符。
 - 内置订阅源（老黄历 / 法定节假日 / 节日节气 / 星座 / 天气）的源站域名不写进仓库：在 `.env.local`（`.gitignore` 已忽略）里写 `VITE_FEED_BASE=https://你的源站`，`pnpm build` 时自动注入；不写则沿用占位符 `your-feed.example.com`，订阅会因域名不存在而全部失败。填源站**裸域**，别加 `www.`——上游会把 `www.` 301 到裸域，而 CORS 代理拉取订阅时不跟随重定向。
 - 部署配置（nginx / frpc / Hermes 脚本）均为 `*.example` 模板，端口为示例值，clone 后替换成你的真实地址即可。
-- `desktop/main.js` 的日历地址为占位符，构建前替换。
+- 桌面客户端不内嵌日历地址，首次启动在设置页填；`desktop-app/` 里也没有任何真实域名或凭据。
 - `deploy/hermes/SKILL.md` 中的真实域名、内网 IP、用户名、姓名均已脱敏。
 
 ---
 
 ## 许可证
 
-本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发。上游代码版权归 Ivan Malinovski 所有，中文化、品牌化及部署资产等新增部分遵循 [MIT License](LICENSE) 发布。桌面客户端（`desktop/`）为独立 MIT 项目，见 [desktop/LICENSE](desktop/LICENSE)。
+本项目基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT License，作者 Ivan Malinovski）二次开发。上游代码版权归 Ivan Malinovski 所有，中文化、品牌化及部署资产等新增部分遵循 [MIT License](LICENSE) 发布。桌面客户端（`desktop-app/`）为同一 MIT 项目的一部分。

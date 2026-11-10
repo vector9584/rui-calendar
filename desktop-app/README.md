@@ -1,59 +1,67 @@
-# 瑞历 · Windows 桌面悬浮日历
+# 瑞历桌面端（desktop-app）
 
-把自托管的「瑞历」网页日历（`https://mstsc.ruibing.wang:7086/`）包装成一个 Windows 桌面悬浮小组件，支持悬浮/置顶、透明度调节、锁定点击穿透、开机启动等。
+瑞历的桌面客户端。Electron + TypeScript，本地优先：配置和数据存在本机，断网照样能看能改，联网后走 CalDAV 增量同步。
 
-## 内嵌网页
+1.2.0 是一次重写。之前那版是把网页塞进 Electron 壳、靠注入改样式的方案（`desktop/main.js`），已经整体移除。
 
-内嵌网页是「瑞历」—— 基于 [Calino](https://github.com/Ivan-Malinovski/calino)（MIT）二次开发的中文自托管日历系统：由 Baikal（CalDAV/CardDAV 存储）+ 瑞历前端 + CORS 代理 + nginx/frp 公网发布组成，数据通过 CalDAV 协议读写，网页端与 iOS/Android 原生日历三端一致。
+## 结构
 
-详细介绍见：<https://github.com/vector9584/ruili-calendar>
+```
+desktop-app/
+├── desktop/
+│   ├── src/main/       主进程：index / store / vault / backup / logger / autostart / updater
+│   ├── src/preload/    sandbox preload，IPC 通道白名单内联
+│   ├── src/renderer/   本地渲染层：index.html / index.ts / tokens.css / shell.css
+│   ├── src/shared/     ipc / schema(zod) / security / bounds / channels.json
+│   ├── tests/          主进程单元测试
+│   └── e2e/            桌面壳 Playwright 用例
+├── scripts/build.mjs   编译主进程 + 调前端 vite build + 一起打进 asar
+├── scripts/frontend.mjs 转发前端命令（typecheck / lint / test / e2e）
+├── docs/verification/  功能完成度矩阵、变更清单、验证记录与截图
+└── package.json        electron-builder 三平台配置
+```
 
-## 功能特性
+## 构建
 
-- 悬浮 / 置顶：可在桌面普通悬浮，或置顶在所有窗口之上
-- 透明度：5% ~ 100% 可调
-- 锁定：锁定后点击穿透并隐藏顶部栏，只能通过系统托盘菜单解锁
-- 开机启动：登录 Windows 后自动运行
-- 顶部栏按钮：关闭（隐藏到托盘）、刷新、设置
-- 托盘菜单：悬浮 / 锁定 / 开机启动开关、设置、退出
-- 主题跟随：顶部栏颜色随网页明暗主题实时切换
-- 无滚动条，页面自适应填满窗口
-
-## 安装
-
-### 便携版（免安装）
-
-1. 下载 `瑞历 1.1.0.exe`
-2. 双击直接运行，无需安装，配置保存在用户目录
-
-### 安装版
-
-1. 下载 `瑞历 Setup 1.1.0.exe`
-2. 双击运行，按向导选择安装目录并完成安装
-3. 从桌面或开始菜单打开「瑞历」
-
-### 卸载
-
-- 安装版：控制面板 → 程序和功能 → 卸载「瑞历」，或运行安装目录下的卸载程序
-- 便携版：直接删除 exe 即可
-
-## 使用说明
-
-- 拖动窗口顶部空白处可移动窗口
-- 左上角按钮（从左到右）：关闭（隐藏到托盘）、刷新、设置
-- 顶部栏右键或系统托盘图标右键打开菜单：悬浮 / 锁定 / 开机启动（红=关，绿=开）
-- 锁定后窗口不响应鼠标且顶部栏隐藏，右键系统托盘「瑞历」图标 → 关闭「锁定」即可解锁
-- 设置面板可调节透明度、悬浮、锁定、开机启动
-
-## 开发与构建
+需要一个能跑前端的环境——前端就在仓库根目录，桌面工程借用它的 `node_modules`：
 
 ```bash
-npm install
-npm start               # 本地运行
-npm run dist            # 构建安装版 + 便携版（产物在 dist/）
-npm run dist:portable   # 仅构建便携版
+# 在仓库根，先装前端依赖
+pnpm install
+pnpm build                       # 产物 dist/
+
+# 再进桌面工程
+cd desktop-app
+pnpm install
+pnpm build                       # 编译主进程 + 把 dist/ 拷进 build/web
+pnpm build:win                   # Windows：NSIS 安装版 + 便携版
+pnpm build:mac                   # macOS：universal dmg + zip
+pnpm build:linux                 # Linux：AppImage + deb（x64 / arm64）
 ```
+
+产物落在 `desktop-app/release/`。`pnpm start` 直接跑 `electron .`，前提是 `build/` 已经生成。
+
+## 测试
+
+```bash
+pnpm test:desktop    # 主进程单测（store / vault / backup / security / updater）
+pnpm typecheck       # 桌面 TS + 前端 TS 一起过
+pnpm e2e:desktop     # 桌面壳 Playwright
+```
+
+## 验收状态
+
+`docs/verification/功能完成度矩阵.md` 逐条列了每个功能点的入口、UI、交互、数据、持久化、异常态、跨平台和测试，末尾是状态列：**5 项 ✅ 完整、7 项 ⚠️ 半成品**。
+
+那 7 项不是功能没做，是实现完了但验收证据没全绿——跨浏览器矩阵、三平台 GUI 逐项交互、全部组件十态组合这些还缺记录。每一行的状态列写清了缺口是什么，`验证记录.md` 里有对应的原始日志与截图。
+
+## 安全边界
+
+- `sandbox: true`、`contextIsolation: true`、`nodeIntegration: false`
+- 渲染层不接触 Node，能用的 IPC 由 `channels.json` 白名单决定，主进程侧再做 zod 校验
+- 导航白名单 + CSP，禁止远程页面加载
+- 配置写入是原子的（临时文件 + rename），损坏文件保留为 `.previous` 供回滚
 
 ## 许可证
 
-MIT License
+MIT，与仓库根 [LICENSE](../LICENSE) 一致。
