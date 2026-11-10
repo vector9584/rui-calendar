@@ -1,0 +1,5 @@
+{
+  "get": "state:get",
+  "patch": "state:patch",
+  "changed": "state:changed"
+}

@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>瑞历</title>
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="shell.css" />
+  </head>
+  <body>
+    <header id="toolbar" class="toolbar" aria-label="瑞历窗口工具条">
+      <span class="brand">瑞历</span><span class="drag-space" title="拖动移动窗口"></span>
+      <button type="button" data-command="toggle-lock" aria-label="锁定日历" title="锁定日历">
+        锁定
+      </button>
+      <button type="button" data-command="reload" aria-label="刷新日历" title="刷新日历">
+        刷新
+      </button>
+      <button type="button" data-command="settings" aria-label="设置与关于" title="设置与关于">
+        设置
+      </button>
+      <button type="button" data-command="menu" aria-label="更多操作" title="更多操作">更多</button>
+      <button type="button" data-command="hide" aria-label="隐藏到托盘" title="隐藏到托盘">
+        隐藏
+      </button>
+    </header>
+    <main id="settings">
+      <div class="page-title">
+        <div>
+          <span class="eyebrow">RUI CALENDAR</span>
+          <h1>让日程安放在这里</h1>
+          <p>窗口、连接与数据，都由你掌握。</p>
+        </div>
+        <button type="button" data-command="calendar">返回日历</button>
+      </div>
+      <div id="message" role="status" aria-live="polite" hidden></div>
+      <section aria-labelledby="window-title">
+        <h2 id="window-title">桌面窗口</h2>
+        <label class="row"
+          ><span>始终置顶<small>在其他窗口上方显示日历</small></span
+          ><input id="mode" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span>锁定日历<small>日历区域点击穿透，顶部工具条保持可操作</small></span
+          ><input id="locked" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span>迷你模式<small>将窗口调整为紧凑尺寸</small></span
+          ><input id="mini" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span>免打扰<small>暂停桌面提醒，日历中的提醒设置继续保留</small></span
+          ><input id="doNotDisturb" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span>登录时启动<small id="autoStartHint">登录系统后自动打开瑞历</small></span
+          ><input id="autoStart" type="checkbox"
+        /></label>
+        <label class="row"
+          ><span
+            >透明度 <output id="opacityValue">95%</output
+            ><small id="opacityHint">拖动即可预览，自动保存</small></span
+          ><input id="opacity" type="range" min="5" max="100" step="1"
+        /></label>
+        <label class="row"
+          ><span>外观</span
+          ><select id="theme">
+            <option value="system">跟随系统</option>
+            <option value="light">浅色</option>
+            <option value="dark">深色</option>
+          </select></label
+        >
+      </section>
+      <section aria-labelledby="remote-title">
+        <h2 id="remote-title">远程网页</h2>
+        <p>本地日历可离线使用。填写已有网页服务地址后，它会在独立的安全内容视图中打开。</p>
+        <form id="remote-form">
+          <label for="remoteUrl">网页地址</label>
+          <div class="input-row">
+            <input id="remoteUrl" type="url" autocomplete="url" /><button type="submit">
+              保存地址
+            </button>
+          </div>
+        </form>
+        <p>多账户、CalDAV 服务器与应用专用密码在本地日历的「设置 → 同步」中管理。</p>
+      </section>
+      <section id="certificate" aria-labelledby="certificate-title" hidden>
+        <h2 id="certificate-title">服务器证书需要核对</h2>
+        <p id="certificateDetails"></p>
+        <button type="button" id="trust-certificate">核对并信任这张证书</button>
+      </section>
+      <section aria-labelledby="about-title">
+        <h2 id="about-title">关于瑞历 <span id="version"></span></h2>
+        <p id="platformSupport"></p>
+        <p id="accessFallback"></p>
+        <p id="keychainStatus"></p>
+        <form id="update-form">
+          <label for="updateUrl">更新服务地址（HTTPS）</label>
+          <div class="input-row">
+            <input id="updateUrl" type="url" /><button type="submit">保存</button>
+          </div>
+        </form>
+        <p id="updateStatus" role="status"></p>
+        <progress
+          id="updateProgress"
+          max="100"
+          value="0"
+          hidden
+          aria-label="更新下载进度"
+        ></progress>
+        <div class="actions">
+          <button type="button" data-command="update:check">检查更新</button
+          ><button type="button" data-command="update:download" hidden>下载更新</button
+          ><button type="button" data-command="update:install" hidden>重启安装</button
+          ><button type="button" data-command="update:later" hidden>稍后更新</button
+          ><button type="button" data-command="update:skip" hidden>跳过此版本</button
+          ><button type="button" data-command="logs:export">导出日志</button>
+        </div>
+        <p>加密备份与恢复位于本地日历的「设置 → 数据」。</p>
+      </section>
+      <footer>
+        <button type="button" data-command="hide">隐藏到托盘</button
+        ><button type="button" data-command="quit" class="danger">退出瑞历</button>
+      </footer>
+    </main>
+    <div id="toast" role="alert" hidden></div>
+    <script type="module" src="index.js"></script>
+  </body>
+</html>

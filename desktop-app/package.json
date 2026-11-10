@@ -1,0 +1,47 @@
+{
+  "name": "ruili-calendar",
+  "version": "1.2.0",
+  "description": "瑞历 · 本地优先的日历与桌面悬浮窗",
+  "desktopName": "ruili-calendar",
+  "homepage": "https://ruili.local",
+  "main": "build/desktop/main/index.js",
+  "author": "ruibing",
+  "license": "MIT",
+  "engines": { "node": ">=22.12" },
+  "packageManager": "pnpm@10.30.3",
+  "scripts": {
+    "start": "electron .",
+    "dev": "npm run build && electron .",
+    "build": "node scripts/build.mjs",
+    "build:desktop": "node scripts/build.mjs --desktop-only",
+    "typecheck": "tsc -p desktop/tsconfig.json && node scripts/frontend.mjs typecheck",
+    "lint": "eslint desktop scripts && node scripts/frontend.mjs lint",
+    "format": "prettier --write desktop/src desktop/tests scripts",
+    "test": "vitest --config vitest.config.mjs run && node scripts/frontend.mjs test:run",
+    "test:desktop": "vitest --config vitest.config.mjs run",
+    "e2e": "playwright test && node scripts/frontend.mjs e2e",
+    "e2e:desktop": "playwright test",
+    "build:win": "npm run build && electron-builder --win --publish never",
+    "build:mac": "npm run build && electron-builder --mac --universal --publish never",
+    "build:linux": "npm run build && electron-builder --linux --publish never",
+    "dist": "npm run build:win",
+    "dist:portable": "npm run build && electron-builder --win portable --publish never"
+  },
+  "dependencies": { "electron-updater": "^6.7.0", "zod": "^4.6.5" },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1", "@playwright/test": "^1.63.0", "@types/node": "^26.6.4",
+    "electron": "^45.0.0", "electron-builder": "^26.18.0", "esbuild": "^0.27.0",
+    "eslint": "^10.12.0", "globals": "^17.13.0", "prettier": "^3.9.9",
+    "typescript": "~6.0.3", "typescript-eslint": "^8.71.0", "vitest": "^4.1.0"
+  },
+  "build": {
+    "appId": "com.ruibing.ruili", "productName": "瑞历", "asar": true,
+    "directories": { "output": "release" },
+    "files": ["build/**/*", "assets/瑞历.png", "assets/瑞历.icns", "package.json"],
+    "win": { "icon": "assets/瑞历.png", "target": [{ "target": "nsis", "arch": ["x64"] }, { "target": "portable", "arch": ["x64"] }] },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "createStartMenuShortcut": true, "shortcutName": "瑞历" },
+    "mac": { "icon": "assets/瑞历.icns", "category": "public.app-category.productivity", "target": [{ "target": "dmg", "arch": ["universal"] }, { "target": "zip", "arch": ["universal"] }], "hardenedRuntime": true },
+    "linux": { "category": "Office", "syncDesktopName": true, "icon": "assets/瑞历.png", "target": [{ "target": "AppImage", "arch": ["x64", "arm64"] }, { "target": "deb", "arch": ["x64", "arm64"] }], "maintainer": "ruibing" },
+    "deb": { "compression": "gz" }
+  }
+}
