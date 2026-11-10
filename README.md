@@ -10,16 +10,15 @@
 </p>
 
 <p align="center">
-  👀 <a href="https://mstsc.ruibing.wang:7086/">在线体验</a> ·
-  🌐 <a href="https://vector9584.github.io/rui-calendar/">应用主页</a> ·
-  ⬇️ <a href="https://github.com/vector9584/rui-calendar/releases/latest">下载安装包</a> ·
-  <a href="#能做什么">能做什么</a> ·
-  <a href="#架构">架构</a> ·
-  <a href="#组件清单">组件</a> ·
-  <a href="#桌面客户端">桌面客户端</a> ·
-  <a href="#快速开始">快速开始</a> ·
-  <a href="#文档">文档</a> ·
-  <a href="JOURNEY.md">心路历程</a>
+  <a href="https://mstsc.ruibing.wang:7086/"><b>在线体验</b></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://github.com/vector9584/rui-calendar/releases/latest"><b>下载安装包</b></a>
+  &nbsp;&nbsp;|&nbsp;&nbsp;
+  <a href="https://vector9584.github.io/rui-calendar/">应用主页</a>
+</p>
+
+<p align="center">
+  <sub><a href="#能做什么">能做什么</a> · <a href="#特性">特性</a> · <a href="#架构">架构</a> · <a href="#组件清单">组件清单</a> · <a href="#桌面客户端">桌面客户端</a> · <a href="#快速开始">快速开始</a> · <a href="#文档">文档</a></sub>
 </p>
 
 ---
