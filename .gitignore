@@ -97,4 +97,9 @@ FORK_NOTES.md
 .jmap-dev-data/
 
 # Upstream CI workflows (need workflow-scope PAT to push; not needed for the fork)
-.github/workflows/
+# Only android.yml is carried over: it fires on `v*` tags and attaches the APK to
+# the release. docker.yml and deploy.yml run on every push to main and are
+# upstream's own pipelines (deploy.yml would also fight the repo's built-in
+# pages-build-deployment), so they stay ignored.
+.github/workflows/*
+!.github/workflows/android.yml
