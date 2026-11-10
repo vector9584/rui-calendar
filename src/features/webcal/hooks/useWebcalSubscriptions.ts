@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import { useState, useCallback, useEffect } from 'react'
 import { createUuid } from '@/lib/uuid'
 import i18n from '@/lib/i18n'
@@ -260,7 +261,7 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
             presetId,
           })
         } catch (err) {
-          console.error(`[Webcal] Failed to subscribe preset ${presetId}:`, err)
+          runtimeLogger.error(`[Webcal] Failed to subscribe preset ${presetId}:`, err)
         }
       } else if (existing) {
         removeSubscription(existing.id)
@@ -296,7 +297,7 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
           notifyReminders: false,
         })
       } catch (err) {
-        console.error(`[Webcal] Failed to update preset ${presetId}:`, err)
+        runtimeLogger.error(`[Webcal] Failed to update preset ${presetId}:`, err)
       }
     },
     [updateSubscription]
@@ -389,7 +390,7 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
         const alreadySubscribed = existing.some((s) => s.url === normalizedUrl)
         if (alreadySubscribed) continue
 
-        console.log(`[Webcal] Auto-subscribing to preconfigured feed: ${entry.name}`)
+        runtimeLogger.debug(`[Webcal] Auto-subscribing to preconfigured feed: ${entry.name}`)
         try {
           await addSubscription({
             url: normalizedUrl,
@@ -400,7 +401,7 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
             isPreconfigured: true,
           })
         } catch (err) {
-          console.error(`[Webcal] Failed to auto-subscribe ${entry.name}:`, err)
+          runtimeLogger.error(`[Webcal] Failed to auto-subscribe ${entry.name}:`, err)
         }
       }
     }
@@ -408,9 +409,10 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isUnlocked, hasPreconfiguredWebcal])
 
-  // Auto-subscribe to built-in presets on first run (default: all enabled).
+  // Auto-subscribe to built-in presets only after the user enables them.
   // Guarded by a module-level flag so a re-mount never re-adds them.
   useEffect(() => {
+    if (import.meta.env.VITE_E2E_DISABLE_WEB_CAL_PRESETS === 'true') return
     if (presetAutoConnectDone) return
     presetAutoConnectDone = true
 
@@ -433,7 +435,7 @@ export function useWebcalSubscriptions(): UseWebcalSubscriptionsReturn {
             presetId: preset.id,
           })
         } catch (err) {
-          console.error(`[Webcal] Failed to auto-subscribe preset ${preset.id}:`, err)
+          runtimeLogger.error(`[Webcal] Failed to auto-subscribe preset ${preset.id}:`, err)
         }
       }
     }

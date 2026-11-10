@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../lib/runtimeLogger'
 import type { WebcalSubscription } from './types'
 import { createUuid } from '@/lib/uuid'
 
@@ -26,7 +27,7 @@ export function getAllSubscriptions(): WebcalSubscription[] {
   try {
     return JSON.parse(stored) as WebcalSubscription[]
   } catch {
-    console.warn(
+    runtimeLogger.warn(
       '[Webcal] Failed to parse stored subscriptions from localStorage. Data may be corrupted.'
     )
     return []

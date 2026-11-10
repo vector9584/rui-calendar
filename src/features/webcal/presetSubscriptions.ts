@@ -80,11 +80,11 @@ const DEFAULT_ASTRO_SIGN = 'pisces'
 const DEFAULT_WEATHER_LOCATION = 'Beijing_Beijing_Haidian'
 
 /**
- * Base URL for preset feeds — the real feed provider origin.
+ * Base URL for preset feeds — the feed provider origin.
  *
  * The public repo ships a placeholder (`your-feed.example.com`) because the
  * upstream provider is a specific third-party service; self-hosters point this
- * at their own feed provider via `VITE_FEED_BASE` in `.env.local` (gitignored).
+ * at their own provider via `VITE_FEED_BASE` in `.env.local` (gitignored).
  * The CORS bypass is applied separately through each subscription's proxyUrl
  * field (see proxyBase() below), so the stored URL stays the canonical public
  * feed URL.
@@ -92,10 +92,21 @@ const DEFAULT_WEATHER_LOCATION = 'Beijing_Beijing_Haidian'
  * Use the apex host, not `www.` — the provider 301s `www.` → apex, and the
  * CORS proxy does not follow redirects for feed fetches.
  */
+const PLACEHOLDER_FEED_BASE = 'https://your-feed.example.com'
+
 function feedBase(): string {
   const configured = import.meta.env.VITE_FEED_BASE
-  return (configured && configured.trim()) || 'https://your-feed.example.com'
+  return (configured && configured.trim()) || PLACEHOLDER_FEED_BASE
 }
+
+/**
+ * Whether a real feed origin was configured at build time.
+ *
+ * Presets default to ON only when the build actually knows where the feeds
+ * live. A public clone without `VITE_FEED_BASE` keeps them OFF so first run
+ * does not fire six requests at a hostname that does not exist.
+ */
+const FEED_CONFIGURED = feedBase() !== PLACEHOLDER_FEED_BASE
 
 /**
  * Generic CORS-proxy base on our own origin. Every preset (and, by default,
@@ -148,7 +159,7 @@ const PRESET_STATE_KEY = 'calino_preset_state'
 export function getDefaultPresetState(): PresetState {
   const toggles: Record<string, boolean> = {}
   for (const preset of PRESET_SUBSCRIPTIONS) {
-    toggles[preset.id] = true
+    toggles[preset.id] = FEED_CONFIGURED
   }
   return {
     toggles,

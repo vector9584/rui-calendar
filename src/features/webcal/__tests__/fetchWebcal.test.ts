@@ -73,6 +73,6 @@ describe('fetchWebcalIcs', () => {
 
     const calledUrl = vi.mocked(globalThis.fetch).mock.calls[0][0] as string
     expect(calledUrl).toContain('proxy.example.com')
-    expect(calledUrl).toContain(encodeURIComponent('https://example.com'))
+    expect(calledUrl).toContain('aHR0cHM6Ly9leGFtcGxlLmNvbQ')
   })
 })
