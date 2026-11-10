@@ -1,4 +1,4 @@
-import '@testing-library/jest-dom'
+import '@testing-library/jest-dom/vitest'
 import { vi } from 'vitest'
 import pkg from '../../package.json'
 import { initI18n } from '@/lib/i18n'

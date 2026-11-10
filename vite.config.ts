@@ -1,15 +1,18 @@
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, writeFileSync } from 'node:fs'
 import { defineConfig } from 'vite'
+import type { Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
-import { configDefaults } from 'vitest/config'
 import { caldavMockPlugin } from './e2e/fixtures/vite-caldav-mock'
 import { carddavMockPlugin } from './e2e/fixtures/vite-carddav-mock'
 import { contentSecurityPolicy } from './src/config/contentSecurityPolicy.ts'
 import { fontScalePostcss } from './src/config/fontScale.ts'
+import { themeCatalogPlugin } from './scripts/themeCatalogPlugin'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8'))
+const projectDirectory = fileURLToPath(new URL('.', import.meta.url))
 
 // Load self-hosted config at build time (baked into bundle, not served as separate file)
 const configPath = new URL('./calino.config.json', import.meta.url)
@@ -47,12 +50,32 @@ if (process.env.CALINO_E2E_MOCK === '1') {
 // The cross-origin diagnostics fixture is deliberately plain HTTP. Permit that
 // transport without changing hosted-only UI behavior across the rest of E2E.
 const allowHttpConnections = isSelfHosted || process.env.CALINO_E2E_MOCK === '1'
+const serviceWorkerPrecachePlugin: Plugin = {
+  name: 'calino-service-worker-precache',
+  apply: 'build',
+  writeBundle(outputOptions, bundle) {
+    const outputDirectory = outputOptions.dir ?? path.resolve(projectDirectory, 'dist')
+    const assets = Object.values(bundle)
+      .map((output) => output.fileName)
+      .filter((fileName) => /\.(?:js|css|woff2?|ttf|otf|png|jpe?g|webp|svg|ico)$/.test(fileName))
+      .map((fileName) => `/${fileName}`)
+    const entry = Object.values(bundle).find(
+      (output) => output.type === 'chunk' && output.isEntry && output.name === 'main'
+    )
+    const buildId = entry?.fileName.match(/-([\w]+)\.js$/)?.[1] ?? Date.now().toString(36)
+    const serviceWorkerPath = path.join(outputDirectory, 'sw.js')
+    const source = readFileSync(serviceWorkerPath, 'utf8')
+      .replace('__BUILD_ID__', buildId)
+      .replace('/* __CALINO_BUILD_ASSETS__ */ []', JSON.stringify(assets))
+    writeFileSync(serviceWorkerPath, source)
+  },
+}
 
 // Unset (the default) keeps the dev server localhost-only; see the SECURITY
 // note on `server.host` below before setting it.
 const devHost = process.env.CALINO_DEV_HOST
 
-export default defineConfig({
+const config = {
   base: '/',
   // The app reads these non-VITE_ build-time values from import.meta.env.
   // Keep the allowlist narrow: CALINO_DEV_* and other server-only settings
@@ -67,7 +90,7 @@ export default defineConfig({
     {
       name: 'calino-content-security-policy',
       enforce: 'pre',
-      transformIndexHtml: (html) =>
+      transformIndexHtml: (html: string) =>
         html.replace(
           '__CALINO_CONTENT_SECURITY_POLICY__',
           contentSecurityPolicy(allowHttpConnections)
@@ -75,8 +98,10 @@ export default defineConfig({
     },
     react(),
     nodePolyfills(),
+    themeCatalogPlugin(projectDirectory),
     caldavMockPlugin(),
     carddavMockPlugin(),
+    serviceWorkerPrecachePlugin,
   ],
   server: {
     // SECURITY: default to localhost-only. The dev server has known
@@ -105,70 +130,42 @@ export default defineConfig({
     // same-origin, so strict extension CSPs allow it under 'self'.
     hmr: devHost ? true : { host: 'localhost', port: 8080 },
   },
+  optimizeDeps: {
+    // The E2E server transforms modules on demand. Skipping the full dependency
+    // crawl avoids a multi-minute pnpm symlink scan before the port is ready.
+    noDiscovery: process.env.CALINO_E2E_MOCK === '1',
+    exclude: ['dexie', 'use-sync-external-store'],
+  },
   css: {
     // Makes every font size follow the Font Size setting; see fontScale.ts.
     postcss: { plugins: [fontScalePostcss()] },
   },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(projectDirectory, './src'),
+      'use-sync-external-store/shim': path.resolve(
+        projectDirectory,
+        './src/config/useSyncExternalStoreShim.ts'
+      ),
+      dexie: path.resolve(projectDirectory, './node_modules/dexie/dist/dexie.mjs'),
+      'style-to-js': path.resolve(projectDirectory, './src/config/styleToJs.ts'),
+      debug: path.resolve(projectDirectory, './src/config/debug.ts'),
+      extend: path.resolve(projectDirectory, './src/config/extend.ts'),
     },
   },
   build: {
+    chunkSizeWarningLimit: 1200,
     rollupOptions: {
       // Second entry for the Android background sync worker, which loads
       // headless.html in an offscreen WebView at the same origin as the app so
       // it can read the stored accounts. It shares the app's modules, so this
       // costs a small extra chunk, not a second copy. See src/headless.ts.
       input: {
-        main: path.resolve(__dirname, 'index.html'),
-        headless: path.resolve(__dirname, 'headless.html'),
+        main: path.resolve(projectDirectory, 'index.html'),
+        headless: path.resolve(projectDirectory, 'headless.html'),
       },
     },
   },
-  test: {
-    globals: true,
-    environment: 'jsdom',
-    setupFiles: './src/test/setup.ts',
-    // Pin the zone so date handling is asserted against a fixed offset rather
-    // than whatever the machine happens to be. Several suites (NLParser,
-    // DayEventsPopup, recurrence) were written against a UTC+ zone and only
-    // passed by accident of the author's machine; pinning makes that
-    // assumption explicit and true on a UTC CI box.
-    //
-    // The suite runs twice, once either side of UTC, because a single pin can
-    // only face one way and both directions have produced real bugs: west is
-    // where the `toISOString()` habit breaks (#116, the recurrence UNTIL
-    // description), east is where reading a floating date with UTC getters
-    // breaks (the all-day UNTIL serializer). A test file cannot pick its own
-    // zone — reassigning `process.env.TZ` inside a worker is a no-op, since the
-    // zone is resolved before the test runs — so this has to be two projects
-    // rather than a helper. Anything genuinely zone-dependent must derive its
-    // expectation from the ambient zone, not hardcode one offset.
-    projects: [
-      { extends: true, test: { name: 'west', env: { TZ: 'America/New_York' } } },
-      {
-        extends: true,
-        test: {
-          name: 'east',
-          env: { TZ: 'Europe/Copenhagen' },
-          // The perf spec asserts wall-clock budgets, so it measures whatever
-          // else the machine is doing — and the two projects run concurrently.
-          // It has no zone dependence, so one run is the whole of its value.
-          exclude: [...configDefaults.exclude, 'e2e/**', '.claude/**', '**/*.perf.test.ts'],
-        },
-      },
-    ],
-    // e2e/ is for Playwright tests, not vitest — keep them out of `pnpm test`.
-    // .claude/ may contain nested git worktrees with their own copy of this
-    // repo; without excluding it, vitest resolves duplicate React/component
-    // modules from those worktrees and tests fail with "Invalid hook call".
-    exclude: [...configDefaults.exclude, 'e2e/**', '.claude/**'],
-    // CSS imports are stubbed to empty by default, which also swallows `?raw`.
-    // The contrast tests parse built-in.css as text to re-derive its ratios, so
-    // that one file has to come through intact. Scoped deliberately: enabling
-    // CSS wholesale would make CSS-module imports return real class names
-    // instead of the proxy other tests rely on.
-    css: { include: [/built-in\.css/] },
-  },
-})
+}
+
+export default defineConfig(config)

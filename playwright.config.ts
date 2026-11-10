@@ -6,7 +6,10 @@ import { defineConfig, devices } from '@playwright/test'
 // backend is then absent and the sync specs fail in ways that look like flakes.
 // Its own port keeps the suite self-contained and lets `pnpm dev` keep running.
 const PORT = Number(process.env.E2E_PORT ?? 5199)
-const BASE_URL = `http://localhost:${PORT}`
+const BASE_URL = `http://127.0.0.1:${PORT}`
+const PREVIEW_PORT = Number(process.env.E2E_PREVIEW_PORT ?? 5198)
+const PREVIEW_URL = `http://127.0.0.1:${PREVIEW_PORT}`
+process.env.E2E_PREVIEW_URL = PREVIEW_URL
 const DAV_PORT = Number(process.env.DAV_PORT ?? 8099)
 const IS_CI = !!process.env.CI
 const IS_PARALLEL_RUNNER = process.env.PLAYWRIGHT_PARALLEL_RUNNER === '1'
@@ -68,12 +71,12 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
   ],
-  webServer: [
+  webServer: process.env.PLAYWRIGHT_EXTERNAL_SERVERS === '1' ? undefined : [
     {
-      command: `CALINO_E2E_MOCK=1 pnpm dev --port ${PORT} --strictPort`,
+      command: `CALINO_E2E_MOCK=1 VITE_SITE_URL=https://ruili.local VITE_CONFIG_NATIVE_IGNORE_WARNING=true node_modules/.bin/vite --config vite.e2e.config.ts --configLoader bundle --host 127.0.0.1 --port ${PORT} --strictPort`,
       url: BASE_URL,
       reuseExistingServer: !IS_CI && !IS_PARALLEL_RUNNER,
-      timeout: 120_000,
+      timeout: 300_000,
       stdout: 'ignore',
       stderr: 'pipe',
     },
@@ -84,9 +87,17 @@ export default defineConfig({
       // only thing diagnostics has to reason about. It deliberately uses HTTP
       // to cover private-network DAV from a self-hosted build.
       command: `node e2e/fixtures/dav-server.mjs`,
-      url: `http://localhost:${DAV_PORT}/good/`,
+      url: `http://127.0.0.1:${DAV_PORT}/good/`,
       reuseExistingServer: !IS_CI && !IS_PARALLEL_RUNNER,
       timeout: 30_000,
+      stdout: 'ignore',
+      stderr: 'pipe',
+    },
+    {
+      command: `VITE_CONFIG_NATIVE_IGNORE_WARNING=true node_modules/.bin/vite preview --host 127.0.0.1 --port ${PREVIEW_PORT} --strictPort`,
+      url: PREVIEW_URL,
+      reuseExistingServer: !IS_CI && !IS_PARALLEL_RUNNER,
+      timeout: 60_000,
       stdout: 'ignore',
       stderr: 'pipe',
     },
