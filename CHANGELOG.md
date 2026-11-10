@@ -4,6 +4,31 @@ All notable changes to Calino will be documented in this file.
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-10
+
+瑞历自管的第一个版本。桌面端从「网页塞进 Electron 壳再注入改样式」重写为独立的 TypeScript 主进程工程；网页端继续跟随上游 Calino，因此本文件里 0.41.0 及更早的条目仍按上游英文记录。
+
+### 桌面端重写
+
+- **独立工程。** 新增 `desktop-app/`，Electron + TypeScript 三进程结构（main / preload / renderer），旧的 `desktop/main.js` 注入方案整体移除。主进程按职责拆成 `store`、`vault`、`backup`、`logger`、`autostart`、`updater` 六个模块。
+- **本地优先。** 配置和事件先落本机，断网能读能写，联网后走 CalDAV 增量同步；`revision` 单调递增用于冲突检测。
+- **凭据进系统钥匙串。** Windows 凭据管理器 / macOS 钥匙串 / Linux Secret Service，配置文件里不落明文密码。
+- **开机自启。** Windows 写 `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`，macOS 走登录项，Linux 写 `~/.config/autostart/ruili-calendar.desktop`（AppImage 用 `$APPIMAGE` 的真实路径）。
+- **窗口形态。** 透明度、鼠标穿透、置顶/桌面模式、迷你模式、托盘常驻，`Ctrl/Cmd+Shift+Space` 全局显隐。
+- **三平台产物。** Windows NSIS 安装版与便携版、macOS universal（Intel + Apple Silicon）dmg/zip、Linux AppImage 与 amd64/arm64 deb。
+
+### 网页端
+
+- **内置订阅源改为可配置。** 六个内置日历（老黄历宜/忌、法定节假日、节气、星座、天气）的源站改由 `VITE_FEED_BASE` 指定，不再硬编码真实域名；开源仓库保留 `your-feed.example.com` 占位符，未配置时该功能自动关闭。把占位符原样发到生产会让订阅经代理后全部 502。
+- **版本号统一。** 根 `package.json` 从 `0.41.0` 提到 `1.2.0`。它同时是 Android `versionName`/`versionCode`（`android/app/build.gradle`）和 `scripts/release.sh` 打 tag 的唯一来源，此前与已发布的 `v1.2.0` 脱节，再跑一次 `--patch` 会打出 `v0.41.1`。
+
+### 已知情况
+
+- macOS 包未签名未公证、Windows 包无代码签名证书，首次运行会有系统提示。
+- Android APK 未随本版发布：`.github/workflows/android.yml` 被 `.gitignore` 第 99 行的上游遗留规则（`.github/workflows/`）排除，从未进入仓库，所以 tag 推送时没有任何 CI 去构建它；此外它需要 keystore 与四个 secrets，本仓库也不含这两样。
+
+**完整对比**：https://github.com/vector9584/rui-calendar/compare/v1.1.0...v1.2.0
+
 ## [0.41.0] - 2026-10-22
 
 This release adds configurable event styles based on categories and gives overlapping events more room in week and day view. It also fixes birthdays and anniversaries that have no year, so they stay visible and survive contact edits.
