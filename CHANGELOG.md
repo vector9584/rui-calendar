@@ -22,10 +22,17 @@ All notable changes to Calino will be documented in this file.
 - **内置订阅源改为可配置。** 六个内置日历（老黄历宜/忌、法定节假日、节气、星座、天气）的源站改由 `VITE_FEED_BASE` 指定，不再硬编码真实域名；开源仓库保留 `your-feed.example.com` 占位符，未配置时该功能自动关闭。把占位符原样发到生产会让订阅经代理后全部 502。
 - **版本号统一。** 根 `package.json` 从 `0.41.0` 提到 `1.2.0`。它同时是 Android `versionName`/`versionCode`（`android/app/build.gradle`）和 `scripts/release.sh` 打 tag 的唯一来源，此前与已发布的 `v1.2.0` 脱节，再跑一次 `--patch` 会打出 `v0.41.1`。
 
+### Android
+
+- **APK 随本版发布。** `ruili-v1.2.0.apk`（6,086,632 字节），由 GitHub Actions 在 ubuntu-latest 上用 JDK 21 + Android SDK 构建，v2 签名方案，证书主体 `CN=Wang Ruibing, O=Ruili Calendar`，有效期至 2051 年。
+- **签名 key 是本仓库自己的。** 上游 Calino 的签名属于原作者，拿不到；此前也从未发布过 APK，没有需要覆盖安装的老用户。因此新建了一把自签 key（RSA 4096），私钥与密码不进仓库，只存在 GitHub Actions secrets 与本地备份两处。
+- **装不上的情况。** 自签证书会让系统提示"来源未知"，属正常。如果设备上装的是上游 Calino 官方 APK，必须先卸载——包名相同而签名不同，Android 会直接拒绝覆盖。
+- **上一版为什么没有 APK。** 打 `v1.2.0` tag 那次，`.github/workflows/android.yml` 还被 `.gitignore` 第 99 行的上游遗留规则（`.github/workflows/`）排除，从未进入仓库，所以没有任何 CI 去构建它。本版把它改成 `.github/workflows/*` 加白名单只放 `android.yml`（`docker.yml`、`deploy.yml` 是上游自己的流水线，push main 就触发，`deploy.yml` 还会和本仓库内置的 Pages 部署抢），并给工作流加了 `workflow_dispatch`，用来给已经发布的 tag 补挂 APK。
+
 ### 已知情况
 
 - macOS 包未签名未公证、Windows 包无代码签名证书，首次运行会有系统提示。
-- Android APK 未随本版发布：`.github/workflows/android.yml` 被 `.gitignore` 第 99 行的上游遗留规则（`.github/workflows/`）排除，从未进入仓库，所以 tag 推送时没有任何 CI 去构建它；此外它需要 keystore 与四个 secrets，本仓库也不含这两样。
+- Android 用自签证书，同样会有"来源未知"提示；能覆盖安装的前提是同一把 key，换 key 等于让所有已装用户卸载重装。
 
 **完整对比**：https://github.com/vector9584/rui-calendar/compare/v1.1.0...v1.2.0
 
