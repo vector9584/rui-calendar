@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { JSX } from 'react'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
@@ -114,7 +115,7 @@ export function IcsImportModal({
     try {
       return { parsed: parseICALData(icsText, 'preview'), parseFailed: false }
     } catch (e) {
-      console.error('Failed to parse .ics file for import preview:', e)
+      runtimeLogger.error('Failed to parse .ics file for import preview:', e)
       return { parsed: [], parseFailed: true }
     }
   }, [icsText])

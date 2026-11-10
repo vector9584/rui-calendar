@@ -203,7 +203,7 @@ export function getInitialFormState(
           ? 'after'
           : 'never'
       return {
-        title: existingEvent.title,
+        title: existingEvent.title ?? '',
         description: existingEvent.description || '',
         location: existingEvent.location || '',
         // TZID events store naive wall clocks in the event zone — the modal

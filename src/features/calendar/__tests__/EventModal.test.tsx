@@ -308,6 +308,24 @@ describe('EventModal', () => {
     expect(screen.getByPlaceholderText('Add description...')).toHaveValue('Original description')
   })
 
+  it('keeps the title editor controlled when a legacy recurring event has no title', () => {
+    const store = useCalendarStore.getState()
+    store.addEvent({
+      id: 'legacy-recurring-event',
+      calendarId: 'default',
+      title: undefined,
+      start: '2024-03-01T10:00:00',
+      end: '2024-03-01T11:00:00',
+      isAllDay: false,
+      recurrence: { frequency: 'weekly', interval: 1 },
+    } as unknown as Parameters<typeof store.addEvent>[0])
+    store.openModal(undefined, undefined, 'legacy-recurring-event')
+
+    render(<EventModal />)
+
+    expect(screen.getByPlaceholderText('Event title')).toHaveValue('')
+  })
+
   it('does not create event with empty title', () => {
     const store = useCalendarStore.getState()
     store.openModal()

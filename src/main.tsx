@@ -1,3 +1,4 @@
+import { runtimeLogger } from './lib/runtimeLogger'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
@@ -29,7 +30,7 @@ const renderApp = (): void => {
 
 void startI18n()
   .catch((error: unknown) => {
-    console.error('[i18n] startup catalog failed; falling back to English:', error)
+    runtimeLogger.error('[i18n] startup catalog failed; falling back to English:', error)
     initI18n('en')
   })
   .then(renderApp)

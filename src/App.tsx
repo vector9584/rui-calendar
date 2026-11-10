@@ -1,3 +1,4 @@
+import { runtimeLogger } from './lib/runtimeLogger'
 import type { JSX, MouseEvent as ReactMouseEvent } from 'react'
 import { useCallback, useEffect, useState, useRef, lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router'
@@ -227,7 +228,9 @@ function useViewManager(): void {
   const isCalendarRoute = URL_TO_VIEW[location.pathname] !== undefined
   const isRootRoute = location.pathname === '/'
 
-  // Sync URL -> State (only when URL changes externally)
+  // The URL is the authoritative route. Store hydration and background sync
+  // can update currentView while a page is open; restore the route view so a
+  // background settings pull cannot unmount the active editor.
   useEffect(() => {
     if (!isMounted.current) return
     if (isRedirecting) return // Wait for GitHub Pages redirect to complete
@@ -243,14 +246,15 @@ function useViewManager(): void {
     if (!isCalendarRoute) return
 
     const viewFromUrl = URL_TO_VIEW[location.pathname]
-    if (viewFromUrl && viewFromUrl !== lastUrlView.current) {
+    if (viewFromUrl) {
       lastUrlView.current = viewFromUrl
-      if (viewFromUrl !== currentViewRef.current) {
+      if (viewFromUrl !== currentView) {
         setCurrentView(viewFromUrl)
       }
     }
   }, [
     location.pathname,
+    currentView,
     setCurrentView,
     isCalendarRoute,
     isRootRoute,
@@ -315,6 +319,7 @@ function CalendarApp(): JSX.Element {
   const navigate = useNavigate()
   const location = useLocation()
   const currentView = useCalendarStore((state) => state.currentView)
+  const routeView = URL_TO_VIEW[location.pathname] ?? currentView
   const setOverlayOpen = useCalendarStore((state) => state.setOverlayOpen)
   const openModal = useCalendarStore((state) => state.openModal)
   const isJournalModalOpen = useCalendarStore((state) => state.isJournalModalOpen)
@@ -715,7 +720,7 @@ function CalendarApp(): JSX.Element {
 
   const renderView = (): JSX.Element => {
     const viewElement = (() => {
-      switch (currentView) {
+      switch (routeView) {
         case 'month':
           return <CalendarGrid />
         case 'year':
@@ -741,8 +746,8 @@ function CalendarApp(): JSX.Element {
     // Key the boundary on the view so switching views remounts a fresh
     // boundary and recovers from a crashed view without a full reload.
     return (
-      <ErrorBoundary key={currentView}>
-        <ViewLoader viewKey={currentView}>{viewElement}</ViewLoader>
+      <ErrorBoundary key={routeView}>
+        <ViewLoader viewKey={routeView}>{viewElement}</ViewLoader>
       </ErrorBoundary>
     )
   }
@@ -821,7 +826,7 @@ function CalendarApp(): JSX.Element {
           ref={mainRef}
           id="main-content"
           tabIndex={-1}
-          data-view={currentView}
+          data-view={routeView}
           onPanStart={isMobile ? handleContentPanStart : undefined}
           onPanEnd={isMobile ? handleContentPanEnd : undefined}
           style={isMobile ? { touchAction: 'pan-y' } : undefined}
@@ -960,7 +965,7 @@ function App(): JSX.Element {
   // an uncaught rejection here would surface as an unhandled promise rejection.
   useEffect(() => {
     loadConfigFile().catch((err) => {
-      console.warn('[config] Failed to load config file:', err)
+      runtimeLogger.warn('[config] Failed to load config file:', err)
     })
   }, [loadConfigFile])
 

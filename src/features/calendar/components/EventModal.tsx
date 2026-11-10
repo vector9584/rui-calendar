@@ -326,7 +326,7 @@ export function EventModal(): JSX.Element | null {
   const [nlpSuggestion, setNlpSuggestion] = useState<NLPParseResult | null>(null)
 
   const handleTitleChange = (val: string): void => {
-    setTitle(val)
+    setTitle(val ?? '')
     setHighlightedIndex(-1)
 
     // Inline NLP: only when creating a new event, and only surface a chip when
@@ -406,7 +406,7 @@ export function EventModal(): JSX.Element | null {
   }
 
   const applyNlpSuggestion = (parsed: NLPParseResult): void => {
-    setTitle(parsed.title)
+    setTitle(parsed.title ?? '')
     setStartDate(format(parsed.startDate, 'yyyy-MM-dd'))
     setIsAllDay(parsed.isAllDay)
     if (!parsed.isAllDay) {
@@ -1421,14 +1421,6 @@ export function EventModal(): JSX.Element | null {
           }
           const existingEvent = events.find((e) => e.id === eventId)
           if (existingEvent) {
-            console.log(
-              '[EventModal] Saving event. attachments state:',
-              JSON.stringify(attachments)
-            )
-            console.log(
-              '[EventModal] existingEvent.attachments:',
-              JSON.stringify(existingEvent.attachments)
-            )
             const pushEdit = (): Promise<boolean> =>
               safeCalDAVUpdate(
                 updateCalDAVEvent,
@@ -1684,7 +1676,7 @@ export function EventModal(): JSX.Element | null {
                       ? t('modals.eventModal.taskTitlePlaceholder')
                       : t('modals.eventModal.eventTitlePlaceholder')
                   }
-                  value={title}
+                  value={title ?? ''}
                   onChange={(e) => handleTitleChange(e.target.value)}
                   onKeyDown={handleTitleKeyDown}
                   className={styles.modalTitle}
@@ -2026,7 +2018,7 @@ export function EventModal(): JSX.Element | null {
                     </div>
                     <textarea
                       placeholder={t('modals.eventModal.addDescriptionPlaceholder')}
-                      value={description}
+                      value={description ?? ''}
                       onChange={(e) => setDescription(e.target.value)}
                       className={`${styles.modalInput} ${styles.modalTextarea}`}
                       data-component="event-description-input"

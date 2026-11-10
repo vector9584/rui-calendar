@@ -128,6 +128,7 @@ function JournalEditor({
   const { t } = useTranslation('calendar')
   const titleRef = useRef<HTMLInputElement>(null)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
+  const pendingBodySelectionRef = useRef<{ start: number; end: number } | null>(null)
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [showMore, setShowMore] = useState(
     Boolean(entry.url || entry.attachments?.length || entry.relatedTo?.length)
@@ -165,6 +166,15 @@ function JournalEditor({
     if (focusVersion > 0) requestAnimationFrame(() => titleRef.current?.focus())
   }, [focusVersion])
 
+  useLayoutEffect(() => {
+    const selection = pendingBodySelectionRef.current
+    const textarea = bodyRef.current
+    if (!selection || !textarea) return
+    pendingBodySelectionRef.current = null
+    textarea.focus()
+    textarea.setSelectionRange(selection.start, selection.end)
+  }, [entry.description])
+
   useEffect(() => {
     if (mode !== 'read') return
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -196,11 +206,11 @@ function JournalEditor({
       textarea.selectionEnd,
       marker
     )
+    pendingBodySelectionRef.current = {
+      start: result.selectionStart,
+      end: result.selectionEnd,
+    }
     updateBody(result.value)
-    requestAnimationFrame(() => {
-      textarea.focus()
-      textarea.setSelectionRange(result.selectionStart, result.selectionEnd)
-    })
   }
   const handleBodyKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if ((event.metaKey || event.ctrlKey) && (event.key === 'b' || event.key === 'i')) {
@@ -547,6 +557,7 @@ export function JournalView(): JSX.Element {
   const [viewMode, setViewMode] = useState<'month' | 'all'>('month')
   const [editorMode, setEditorMode] = useState<EditorMode>('read')
   const [listOnly, setListOnly] = useState(true)
+  const [draftId, setDraftId] = useState<string | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
@@ -600,7 +611,11 @@ export function JournalView(): JSX.Element {
     )
   }, [])
   const activeId = selectedId
-  const selectedEntry = entries.find((entry) => entry.id === activeId) || null
+  const selectedEntry =
+    entries.find((entry) => entry.id === activeId) ||
+    (activeId && draftId === activeId
+      ? (events.find((entry) => entry.id === activeId) ?? null)
+      : null)
   const writableCalendars = useMemo(
     () => calendars.filter((calendar) => !calendar.readOnly),
     [calendars]
@@ -713,11 +728,14 @@ export function JournalView(): JSX.Element {
   )
 
   useEffect(() => {
-    if (selectedId && !selectedEntry) {
+    // A new draft is selected before the store update reaches this render.
+    // Keep that selection while `entries` catches up or the editor closes
+    // immediately after creating the first entry in an empty journal.
+    if (selectedId && !selectedEntry && !draftIdsRef.current.has(selectedId)) {
       setSelectedId(entries[0]?.id || null)
       setOverlayOpen(false)
     }
-  }, [entries, selectedEntry, selectedId])
+  }, [draftId, entries, selectedEntry, selectedId])
   useEffect(() => {
     setConfirmDeleteId(null)
   }, [selectedId])
@@ -790,6 +808,10 @@ export function JournalView(): JSX.Element {
         : today
     const now = new Date().toISOString()
     const id = createUuid()
+    // Mark the id before adding to Zustand because subscribers can render
+    // synchronously while the selected draft is not yet in `entries`.
+    draftIdsRef.current.add(id)
+    syncBaseRef.current.delete(id)
     addEvent({
       id,
       calendarId: defaultCalendarId,
@@ -799,13 +821,13 @@ export function JournalView(): JSX.Element {
       end: date,
       isAllDay: true,
       type: 'journal',
+      syncStatus: 'pending',
       created: now,
       lastModified: now,
     })
-    draftIdsRef.current.add(id)
-    syncBaseRef.current.delete(id)
     setSaveStatuses((current) => ({ ...current, [id]: 'unsaved' }))
     setSelectedId(id)
+    setDraftId(id)
     setOverlayOpen(true)
     setEditorMode('write')
     setListOnly(false)
@@ -859,6 +881,7 @@ export function JournalView(): JSX.Element {
         timersRef.current.delete(entryId)
         syncBaseRef.current.delete(entryId)
         draftIdsRef.current.delete(entryId)
+        setDraftId((current) => (current === entryId ? null : current))
         setSelectedId(next?.id || null)
       }, 220)
       removalTimersRef.current.set(entryId, timer)

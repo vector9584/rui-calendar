@@ -170,10 +170,16 @@ export const EventCard = React.memo(function EventCard({
     const node = contentRef.current
     if (!node || !onContentHeightChange || typeof ResizeObserver === 'undefined') return
     const observer = new ResizeObserver(() => {
-      // Include top padding and breathing room for pen marks, icons and the next card.
-      onContentHeightChange(event.id, Math.ceil(node.offsetTop + node.offsetHeight + 6))
+      // The card clips content to its time-based height, so observing only the
+      // flex child misses font changes. scrollHeight keeps the natural text
+      // requirement even when the visible child is constrained by the card.
+      onContentHeightChange(
+        event.id,
+        Math.ceil(node.offsetTop + Math.max(node.offsetHeight, node.scrollHeight) + 6)
+      )
     })
     observer.observe(node)
+    node.querySelectorAll('*').forEach((child) => observer.observe(child))
     return () => observer.disconnect()
   }, [event.id, onContentHeightChange])
 

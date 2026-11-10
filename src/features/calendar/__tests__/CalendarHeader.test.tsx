@@ -45,7 +45,7 @@ describe('CalendarHeader', () => {
     const store = useCalendarStore.getState()
     store.setCurrentView('week')
     renderWithRouter(<CalendarHeader />)
-    expect(screen.getByRole('heading')).toHaveTextContent(/mar/i)
+    expect(screen.getByRole('heading')).toHaveTextContent(/mar|3月/i)
   })
 
   it('renders day view title', () => {

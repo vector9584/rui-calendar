@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../lib/runtimeLogger'
 import { type ReactNode } from 'react'
 import { Component, type ErrorInfo } from 'react'
 import i18n from '@/lib/i18n'
@@ -24,7 +25,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    runtimeLogger.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render(): ReactNode {

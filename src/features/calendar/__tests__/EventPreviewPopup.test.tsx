@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { screen, fireEvent, waitFor } from '@testing-library/react'
 import { render } from '@/test/caldavRender'
 import { format, parseISO } from 'date-fns'
@@ -89,6 +89,25 @@ describe('EventPreviewPopup', () => {
       <EventPreviewPopup event={mockEvent} position={mockPosition} clickedEventId="test-event-1" />
     )
     expect(screen.getByText('Test Meeting')).toBeInTheDocument()
+  })
+
+  it('keeps the inline title editor controlled for legacy events without a title', async () => {
+    const legacyEvent = { ...mockEvent, title: undefined } as unknown as CalendarEvent
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+
+    render(
+      <EventPreviewPopup
+        event={legacyEvent}
+        position={mockPosition}
+        clickedEventId={legacyEvent.id}
+      />
+    )
+    fireEvent.click(document.querySelector('[data-component="event-preview-title"]')!)
+
+    const input = await screen.findByDisplayValue('')
+    expect(input).toHaveValue('')
+    expect(error.mock.calls.flat().join(' ')).not.toContain('changing a controlled input to be uncontrolled')
+    error.mockRestore()
   })
 
   it('renders event date', () => {

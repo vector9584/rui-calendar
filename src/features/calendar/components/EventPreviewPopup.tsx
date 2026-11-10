@@ -101,7 +101,10 @@ export function EventPreviewPopup({
     deleteEvent: deleteCalDAVEvent,
   } = useCalDAV()
   const originalEventId = extractOriginalEventId(clickedEventId)
-  const eventIdToUse = originalEventId || event.id
+  const directOverrideMasterId = event.recurrenceMasterId
+  const effectiveOriginalEventId = originalEventId || directOverrideMasterId
+  const clickedOverride = events.find((candidate) => candidate.id === clickedEventId)
+  const eventIdToUse = effectiveOriginalEventId || event.id
 
   const recurrenceDescription = useMemo(() => describeRecurrence(event), [event])
   // For recurring event occurrences, the event prop is the parent series.
@@ -109,6 +112,22 @@ export function EventPreviewPopup({
   const occurrenceStartISO = originalEventId
     ? clickedEventId.slice(originalEventId.length + 1)
     : null
+  const expandedOverride =
+    originalEventId && occurrenceStartISO
+      ? events.find(
+          (candidate) =>
+            Boolean(candidate.recurrenceId) &&
+            (candidate.recurrenceMasterId === originalEventId || candidate.uid === event.uid) &&
+            candidate.recurrenceId === occurrenceStartISO
+        )
+      : undefined
+  const effectiveRecurrenceId =
+    event.recurrenceId || clickedOverride?.recurrenceId || expandedOverride?.recurrenceId
+  const effectiveMasterId =
+    effectiveOriginalEventId ||
+    clickedOverride?.recurrenceMasterId ||
+    expandedOverride?.recurrenceMasterId ||
+    event.recurrenceMasterId
   const effectiveStart = occurrenceStartISO ?? event.start
   const effectiveEnd = occurrenceStartISO
     ? new Date(
@@ -206,7 +225,7 @@ export function EventPreviewPopup({
           : 'yyyy-MM-dd'
 
   const [editingField, setEditingField] = useState<string | null>(null)
-  const [editTitle, setEditTitle] = useState(event.title)
+  const [editTitle, setEditTitle] = useState(event.title ?? '')
   const [editDate, setEditDate] = useState('')
   const [editEndDate, setEditEndDate] = useState('')
   const [editTime, setEditTime] = useState('')
@@ -368,10 +387,10 @@ export function EventPreviewPopup({
       }
     }
 
-    if (event.recurrenceId && originalEventId) {
+    if (event.recurrenceId && effectiveOriginalEventId) {
       const masterEvent = useCalendarStore
         .getState()
-        .events.find((candidate) => candidate.id === originalEventId)
+        .events.find((candidate) => candidate.id === effectiveOriginalEventId)
       if (!masterEvent) {
         showToast(t('modals.eventPreview.masterEventNotFoundThisOccurrence'))
         return
@@ -387,7 +406,8 @@ export function EventPreviewPopup({
       return
     }
 
-    const recurring = !!event.recurrence || !!event.rruleString || !!originalEventId
+    const recurring =
+      !!event.recurrence || !!event.rruleString || !!effectiveOriginalEventId || !!event.recurrenceId
     if (recurring) {
       setPendingUpdates(updates)
       setShowRecurrenceDialog(true)
@@ -597,7 +617,7 @@ export function EventPreviewPopup({
   }
 
   const cancelEditing = useCallback(() => {
-    setEditTitle(event.title)
+    setEditTitle(event.title ?? '')
     setEditDate('')
     setEditEndDate('')
     setEditTime('')
@@ -717,7 +737,7 @@ export function EventPreviewPopup({
   }
 
   const handleDelete = async (): Promise<void> => {
-    if (event.recurrenceId) {
+    if (effectiveRecurrenceId || effectiveMasterId) {
       await performDelete('this')
       return
     }
@@ -808,7 +828,11 @@ export function EventPreviewPopup({
       )
     }
     return (
-      <span className={styles.title} onClick={() => startEditing('title')}>
+      <span
+        className={styles.title}
+        data-component="event-preview-title"
+        onClick={() => startEditing('title')}
+      >
         {editTitle}
       </span>
     )

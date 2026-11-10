@@ -1,3 +1,4 @@
+import { runtimeLogger } from '../../../lib/runtimeLogger'
 import type { JSX } from 'react'
 import { useMemo, useState, useRef, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router'
@@ -165,7 +166,7 @@ export function Sidebar({
       try {
         await syncAccount(accountId)
       } catch (err) {
-        console.warn(`[CalDAV] Sync failed for account ${accountId}:`, err)
+        if (navigator.onLine) runtimeLogger.warn(`[CalDAV] Sync failed for account ${accountId}:`, err)
         errors.push(err instanceof Error ? err.message : String(err))
       }
     }
@@ -210,8 +211,9 @@ export function Sidebar({
   useEffect(() => {
     if (hasAutoSyncedCalendars || accountIds.length === 0) return
     hasAutoSyncedCalendars = true
-    runSyncAll().catch((error) => {
-      console.warn('[CalDAV] Automatic calendar sync failed:', error)
+    runSyncAll().catch(() => {
+      // The sync status indicator and error banner expose the failure to the
+      // user; avoid duplicating expected network failures in the console.
     })
   }, [accountIds.length, runSyncAll])
 

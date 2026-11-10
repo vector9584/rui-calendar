@@ -175,7 +175,7 @@ describe('Bug 10: EventPreviewPopup relatedTarget null', () => {
       fireEvent.click(screen.getByText('10:00 - 11:00'))
     })
 
-    const timeInputs = document.querySelectorAll('[data-component^="event-preview-"]')
+    const timeInputs = document.querySelectorAll('input[data-component^="event-preview-"]')
     expect(timeInputs.length).toBeGreaterThanOrEqual(2)
 
     // Blur with null relatedTarget - old code crashes on contains(null)
@@ -319,7 +319,7 @@ describe('Bug 12: editEndTime initialization', () => {
       fireEvent.click(screen.getByText('09:00 - 11:30'))
     })
 
-    const timeInputs = document.querySelectorAll('[data-component^="event-preview-"]')
+    const timeInputs = document.querySelectorAll('input[data-component^="event-preview-"]')
     expect(timeInputs.length).toBe(2)
 
     expect((timeInputs[0] as HTMLInputElement).value).toBe('09:00')
