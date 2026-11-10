@@ -48,9 +48,9 @@ test.describe('deleting synced resources', () => {
     // Create through the modal, targeting the remote calendar. Day cells are
     // focusable containers without a button role (the day-number button is the
     // semantic control), so select by data-date.
-    const dayCell = page.locator('[data-date]').first()
+    const dayCell = page.locator('[data-date="2026-11-01"]')
     await expect(dayCell).toBeVisible({ timeout: 10_000 })
-    await dayCell.click()
+    await dayCell.dblclick()
     const modal = page.locator('[data-component="modal-card"]')
     await expect(modal).toBeVisible()
     await modal.locator('[data-component="event-title-input"]').fill('Delete me')

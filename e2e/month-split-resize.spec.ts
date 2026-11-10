@@ -28,19 +28,30 @@ async function touchDrag(
 ): Promise<void> {
   await page.locator(SPLIT_HANDLE).evaluate(
     (element, { yStart, yEnd }) => {
-      const touchAt = (y: number) =>
-        new Touch({ identifier: 1, target: element, clientX: 195, clientY: y })
-      const dispatch = (target: EventTarget, type: string, y: number, active: boolean) => {
+      const touchAt = (y: number): Touch => {
+        if (typeof document.createTouch === 'function') {
+          return document.createTouch(window, element, 1, 195, y, 195, y, 1, 1, 0, 1)
+        }
+        return new Touch({ identifier: 1, target: element, clientX: 195, clientY: y })
+      }
+      const touchList = (touch: Touch): TouchList =>
+        typeof document.createTouchList === 'function'
+          ? document.createTouchList(touch)
+          : ([touch] as unknown as TouchList)
+      const emptyTouchList = (): TouchList => [] as unknown as TouchList
+      const touchEvent = (type: string, y: number, active: boolean): Event => {
         const touch = touchAt(y)
-        target.dispatchEvent(
-          new TouchEvent(type, {
-            bubbles: true,
-            cancelable: true,
-            touches: active ? [touch] : [],
-            targetTouches: active ? [touch] : [],
-            changedTouches: [touch],
-          })
-        )
+        const touches = active ? touchList(touch) : emptyTouchList()
+        const event = new Event(type, { bubbles: true, cancelable: true })
+        Object.defineProperties(event, {
+          touches: { value: touches },
+          targetTouches: { value: touches },
+          changedTouches: { value: touchList(touch) },
+        })
+        return event
+      }
+      const dispatch = (target: EventTarget, type: string, y: number, active: boolean) => {
+        target.dispatchEvent(touchEvent(type, y, active))
       }
 
       dispatch(element, 'touchstart', yStart, true)
@@ -53,25 +64,26 @@ async function touchDrag(
 
 async function touchTap(page: import('@playwright/test').Page): Promise<void> {
   await page.locator(SPLIT_HANDLE).evaluate((element) => {
-    const touch = new Touch({ identifier: 2, target: element, clientX: 195, clientY: 400 })
-    element.dispatchEvent(
-      new TouchEvent('touchstart', {
-        bubbles: true,
-        cancelable: true,
-        touches: [touch],
-        targetTouches: [touch],
-        changedTouches: [touch],
+    const touch =
+      typeof document.createTouch === 'function'
+        ? document.createTouch(window, element, 2, 195, 400, 195, 400, 1, 1, 0, 1)
+        : new Touch({ identifier: 2, target: element, clientX: 195, clientY: 400 })
+    const touchList = (): TouchList =>
+      typeof document.createTouchList === 'function'
+        ? document.createTouchList(touch)
+        : ([touch] as unknown as TouchList)
+    const emptyTouchList = [] as unknown as TouchList
+    const eventWithTouches = (type: string, touches: TouchList, changed: TouchList): Event => {
+      const event = new Event(type, { bubbles: true, cancelable: true })
+      Object.defineProperties(event, {
+        touches: { value: touches },
+        targetTouches: { value: touches },
+        changedTouches: { value: changed },
       })
-    )
-    document.dispatchEvent(
-      new TouchEvent('touchend', {
-        bubbles: true,
-        cancelable: true,
-        touches: [],
-        targetTouches: [],
-        changedTouches: [touch],
-      })
-    )
+      return event
+    }
+    element.dispatchEvent(eventWithTouches('touchstart', touchList(), touchList()))
+    document.dispatchEvent(eventWithTouches('touchend', emptyTouchList, touchList()))
   })
 }
 

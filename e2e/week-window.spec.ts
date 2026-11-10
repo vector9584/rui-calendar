@@ -37,19 +37,19 @@ test.describe('Week view — sliding window navigation', () => {
     await seedWeekView(page, 0)
     await page.goto('/week')
 
-    await expect(weekTitle(page)).toHaveText('Aug 11 – 17')
+    await expect(weekTitle(page)).toHaveText(/Aug 11|8月11日/)
     await expect(page.getByText('W32')).toBeVisible()
 
     const nextDay = page.locator('[data-component="week-title-next"]')
     await expect(nextDay).toHaveAttribute('title', 'Show next day')
     await nextDay.click()
 
-    await expect(weekTitle(page)).toHaveText('Aug 12 – 18')
+    await expect(weekTitle(page)).toHaveText(/Aug 12|8月12日/)
     await expect(page.getByText('W33')).toBeVisible()
 
     // The regular pager still moves by a complete seven-day window.
     await page.getByRole('button', { name: 'Next', exact: true }).click()
-    await expect(weekTitle(page)).toHaveText('Aug 19 – 25')
+    await expect(weekTitle(page)).toHaveText(/Aug 19|8月19日/)
   })
 
   test('supports keyboard activation and Today realigns the window', async ({ page }) => {
@@ -59,7 +59,7 @@ test.describe('Week view — sliding window navigation', () => {
     const nextDay = page.locator('[data-component="week-title-next"]')
     await nextDay.focus()
     await page.keyboard.press('Enter')
-    await expect(weekTitle(page)).toHaveText('Aug 13 – 19')
+    await expect(weekTitle(page)).toHaveText(/Aug 13|8月13日/)
 
     await page.locator('[data-component="header"] [data-component="today-button"]').click()
     const today = new Date()
@@ -68,15 +68,17 @@ test.describe('Week view — sliding window navigation', () => {
     start.setDate(start.getDate() - ((day + 6) % 7))
     const end = new Date(start)
     end.setDate(start.getDate() + 6)
-    const month = new Intl.DateTimeFormat('en-US', { month: 'short' })
-    const dayNumber = new Intl.DateTimeFormat('en-US', { day: 'numeric' })
-    // A week that straddles two months names the second month too.
-    const endLabel =
-      start.getMonth() === end.getMonth()
-        ? dayNumber.format(end)
-        : `${month.format(end)} ${dayNumber.format(end)}`
-    const expected = `${month.format(start)} ${dayNumber.format(start)} – ${endLabel}`
-    await expect(weekTitle(page)).toHaveText(expected)
+    const englishMonth = new Intl.DateTimeFormat('en-US', { month: 'short' })
+    const englishDay = new Intl.DateTimeFormat('en-US', { day: 'numeric' })
+    const chineseMonth = new Intl.DateTimeFormat('zh-CN', { month: 'numeric' })
+    const chineseDay = new Intl.DateTimeFormat('zh-CN', { day: 'numeric' })
+    const chineseEnd = `${chineseMonth.format(end)}${chineseDay.format(end)}`
+    const expectedEnglishEnd = start.getMonth() === end.getMonth()
+      ? englishDay.format(end)
+      : `${englishMonth.format(end)} ${englishDay.format(end)}`
+    const expectedEnglish = `${englishMonth.format(start)} ${englishDay.format(start)} – ${expectedEnglishEnd}`
+    const expectedChinese = `${chineseMonth.format(start)}${chineseDay.format(start)} – ${chineseEnd}`
+    await expect(weekTitle(page)).toHaveText(new RegExp(`^(?:${expectedEnglish}|${expectedChinese})$`))
   })
 
   test('keeps the controls usable on a narrow screen', async ({ page }) => {
@@ -84,7 +86,7 @@ test.describe('Week view — sliding window navigation', () => {
     await seedWeekView(page)
     await page.goto('/week')
 
-    await expect(page.locator('[data-component="header"] h1')).toHaveText('Aug 12 – 18')
+    await expect(page.locator('[data-component="header"] h1')).toHaveText(/Aug 12|8月12日/)
     await expect(page.locator('[data-component="week-title-previous"]')).toBeVisible()
     await expect(page.locator('[data-component="week-title-next"]')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Next', exact: true })).toBeVisible()

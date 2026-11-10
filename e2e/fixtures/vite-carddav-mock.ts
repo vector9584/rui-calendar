@@ -26,10 +26,11 @@ const MOUNT = '/mock-carddav'
 const PRINCIPAL = `${MOUNT}/dav/principals/user/`
 const HOME = `${MOUNT}/dav/addressbooks/user/`
 const BOOK = `${HOME}book/`
+const CALENDAR_HOME = `${MOUNT}/dav/calendars/user/`
 const TOKEN_PREFIX = 'http://calino.test/ns/sync/'
 
 const NS =
-  'xmlns="DAV:" xmlns:CR="urn:ietf:params:xml:ns:carddav" xmlns:CS="http://calendarserver.org/ns/"'
+  'xmlns="DAV:" xmlns:CR="urn:ietf:params:xml:ns:carddav" xmlns:C="urn:ietf:params:xml:ns:caldav" xmlns:CS="http://calendarserver.org/ns/"'
 
 interface LoggedRequest {
   method: string
@@ -183,6 +184,7 @@ export function carddavMockPlugin(): Plugin {
       res.writeHead(301, { Location: `${MOUNT}/dav/` })
       return res.end()
     }
+    if (path === '/.well-known/caldav') return send(204)
     if (method === 'PROPFIND' && (path === '/dav/' || path === '/' || path === '')) {
       return send(
         207,
@@ -200,8 +202,17 @@ export function carddavMockPlugin(): Plugin {
         multistatus([
           propResponse(
             PRINCIPAL,
-            `<CR:addressbook-home-set><href>${HOME}</href></CR:addressbook-home-set>`
+            `<CR:addressbook-home-set><href>${HOME}</href></CR:addressbook-home-set>` +
+              `<C:calendar-home-set><href>${CALENDAR_HOME}</href></C:calendar-home-set>`
           ),
+        ])
+      )
+    }
+    if (method === 'PROPFIND' && path === rel(CALENDAR_HOME)) {
+      return send(
+        207,
+        multistatus([
+          propResponse(CALENDAR_HOME, '<resourcetype><collection/></resourcetype>'),
         ])
       )
     }

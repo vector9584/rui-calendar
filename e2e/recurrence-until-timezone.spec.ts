@@ -78,10 +78,10 @@ test.describe('All-day recurrence UNTIL across the UTC boundary', () => {
 
     // The day cell is a focusable container without a button role (the inner
     // day-number button is the semantic control) — select it by data-date.
-    // Clicking it opens the same quick-create modal as before.
+    // Double-clicking a date opens the timed quick-create modal.
     const cell = page.locator('[data-date]').first()
     await expect(cell).toBeVisible()
-    await cell.click()
+    await cell.dblclick()
 
     const modal = page.locator('[data-component="modal-card"]')
     await expect(modal).toBeVisible()

@@ -16,7 +16,7 @@ test.describe('header — wordmark goes home', () => {
     await expect(page.locator('[data-component="header"]')).toBeVisible()
 
     const wordmark = page.locator('[data-component="brand-home"]')
-    await expect(wordmark).toHaveText('Calino')
+    await expect(wordmark).toHaveText('瑞历')
     await wordmark.click()
     await expect(page).toHaveURL(/\/month$/)
 

@@ -33,6 +33,12 @@ test('an unreadable resource is reported once and does not block the rest', asyn
   page,
   baseURL,
 }) => {
+  const consoleIssues: string[] = []
+  page.on('console', (message) => {
+    if (message.type() === 'error' || message.type() === 'warning') {
+      consoleIssues.push(`${message.type()}: ${message.text()} (${message.location().url})`)
+    }
+  })
   await page.request.post(
     `${baseURL!}/mock-caldav/__test__/reset?prefix=${encodeURIComponent(COLLECTION)}`
   )
@@ -58,4 +64,5 @@ test('an unreadable resource is reported once and does not block the rest', asyn
   await expect(page.getByText(/could not be read and (was|were) left as/i)).toBeVisible({
     timeout: 10_000,
   })
+  expect(consoleIssues).toEqual([])
 })

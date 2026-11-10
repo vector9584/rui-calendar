@@ -72,13 +72,13 @@ test.describe('month drag-to-create', () => {
     await expect(page.locator('[data-component="event-end-date"]')).toHaveValue('12/08/2026')
   })
 
-  test('single-day click still creates a timed event (not all-day)', async ({ page }) => {
+  test('double-clicking a day creates a timed event (not all-day)', async ({ page }) => {
     await page.goto('/month')
     await expect(page.locator('[data-component="calendar-grid"]').first()).toBeVisible()
 
     const cell = page.locator('[data-date="2026-08-15"]')
     const box = (await cell.boundingBox())!
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2)
+    await page.mouse.dblclick(box.x + box.width / 2, box.y + box.height / 2)
 
     const titleInput = page.locator('[data-component="event-title-input"]')
     await expect(titleInput).toBeVisible()

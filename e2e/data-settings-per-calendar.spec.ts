@@ -185,7 +185,7 @@ test.describe('Data settings: delete all events from a CalDAV calendar', () => {
     await page.locator('[data-component="sync-all-calendars"]').click()
     const dayCell = page.locator('[data-date]').first()
     await expect(dayCell).toBeVisible({ timeout: 10_000 })
-    await dayCell.click()
+    await dayCell.dblclick()
     const modal = page.locator('[data-component="modal-card"]')
     await expect(modal).toBeVisible()
     await modal.locator('[data-component="event-title-input"]').fill('Purge me')

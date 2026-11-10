@@ -25,8 +25,15 @@ test.describe('links into other apps in descriptions', () => {
   test.beforeEach(async ({ page }) => {
     await clearState(page)
     await page.addInitScript((description) => {
-      if (sessionStorage.getItem('__calino_test_app_links')) return
-      sessionStorage.setItem('__calino_test_app_links', '1')
+      const existing = localStorage.getItem('calino-storage')
+      try {
+        const parsed = existing ? JSON.parse(existing) : null
+        if (parsed?.state?.events?.some((event: { id?: string }) => event.id === 'planning-sync')) {
+          return
+        }
+      } catch {
+        // Replace malformed test state with the deterministic fixture below.
+      }
       const at = (hour: number): string => {
         const date = new Date()
         date.setHours(hour, 0, 0, 0)

@@ -22,9 +22,27 @@ const UTC_DAY = '20260813'
 
 // Owned outright by this spec (see vite-caldav-mock.ts): it asserts the exact
 // contents of a single stored resource, so it cannot share with a parallel spec.
-const J_TZ = '/dav/calendars/user/j-tz/'
+const J_TZ = '/dav/calendars/userj/j-tz/'
 
 test.use({ timezoneId: 'America/New_York' })
+
+async function seedTzStore(page: Page): Promise<void> {
+  await page.addInitScript(({ calendarKey, settingsKey }) => {
+    const calendar = {
+      id: 'j-tz', name: 'Journal TZ', color: '#34A853', isVisible: true,
+      isDefault: true, showTasksInViews: true,
+      supportedComponents: ['VEVENT', 'VTODO', 'VJOURNAL'],
+    }
+    const calendarRaw = localStorage.getItem(calendarKey)
+    const calendarState = calendarRaw ? JSON.parse(calendarRaw) : { state: {}, version: 2 }
+    calendarState.state = { ...(calendarState.state ?? {}), calendars: [calendar], events: [] }
+    localStorage.setItem(calendarKey, JSON.stringify(calendarState))
+    const settingsRaw = localStorage.getItem(settingsKey)
+    const settingsState = settingsRaw ? JSON.parse(settingsRaw) : { state: {}, version: 4 }
+    settingsState.state = { ...(settingsState.state ?? {}), journalEnabled: true }
+    localStorage.setItem(settingsKey, JSON.stringify(settingsState))
+  }, { calendarKey: STORAGE_KEYS.calendar, settingsKey: STORAGE_KEYS.settings })
+}
 
 /** Snapshot the mock's stored resources, retrying transient resets like journal.spec.ts. */
 async function dump(
@@ -46,46 +64,29 @@ async function dump(
   return null
 }
 
-/** Calendar in the store (so the journal can save into it) + journalEnabled. */
-async function seedTzStore(page: Page): Promise<void> {
-  await page.addInitScript(
-    ({ calendarKey, settingsKey }: { calendarKey: string; settingsKey: string }) => {
-      try {
-        const raw = localStorage.getItem(calendarKey)
-        const parsed = raw ? JSON.parse(raw) : { state: {}, version: 1 }
-        parsed.state = {
-          ...(parsed.state ?? {}),
-          calendars: [
-            {
-              id: 'j-tz',
-              name: 'Journal TZ',
-              color: '#34A853',
-              isVisible: true,
-              isDefault: true,
-              showTasksInViews: true,
-              supportedComponents: ['VEVENT', 'VTODO', 'VJOURNAL'],
-            },
-          ],
-          events: [],
-        }
-        localStorage.setItem(calendarKey, JSON.stringify(parsed))
-        const settingsRaw = localStorage.getItem(settingsKey)
-        const settings = settingsRaw ? JSON.parse(settingsRaw) : { state: {}, version: 1 }
-        settings.state = { ...(settings.state ?? {}), journalEnabled: true }
-        localStorage.setItem(settingsKey, JSON.stringify(settings))
-      } catch {
-        /* noop */
-      }
-    },
-    { calendarKey: STORAGE_KEYS.calendar, settingsKey: STORAGE_KEYS.settings }
-  )
-}
-
 async function settleInitialSync(page: Page): Promise<void> {
-  await page.locator('[data-component="sync-all-calendars"]').click()
+  const syncButton = page.locator('[data-component="sync-all-calendars"]')
+  await syncButton.click()
   await expect(
     page.getByText(/All calendars synced\.|Calendars are already syncing\.|Sync failed/).first()
   ).toBeVisible({ timeout: 15_000 })
+}
+
+async function openJournalAfterSync(page: Page): Promise<void> {
+  // Settings sync is shared by the mock CalDAV server across Playwright
+  // workers. Finish that pull first, then enable Journal through the same
+  // user-facing control this feature requires instead of relying on a local
+  // storage seed that a remote settings snapshot can overwrite.
+  await page.goto('/month')
+  await settleInitialSync(page)
+  await page.goto('/settings')
+  const journalToggle = page.getByRole('checkbox', { name: 'Journal' })
+  if (!(await journalToggle.isChecked()))
+    await page.locator('[data-setting="journal"] [data-component="toggle"]').click()
+  await expect(journalToggle).toBeChecked()
+    await page.goto('/journal')
+    await expect(page.getByRole('button', { name: /Journal/ })).toBeVisible()
+    await expect(page.locator('[data-component="journal-view"]')).toBeVisible()
 }
 
 test.describe('Journal entry date across the UTC boundary (#116)', () => {
@@ -97,20 +98,19 @@ test.describe('Journal entry date across the UTC boundary (#116)', () => {
     await seedAccount(page, {
       id: 'journal-tz-account',
       name: 'Journal TZ Mock',
-      serverUrl: `${baseURL}/mock-caldav/dav/`,
+      serverUrl: `${baseURL}/mock-caldav-journal/dav/`,
       username: 'user',
       password: 'pass',
-      calendars: [{ id: 'j-tz', name: 'Journal TZ', path: 'calendars/user/j-tz/', isDefault: true }],
+      calendars: [{ id: 'j-tz', name: 'Journal TZ', path: 'calendars/userj/j-tz/', isDefault: true }],
     })
     await page.request.post(
-      `${baseURL}/mock-caldav/__test__/reset?prefix=${encodeURIComponent(J_TZ)}`
+      `${baseURL}/mock-caldav-journal/__test__/reset?prefix=${encodeURIComponent(J_TZ)}`
     )
     await seedTzStore(page)
   })
 
   test('a new entry defaults to the local day, not the UTC day', async ({ page }) => {
-    await page.goto('/journal')
-    await settleInitialSync(page)
+    await openJournalAfterSync(page)
     const newEntry = page.locator('[data-component="journal-new-entry"]')
     await expect(newEntry).toBeVisible()
     await newEntry.click()
@@ -126,8 +126,7 @@ test.describe('Journal entry date across the UTC boundary (#116)', () => {
   })
 
   test('the entry stored on the server carries the local DTSTART', async ({ page, baseURL }) => {
-    await page.goto('/journal')
-    await settleInitialSync(page)
+    await openJournalAfterSync(page)
     const newEntry = page.locator('[data-component="journal-new-entry"]')
     await expect(newEntry).toBeVisible()
     await newEntry.click()
@@ -135,17 +134,13 @@ test.describe('Journal entry date across the UTC boundary (#116)', () => {
     const titleField = page.getByPlaceholder('Title (optional)')
     await expect(titleField).toBeVisible()
     const bodyField = page.getByPlaceholder('Write something…')
+    await expect(bodyField).toBeVisible()
     await titleField.fill('Debug Journal')
     await expect(titleField).toHaveValue('Debug Journal')
-    // Same controlled-input race journal.spec.ts documents: re-fill until it sticks.
-    await expect
-      .poll(async () => {
-        const value = await bodyField.inputValue().catch(() => '')
-        if (value === 'This is what a Journal Looks Like') return true
-        await bodyField.fill('This is what a Journal Looks Like')
-        return false
-      })
-      .toBe(true)
+    await expect(bodyField).toBeVisible()
+    await bodyField.click()
+    await bodyField.pressSequentially('This is what a Journal Looks Like')
+    await expect(bodyField).toHaveValue('This is what a Journal Looks Like')
 
     // Journal edits are persisted automatically; wait for the debounced sync
     // rather than looking for the old explicit Save button.

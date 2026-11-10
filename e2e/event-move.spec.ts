@@ -121,9 +121,10 @@ const icalStamp = (date: Date) => date.toISOString().replace(/[-:]/g, '').replac
 
 /** Open the event card's modal via the preview popup. */
 async function openEventModal(page: Page, title: string): Promise<void> {
-  const card = page.locator('[data-component="event-card"]').filter({ hasText: title }).first()
-  await expect(card).toBeVisible({ timeout: 15_000 })
-  await card.click()
+  const cardSelector = '[data-component="event-card"]'
+  const card = () => page.locator(cardSelector).filter({ hasText: title }).first()
+  await expect(card()).toBeVisible({ timeout: 15_000 })
+  await card().click({ position: { x: 12, y: 12 }, force: true })
   await page
     .locator('[data-component="event-preview"]')
     .getByRole('button', { name: /Open event/i })
@@ -416,6 +417,15 @@ test.describe('moving events between calendars', () => {
     await page.locator('[data-component="event-calendar-select"]').selectOption(CAL_WORK)
     await page.locator('[data-component="modal-save"]').click()
 
+    // The failed first destination write must leave the source resource intact
+    // until the queued move is retried by sync.
+    await expect
+      .poll(async () => Object.keys((await dump(page, baseURL!, SOURCE)) ?? {}).length, {
+        timeout: 15_000,
+      })
+      .toBe(1)
+    expect(Object.keys((await dump(page, baseURL!, WORK)) ?? {})).toHaveLength(0)
+
     // The queued move is replayed by the next sync's processPendingChanges.
     await syncAll(page)
 
@@ -434,8 +444,9 @@ test.describe('moving events between calendars', () => {
       .toBe(0)
 
     await syncAll(page)
+    await page.goto('/agenda')
     await expect(
-      page.locator('[data-component="event-card"]').filter({ hasText: 'Flaky destination event' })
+      page.getByRole('button', { name: /Flaky destination event/ })
     ).toHaveCount(1, { timeout: 15_000 })
   })
 

@@ -65,7 +65,9 @@ test.describe('calendar discovery sync', () => {
     const syncAll = page.locator('[data-component="sync-all-calendars"]')
     await expect(syncAll).toBeEnabled({ timeout: 10_000 })
     await syncAll.click()
-    await expect(page.getByText(/All calendars synced\.|Calendars are already syncing\./)).toBeVisible({ timeout: 10_000 })
+    await expect(
+      page.getByText(/All calendars synced\.|Calendars are already syncing\./)
+    ).toBeVisible({ timeout: 10_000 })
 
     // Discovery does not rely only on the previously persisted calendar list.
     await page.locator('[data-component="calendar-section-toggle"]').click()
@@ -98,19 +100,27 @@ test.describe('calendar discovery sync', () => {
           showTasksInViews: true,
         }
         localStorage.setItem('calino_caldav_calendars', JSON.stringify([staleCalendar]))
-        localStorage.setItem('calino-storage', JSON.stringify({ state: { calendars: [staleCalendar] }, version: 1 }))
+        localStorage.setItem(
+          'calino-storage',
+          JSON.stringify({ state: { calendars: [staleCalendar] }, version: 1 })
+        )
       },
       { accountId, calendarUrl }
     )
 
     await page.goto('/month')
     await page.locator('[data-component="sync-all-calendars"]').click()
-    await expect(page.getByText(/All calendars synced\.|Calendars are already syncing\./)).toBeVisible()
+    await expect(
+      page.getByText(/All calendars synced\.|Calendars are already syncing\./)
+    ).toBeVisible()
 
     await page.locator('[data-component="calendar-section-toggle"]').click()
     const calendar = page.getByText('Personal', { exact: true }).locator('..')
     await expect(calendar).toBeVisible()
-    await expect(calendar.locator('button').first()).toHaveCSS('background-color', 'rgb(59, 130, 246)')
+    await expect(calendar.locator('button').first()).toHaveCSS(
+      'background-color',
+      'rgb(59, 130, 246)'
+    )
   })
 
   test('imports Planify PRIORITY:0 as no priority', async ({ page, baseURL }) => {
@@ -309,7 +319,10 @@ END:VCALENDAR`,
     const first = new Date()
     first.setUTCDate(1)
     first.setUTCMonth(first.getUTCMonth() + 1)
-    first.setUTCHours(15, 20, 0, 0)
+    // Keep the timed event away from midnight in every supported IANA zone;
+    // otherwise one occurrence legitimately spans two agenda days and a card
+    // count would measure day fragments rather than recurrence instances.
+    first.setUTCHours(6, 20, 0, 0)
     const second = new Date(first)
     second.setUTCDate(second.getUTCDate() + 1)
     const midnightExdate = new Date(second)
@@ -322,10 +335,22 @@ END:VCALENDAR`,
 
     await page.goto('/agenda')
     await page.locator('[data-component="sync-all-calendars"]').click()
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const stored = JSON.parse(localStorage.getItem('calino-storage') ?? '{}')
+            return (stored.state?.events ?? []).some(
+              (event: { title?: string }) => event.title === 'Timed EXDATE regression'
+            )
+          }),
+        { timeout: 15_000 }
+      )
+      .toBe(true)
     await page.getByRole('button', { name: 'Next', exact: true }).click()
 
     await expect(
-      page.locator('main').getByText('Timed EXDATE regression', { exact: true })
+      page.locator('[data-component="agenda-event"]').filter({ hasText: 'Timed EXDATE regression' })
     ).toHaveCount(2, {
       timeout: 10_000,
     })
@@ -384,7 +409,8 @@ END:VCALENDAR`,
     // fails, it just no longer fails on timing alone.
     await expect
       .poll(
-        async () => (await reportCalendar(page, calendarUrl)).match(/UID:atomic-series/g)?.length ?? 0,
+        async () =>
+          (await reportCalendar(page, calendarUrl)).match(/UID:atomic-series/g)?.length ?? 0,
         { timeout: 15_000 }
       )
       .toBe(3)
@@ -428,9 +454,13 @@ END:VCALENDAR`,
     await expect(importedOverride).toBeHidden()
 
     await expect
-      .poll(async () => (await reportCalendar(page, calendarUrl)).match(/UID:atomic-series/g)?.length ?? 0, {
-        timeout: 15_000,
-      })
+      .poll(
+        async () =>
+          (await reportCalendar(page, calendarUrl)).match(/UID:atomic-series/g)?.length ?? 0,
+        {
+          timeout: 15_000,
+        }
+      )
       .toBe(2)
     const bodyAfterDelete = await reportCalendar(page, calendarUrl)
     expect(bodyAfterDelete).not.toContain('SUMMARY:Atomic recurring override')

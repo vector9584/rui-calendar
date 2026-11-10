@@ -44,7 +44,8 @@ test.describe('Monthly day selection', () => {
       await clearState(page)
       await page.clock.setFixedTime(new Date(year, 0, 1, 12))
       await page.goto('/month')
-      await page.locator(`[data-date="${year}-01-${startDay}"]`).click()
+      await page.getByRole('button', { name: 'Next month' }).click()
+      await page.locator(`[data-date="${year}-01-${startDay}"]`).dblclick()
       const modal = page.locator('[data-component="modal-card"]')
       const title = `Monthly day ${day}`
       await modal.locator('[data-component="event-title-input"]').fill(title)
@@ -98,7 +99,7 @@ test.describe('Monthly recurrence — second Tuesday (R2.4 byDayOrdinals)', () =
     await page.goto('/month')
     const tuesdayCell = page.locator('[data-date][aria-label^="Tuesday, "]').first()
     await expect(tuesdayCell).toBeVisible()
-    await tuesdayCell.click()
+    await tuesdayCell.dblclick()
 
     // 2. Modal opens. Fill the title.
     const modal = page.locator('[data-component="modal-card"]')

@@ -241,19 +241,17 @@ test.describe('Week view — pinch gesture wiring', () => {
       const mid = box.left + box.width / 2
 
       const touch = (id: number, x: number): Touch =>
-        new Touch({ identifier: id, target: el, clientX: x, clientY: y })
+        ({ identifier: id, target: el, clientX: x, clientY: y }) as Touch
 
       const fire = (type: string, xs: [number, number]): void => {
         const touches = [touch(0, xs[0]), touch(1, xs[1])]
-        el.dispatchEvent(
-          new TouchEvent(type, {
-            touches,
-            targetTouches: touches,
-            changedTouches: touches,
-            bubbles: true,
-            cancelable: true,
-          })
-        )
+        const event = new Event(type, { bubbles: true, cancelable: true }) as TouchEvent
+        Object.defineProperties(event, {
+          touches: { value: touches },
+          targetTouches: { value: touches },
+          changedTouches: { value: touches },
+        })
+        el.dispatchEvent(event)
       }
 
       fire('touchstart', [mid - 100, mid + 100])

@@ -330,6 +330,29 @@ const ACCOUNTS: MockAccount[] = [
       },
     ],
   },
+  {
+    // Isolated settings and journal collection for journal-timezone.spec.ts.
+    // Settings are shared server state, so this spec must not share the
+    // settings resource with parallel tests that toggle journalEnabled.
+    mount: '/mock-caldav-journal',
+    principalPath: '/dav/principals/userj/',
+    homePath: '/dav/calendars/userj/',
+    displayName: 'Mock CalDAV Journal TZ',
+    collections: [
+      {
+        path: '/dav/calendars/userj/j-tz/',
+        displayName: 'Journal TZ',
+        color: '#34A853',
+        components: ['VEVENT', 'VTODO', 'VJOURNAL'],
+      },
+      {
+        path: '/dav/calendars/userj/calino-settings/',
+        displayName: 'Calino Settings',
+        components: ['VEVENT'],
+        isSettings: true,
+      },
+    ],
+  },
 ]
 
 interface FaultRule {
@@ -639,6 +662,11 @@ export function caldavMockPlugin(): Plugin {
         res.end()
         return
       }
+      if (path === '/.well-known/carddav') {
+        res.writeHead(204)
+        res.end()
+        return
+      }
 
       // 2) PROPFIND on the DAV base or root.
       if ((path === '/dav/' || path === '/' || path === '') && method === 'PROPFIND') {
@@ -943,6 +971,15 @@ export function caldavMockPlugin(): Plugin {
 
     configureServer(server) {
       registerJmapMock(server)
+      server.middlewares.use((req, res, next) => {
+        const path = new URL(req.url ?? '/', 'http://localhost').pathname
+        if (path === '/.well-known/caldav' || path === '/.well-known/carddav') {
+          res.writeHead(204)
+          res.end()
+          return
+        }
+        next()
+      })
       for (const account of ACCOUNTS) {
         server.middlewares.use(account.mount, makeHandler(account))
       }

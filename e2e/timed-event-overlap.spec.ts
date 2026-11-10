@@ -1,12 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { clearState, STORAGE_KEYS } from './fixtures/localstorage'
 
-async function seedEvents(page: Page) {
+async function seedEvents(page: Page, callFrom = '17:00') {
   await clearState(page)
   await page.addInitScript(
-    ({ key }) => {
-      if (sessionStorage.getItem('__calino_timed_overlap')) return
-      sessionStorage.setItem('__calino_timed_overlap', '1')
+    ({ key, callFrom }) => {
       const d = new Date()
       const day = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
       const items = [
@@ -18,7 +16,7 @@ async function seedEvents(page: Page) {
           categories: ['important', 'maybe'],
           location: 'Meeting room',
         },
-        { id: 'call', title: 'Client call', from: '17:00', to: '18:00' },
+        { id: 'call', title: 'Client call', from: callFrom, to: '18:00' },
         { id: 'simultaneous-a', title: 'Concurrent first', from: '10:00', to: '12:00' },
         { id: 'simultaneous-b', title: 'Concurrent second', from: '10:00', to: '11:00' },
         { id: 'close-a', title: 'Close start first', from: '13:00', to: '15:00' },
@@ -50,7 +48,7 @@ async function seedEvents(page: Page) {
         })
       )
     },
-    { key: STORAGE_KEYS.calendar }
+    { key: STORAGE_KEYS.calendar, callFrom }
   )
 }
 
@@ -87,13 +85,22 @@ for (const view of ['week', 'day']) {
       second.getByText('Client call', { exact: true }),
     ]) {
       await expect(target).toBeVisible()
-      expect(
-        await target.evaluate((element) => {
+      const hitTest = await target.evaluate((element) => {
           const r = element.getBoundingClientRect()
           const hit = document.elementFromPoint(r.x + Math.min(r.width / 2, 15), r.y + r.height / 2)
-          return hit !== null && element.contains(hit)
+          const ownCard = element.closest('[data-component="event-card"]')
+          return {
+            visible: r.width > 0 && r.height > 0,
+            target: element.textContent,
+            hit: hit?.textContent,
+            hitClass: (hit as HTMLElement | null)?.className,
+            ownCardText: ownCard?.textContent,
+            hitCardText: hit?.closest('[data-component="event-card"]')?.textContent,
+            rect: { x: r.x, y: r.y, width: r.width, height: r.height },
+            within: hit !== null && ownCard !== null && ownCard.contains(hit),
+          }
         })
-      ).toBe(true)
+      expect(hitTest.within, JSON.stringify(hitTest)).toBe(true)
     }
     // Card interactions still target the correct event in either header.
     await second.getByText('Client call', { exact: true }).click()
@@ -121,7 +128,7 @@ for (const view of ['week', 'day']) {
 }
 
 test('week: overlap adjusts when larger lettering needs more vertical space', async ({ page }) => {
-  await seedEvents(page)
+  await seedEvents(page, '16:55')
   await page.goto('/week')
   const first = card(page, 'Planning workshop'),
     second = card(page, 'Client call')
@@ -133,8 +140,8 @@ test('week: overlap adjusts when larger lettering needs more vertical space', as
       return a!.x + a!.width - b!.x
     })
     .toBeGreaterThan(30)
-  // Simulate enlarged text from a theme or accessibility setting without remounting cards.
-  await page.evaluate(() => document.documentElement.style.setProperty('--font-scale', '2'))
+  // Exercise the same setting state the app uses; its CSS override also triggers content remeasurement.
+  await page.evaluate(() => document.documentElement.setAttribute('data-font-size', 'xlarge'))
   await expect
     .poll(async () => {
       const a = await first.boundingBox(),
@@ -142,7 +149,7 @@ test('week: overlap adjusts when larger lettering needs more vertical space', as
       return a!.x + a!.width - b!.x
     })
     .toBeLessThanOrEqual(1)
-  await page.evaluate(() => document.documentElement.style.removeProperty('--font-scale'))
+  await page.evaluate(() => document.documentElement.setAttribute('data-font-size', 'default'))
   await expect
     .poll(async () => {
       const a = await first.boundingBox(),

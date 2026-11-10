@@ -70,8 +70,13 @@ const server = createServer((req, res) => {
   // before the page ever sees it, exactly as a misconfigured server would.
   if (profile.cors && origin) {
     res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
     res.setHeader('Access-Control-Allow-Methods', ALLOW_METHODS)
     res.setHeader('Access-Control-Allow-Headers', ALLOW_HEADERS)
+    // Chromium treats localhost-to-localhost on different ports as a
+    // private-network request. The fixture must opt in so diagnostics tests
+    // exercise CalDAV checks instead of being stopped at the browser PNA gate.
+    res.setHeader('Access-Control-Allow-Private-Network', 'true')
     res.setHeader(
       'Access-Control-Expose-Headers',
       profile.exposeEtag ? 'ETag, DAV, Allow' : 'DAV, Allow'

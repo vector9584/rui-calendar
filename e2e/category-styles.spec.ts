@@ -1,52 +1,5 @@
 import { test, expect, type Page } from '@playwright/test'
-import { clearState, STORAGE_KEYS } from './fixtures/localstorage'
-
-async function seedStyledEvents(page: Page) {
-  await clearState(page)
-  await page.addInitScript(
-    ({ key }) => {
-      if (sessionStorage.getItem('__calino_category_styles')) return
-      sessionStorage.setItem('__calino_category_styles', '1')
-      const date = new Date()
-      const today = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-      localStorage.setItem(
-        key,
-        JSON.stringify({
-          version: 2,
-          state: {
-            calendars: [
-              {
-                id: 'default',
-                name: 'Calendar',
-                color: '#648574',
-                isVisible: true,
-                isDefault: true,
-              },
-            ],
-            categories: [{ id: 'important-id', name: 'important', color: '#ac7332' }],
-            events: [
-              {
-                id: 'styled-important',
-                title: 'Client presentation',
-                categories: ['important-id'],
-              },
-              { id: 'styled-maybe', title: 'Studio visit', categories: ['Unconfirmed'] },
-              { id: 'styled-both', title: 'Review with Alex?', categories: ['important', 'maybe'] },
-            ].map((event, i) => ({
-              ...event,
-              calendarId: 'default',
-              start: `${today}T${9 + i}:00:00`.replace('T9:', 'T09:'),
-              end: `${today}T${10 + i}:00:00`,
-              isAllDay: false,
-              type: 'event',
-            })),
-          },
-        })
-      )
-    },
-    { key: STORAGE_KEYS.calendar }
-  )
-}
+import { seedStyledEvents } from './fixtures/category-styles'
 
 const eventRow = (page: Page, title: string) =>
   page.locator('[data-component="agenda-event"]').filter({ hasText: title })

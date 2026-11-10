@@ -21,6 +21,10 @@ test.describe('Appearance — font size', () => {
       'aria-checked',
       'true'
     )
+    await expect.poll(() => page.locator('html').getAttribute('data-font-size')).toBe('xlarge')
+    await expect
+      .poll(() => page.locator('html').evaluate((el) => getComputedStyle(el).getPropertyValue('--font-scale').trim()))
+      .toBe('1.3')
     await expect.poll(fontPx).toBeCloseTo(before * 1.3, 1)
 
     await page.reload()

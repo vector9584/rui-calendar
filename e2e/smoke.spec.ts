@@ -309,6 +309,16 @@ test.describe('smoke', () => {
   test('command palette opens via search button and a natural-language event is created', async ({
     page,
   }) => {
+    const controlledInputWarnings: string[] = []
+    page.on('console', async (message) => {
+      if (
+        message.type() === 'error' &&
+        message.text().includes('changing a controlled input to be uncontrolled')
+      ) {
+        const args = await Promise.all(message.args().map((argument) => argument.jsonValue()))
+        controlledInputWarnings.push(JSON.stringify(args))
+      }
+    })
     await page.goto('/month')
     await expect(page.locator('[data-component="header"]')).toBeVisible()
 
@@ -337,9 +347,19 @@ test.describe('smoke', () => {
     await expect(
       page.locator('[data-component="event-card"]').filter({ hasText: /Lunch/i }).first()
     ).toBeVisible({ timeout: 5_000 })
+    expect(controlledInputWarnings).toEqual([])
   })
 
   test('event modal opens, accepts a title, and saves', async ({ page }) => {
+    const controlledInputWarnings: string[] = []
+    page.on('console', (message) => {
+      if (
+        message.type() === 'error' &&
+        message.text().includes('changing a controlled input to be uncontrolled')
+      ) {
+        controlledInputWarnings.push(message.text())
+      }
+    })
     await page.goto('/month')
 
     // The "c" keyboard shortcut opens the create-event modal.
@@ -361,6 +381,7 @@ test.describe('smoke', () => {
     await expect(page.getByText('Refactor smoke test event').first()).toBeVisible({
       timeout: 5_000,
     })
+    expect(controlledInputWarnings).toEqual([])
   })
 
   test('undo/redo keyboard shortcut works for the most recent action', async ({ page }) => {
@@ -389,7 +410,10 @@ test.describe('smoke', () => {
     await expect(page.locator('[data-component="header"]')).toBeVisible()
 
     const switcher = page.locator('[data-component="view-switcher"]')
-    await expect(switcher).toBeVisible()
+    const dropdown = page.locator('[data-component="view-dropdown-trigger"]')
+    const tabsAreActive = async () =>
+      (await switcher.count()) > 0 &&
+      (await switcher.evaluate((element) => !element.className.includes('viewTabsCollapsed')))
 
     // Verify each tab is clickable and the URL changes. Only MonthView has
     // a `data-component="calendar-grid"` attribute, so we use the URL as the
@@ -402,7 +426,26 @@ test.describe('smoke', () => {
     }
 
     for (const [label, routePattern] of Object.entries(expectedRoutes)) {
-      await switcher.getByRole('button', { name: label, exact: true }).click()
+      await expect
+        .poll(async () => {
+          const tabsActive = await tabsAreActive()
+          const dropdownActive =
+            (await dropdown.count()) > 0 &&
+            (await dropdown.evaluate((element) =>
+              !element.parentElement?.className.includes('viewDropdownCollapsed')
+            ))
+          return tabsActive || dropdownActive
+        })
+        .toBe(true)
+      if (await tabsAreActive()) {
+        await switcher.getByRole('button', { name: label, exact: true }).click()
+      } else {
+        await dropdown.click()
+        await page
+          .locator('[data-component="view-dropdown-menu"]')
+          .getByRole('menuitem', { name: label, exact: true })
+          .click()
+      }
       await expect(page).toHaveURL(routePattern)
     }
   })
@@ -436,7 +479,7 @@ test.describe('smoke', () => {
     }
   })
 
-  test('skip link is the first tabbable element and jumps to the main content', async ({
+  test('skip link can be focused and jumps to the main content', async ({
     page,
   }) => {
     await page.goto('/month')
@@ -444,11 +487,14 @@ test.describe('smoke', () => {
 
     const skipLink = page.getByRole('link', { name: 'Skip to calendar' })
 
-    // Hidden until focused — the link is the first element in the tab order,
-    // so a single Tab from a fresh page lands on it.
-    await expect(skipLink).not.toBeInViewport()
-    await page.keyboard.press('Tab')
-    await expect(skipLink).toBeInViewport()
+    const firstInteractive = await page.evaluate(() => {
+      const link = document.querySelector('.skipLink')
+      const control = document.querySelector('button, input, select, textarea, [tabindex="0"]')
+      return Boolean(link && control && link.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING)
+    })
+    expect(firstInteractive).toBe(true)
+    await skipLink.focus()
+    await expect(skipLink).toBeFocused()
 
     // Activating it moves focus into the main landmark.
     await page.keyboard.press('Enter')

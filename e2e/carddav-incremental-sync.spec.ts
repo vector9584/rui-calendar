@@ -101,6 +101,12 @@ test.describe('carddav — namespace-aware, incremental sync', () => {
       password: 'pass',
       calendars: [],
     })
+    await page.addInitScript((key: string) => {
+      const raw = localStorage.getItem(key)
+      const parsed = raw ? JSON.parse(raw) : { state: {}, version: 1 }
+      parsed.state = { ...parsed.state, contactsEnabled: true }
+      localStorage.setItem(key, JSON.stringify(parsed))
+    }, STORAGE_KEYS.settings)
   })
 
   test('reads contacts and stores a sync token from a default-namespace server', async ({

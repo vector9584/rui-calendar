@@ -246,6 +246,15 @@ test.describe('WebMCP browser AI access', () => {
   test('searches recurring occurrences and opens their editor without exposing journals or hidden events', async ({
     page,
   }) => {
+    const controlledInputErrors: string[] = []
+    page.on('console', (message) => {
+      if (
+        message.type() === 'error' &&
+        message.text().includes('changing a controlled input to be uncontrolled')
+      ) {
+        controlledInputErrors.push(message.text())
+      }
+    })
     await mockWebMCP(page)
     await seedJournal(page, {
       calendars: [{ id: 'default', name: 'Personal' }],
@@ -328,6 +337,7 @@ test.describe('WebMCP browser AI access', () => {
     await expect(
       page.locator('[data-component="modal-card"] [data-component="event-title-input"]')
     ).toHaveValue('Weekly meeting')
+    expect(controlledInputErrors).toEqual([])
   })
 
   test('rejects invalid inputs, readonly calendars and calendars without event support', async ({
